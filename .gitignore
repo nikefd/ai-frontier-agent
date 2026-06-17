@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.run/
+*.egg-info/
+.pytest_cache/
+# data dir (runtime); seed-data/ is committed as the demo seed
+/data/

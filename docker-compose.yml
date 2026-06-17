@@ -1,0 +1,22 @@
+services:
+  ai-frontier:
+    build: .
+    container_name: ai-frontier-agent
+    ports:
+      # 本机回环调试入口；Coolify 部署时由其 Traefik 经容器网络反代（域名在 Coolify UI 配）
+      - "127.0.0.1:9702:9702"
+    volumes:
+      - ai-frontier-data:/data
+    environment:
+      # 对话 agent + 抓取/翻译 worker 共用的 LLM（DeepSeek，OpenAI 兼容）；key 在 Coolify 配
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      AIF_LLM_API_KEY: ${DEEPSEEK_API_KEY:-}
+      AIF_LLM_BASE_URL: ${AIF_LLM_BASE_URL:-https://api.deepseek.com}
+      AIF_LLM_MODEL: ${AIF_LLM_MODEL:-deepseek-chat}
+      AIF_DATA_DIR: /data
+      TZ: Asia/Shanghai
+    restart: unless-stopped
+
+volumes:
+  # 命名卷：与部署目录解耦（Coolify 每次部署换工作目录，相对路径 bind mount 会丢数据）
+  ai-frontier-data:

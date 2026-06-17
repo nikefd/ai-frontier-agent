@@ -1,0 +1,39 @@
+{
+  "generated_at": "2026-05-13T04:10:25.279332+00:00",
+  "date": "2026-05-13",
+  "model": "gpt-4o",
+  "cohort_size": 5,
+  "body": "## 一句话总结  \nOpenAI 接口更新支持更复杂的推理，GitLab调整战略以应对代理时代，Datasette 和 LLM 发布新版本。\n\n## 今日重点  \n1. **OpenAI 接口更新支持推理增强**  \n   LLM 0.32a2 发布，关键更新是大部分 OpenAI 推理模型切换到 `/v1/responses` 接口，支持交错式推理能力。[4]  \n   \n2. **GitLab 调整战略应对代理时代**  \n   GitLab 宣布裁员并调整结构，计划减少运营国家数量，适配 \"agentic era\" 的需求。[5]  \n\n3. **Datasette 1.0a29 发布**  \n   此版本修复了零行表格的显示问题，新增 `TokenRestrictions.abbreviated()` 方法等功能。[1]  \n\n## 值得动手  \n- 尝试 LLM 0.32a2 的新推理接口 `/v1/responses`，探索其交错推理的实际表现。[4]  \n- 更新 Datasette 至 1.0a29，体验改进的表格显示和新工具方法。[1]  \n\n## 边角料  \n- GitLab 的战略调整可能预示着更多公司将重新评估在 AI 驱动时代的运营模式。[5]  ",
+  "cohort": [
+    {
+      "id": "a_4f7fd3e5d410",
+      "title": "datasette 1.0a29",
+      "source": "Simon Willison's Weblog",
+      "url": "https://simonwillison.net/2026/May/12/datasette/#atom-everything"
+    },
+    {
+      "id": "a_dbc4f9084771",
+      "title": "Quoting Mo Bitar",
+      "source": "Simon Willison's Weblog",
+      "url": "https://simonwillison.net/2026/May/12/mo-bitar/#atom-everything"
+    },
+    {
+      "id": "a_8f1404f549b0",
+      "title": "Quoting Mitchell Hashimoto",
+      "source": "Simon Willison's Weblog",
+      "url": "https://simonwillison.net/2026/May/12/mitchell-hashimoto/#atom-everything"
+    },
+    {
+      "id": "a_f6cdc92adccd",
+      "title": "llm 0.32a2",
+      "source": "Simon Willison's Weblog",
+      "url": "https://simonwillison.net/2026/May/12/llm/#atom-everything"
+    },
+    {
+      "id": "a_b08efaa00443",
+      "title": "Thoughts on GitLab's workforce reduction\" and \"structural and strategic decisions\"",
+      "source": "Simon Willison's Weblog",
+      "url": "https://simonwillison.net/2026/May/11/gitlab-act-2/#atom-everything"
+    }
+  ]
+}

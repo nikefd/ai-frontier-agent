@@ -1,0 +1,58 @@
+"""Pydantic schemas for the AI-frontier agent.
+
+Trimmed from the original zhangyangbin-agents/models.py: only the AI-news
+shapes are kept (climbing / finance models dropped with their routers).
+"""
+from __future__ import annotations
+
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant", "system"]
+    content: str
+    ts: str | None = None
+
+
+class ChatRequest(BaseModel):
+    message: str
+    stream: bool = False
+    conversation_id: str | None = None  # ← new: ties chat to a stored conversation
+
+
+# ── AI News ──────────────────────────────────────────────────────────
+class Article(BaseModel):
+    id: str | None = None
+    title: str
+    url: str
+    source: str
+    date: str | None = None
+    summary: str | None = None
+    hands_on: str | None = None  # "动手试试" hint
+    tags: list[str] = Field(default_factory=list)
+    pinned: bool = False
+    # tier + relevance + translation (all optional / backwards-compat)
+    tier: str | None = None  # high | med | low (origin feed tier)
+    ai_relevance: str | None = None  # keyword | llm | unknown | rejected
+    title_zh: str | None = None
+    summary_zh: str | None = None
+    translation_status: str | None = None  # pending | ok | failed | skipped
+    deep_dive_status: str | None = None  # none | generating | ok | failed
+    deep_dive_id: str | None = None  # file stem under deep-dives/
+
+
+class Track(BaseModel):
+    id: str | None = None
+    name: str
+    keywords: list[str] = Field(default_factory=list)
+    sources: list[str] = Field(default_factory=list)
+
+
+class Guide(BaseModel):
+    id: str | None = None
+    title: str
+    body: str = ""
+    tags: list[str] = Field(default_factory=list)
+    updated_at: str | None = None

@@ -1,0 +1,36 @@
+[
+  {
+    "id": "t_llm",
+    "name": "大模型 & 训练",
+    "keywords": [
+      "LLM",
+      "训练",
+      "推理",
+      "RLHF",
+      "MoE"
+    ],
+    "sources": []
+  },
+  {
+    "id": "t_agent",
+    "name": "Agent / 工具调用",
+    "keywords": [
+      "Agent",
+      "tool use",
+      "MCP",
+      "function calling"
+    ],
+    "sources": []
+  },
+  {
+    "id": "t_infra",
+    "name": "AI Infra",
+    "keywords": [
+      "推理优化",
+      "vLLM",
+      "GPU",
+      "Triton"
+    ],
+    "sources": []
+  }
+]
