@@ -42,7 +42,8 @@ SUMMARY_FILE = AINEWS_DIR / "summary_today.json"  # cached "today" summary
 READER_CACHE = AINEWS_DIR / "reader-cache"
 
 _ARTICLE_LIMIT = 400    # rolling history cap (raised: ~83 feeds now)
-_DAILY_FETCH_CAP = 60   # per-fetch ceiling: top-N by tier × freshness
+_DAILY_FETCH_CAP = 150  # per-fetch global ceiling (per-feed quota fills first)
+_PER_FEED_CAP = 4       # max items kept per feed per fetch (ensures source diversity)
 
 
 # ── Defaults seed ───────────────────────────────────────────────────
@@ -165,6 +166,16 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://mshibanami.github.io/GitHubTrendingRSS/weekly/all.xml", "name": "GitHub All Languages Weekly Trending", "tier": "high", "category": "trending", "description": "风向标 · GitHub 热门与社区信号"},
     {"url": "https://rsshub.app/github/trending/daily/any", "name": "trending", "tier": "high", "category": "trending", "description": "风向标 · GitHub 热门与社区信号"},
 ]
+
+# Rewrite the public rsshub.app host to the configured (possibly self-hosted)
+# instance. Done once here so DEFAULT_FEEDS, FEED_SPEC_BY_URL and everything
+# downstream consistently use the resolved host.
+if settings.rsshub_base and settings.rsshub_base.rstrip("/") != "https://rsshub.app":
+    _rsshub = settings.rsshub_base.rstrip("/")
+    for _spec in DEFAULT_FEED_SPECS:
+        if _spec["url"].startswith("https://rsshub.app"):
+            _spec["url"] = _spec["url"].replace("https://rsshub.app", _rsshub, 1)
+
 DEFAULT_FEEDS: list[str] = [f["url"] for f in DEFAULT_FEED_SPECS]
 # Quick lookup by url
 FEED_SPEC_BY_URL: dict[str, dict] = {f["url"]: f for f in DEFAULT_FEED_SPECS}

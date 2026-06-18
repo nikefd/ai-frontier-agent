@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     # Data root — articles.json / tracks.json / ui.db / reader-cache all live here.
     data_dir: Path = Field(default_factory=lambda: Path.home() / "agent-data")
 
+    # Self-hosted RSSHub base. Feed specs are written with the public
+    # `https://rsshub.app` host; at load time every such URL is rewritten to
+    # this base. Point it at a private instance (e.g. http://rsshub:1200 inside
+    # the compose network) to escape the public instance's rate limits / 403s.
+    rsshub_base: str = "https://rsshub.app"
+
     # LLM — DeepSeek (OpenAI-compatible). Same key serves chat agent + workers.
     llm_base_url: str = "https://api.deepseek.com"
     llm_model: str = "deepseek-chat"

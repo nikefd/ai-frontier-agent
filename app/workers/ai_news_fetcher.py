@@ -33,6 +33,7 @@ from ..routers.ai_news import (
     DEFAULT_FEED_SPECS,
     FEED_SPEC_BY_URL,
     _DAILY_FETCH_CAP,
+    _PER_FEED_CAP,
     _is_ai_relevant_keywords,
     _load_sources_meta,
     _parse_ts,
@@ -155,17 +156,33 @@ async def fetch_once(feeds: Iterable[str] | None = None) -> int:
             if configured_name:
                 entry["source"] = configured_name
             ts = _parse_ts(entry.get("date") or "") or 0.0
-            candidates.append((tier_rank.get(tier, 9), -ts, entry, m))
+            candidates.append((tier_rank.get(tier, 9), -ts, entry, m, url))
             eligible_count += 1
         m["eligible"] = eligible_count
         m["last_filtered"] = filtered_count
 
-    # Global ranking + cap to _DAILY_FETCH_CAP
-    candidates.sort(key=lambda t: (t[0], t[1]))
-    selected = candidates[:_DAILY_FETCH_CAP]
+    # Per-feed quota + global backfill, instead of a single global time-sorted
+    # cap. A pure global cap let high-frequency vendor feeds (newest timestamps)
+    # crowd out slower-but-valuable sources — e.g. Twitter accounts whose latest
+    # post is a few days old never made the top-N and silently never appeared.
+    # We now guarantee each feed up to _PER_FEED_CAP of its freshest items, then
+    # fill any remaining global budget by recency.
+    by_feed: dict[str, list] = {}
+    for cand in candidates:
+        by_feed.setdefault(cand[4], []).append(cand)
+    selected = []
+    leftover = []
+    for url, cands in by_feed.items():
+        cands.sort(key=lambda t: t[1])  # newest first within the feed
+        selected.extend(cands[:_PER_FEED_CAP])
+        leftover.extend(cands[_PER_FEED_CAP:])
+    # Global backfill up to the overall ceiling, newest first.
+    leftover.sort(key=lambda t: t[1])
+    room = max(0, _DAILY_FETCH_CAP - len(selected))
+    selected.extend(leftover[:room])
 
     added_total = 0
-    for _, _, entry, m in selected:
+    for _, _, entry, m, _url in selected:
         try:
             res = add_article(Article(**entry))
             if not res.get("duplicate"):

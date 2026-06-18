@@ -14,9 +14,38 @@ services:
       AIF_LLM_BASE_URL: ${AIF_LLM_BASE_URL:-https://api.deepseek.com}
       AIF_LLM_MODEL: ${AIF_LLM_MODEL:-deepseek-chat}
       AIF_DATA_DIR: /data
+      # 私有 rsshub：抓取时 rsshub.app 路由全改写到这个容器内地址，绕开公共实例限流/403
+      AIF_RSSHUB_BASE: ${AIF_RSSHUB_BASE:-http://rsshub:1200}
       TZ: Asia/Shanghai
+    depends_on:
+      - rsshub
+    restart: unless-stopped
+
+  # 自建 RSSHub：把 Twitter 大V / GitHub / Anthropic 等 rsshub 路由从公共实例迁到私有实例。
+  # 公共 rsshub.app 对 Twitter 路由 404、对 GitHub/Anthropic 路由 403；私有实例无此限制。
+  rsshub:
+    image: diygod/rsshub:latest
+    container_name: ai-frontier-rsshub
+    environment:
+      NODE_ENV: production
+      CACHE_TYPE: redis
+      REDIS_URL: redis://rsshub-redis:6379/
+      # Twitter 抓取需登录态 cookie（x.com 的 auth_token）。在 Coolify/服务器环境变量手填，
+      # 不写进代码/git。留空则 Twitter 路由抓不到（其余路由仍正常）。
+      TWITTER_AUTH_TOKEN: ${TWITTER_AUTH_TOKEN:-}
+    depends_on:
+      - rsshub-redis
+    restart: unless-stopped
+
+  # rsshub 的缓存后端：减少对上游源的重复请求、降低被限流概率
+  rsshub-redis:
+    image: redis:alpine
+    container_name: ai-frontier-rsshub-redis
+    volumes:
+      - rsshub-redis-data:/data
     restart: unless-stopped
 
 volumes:
   # 命名卷：与部署目录解耦（Coolify 每次部署换工作目录，相对路径 bind mount 会丢数据）
   ai-frontier-data:
+  rsshub-redis-data:
