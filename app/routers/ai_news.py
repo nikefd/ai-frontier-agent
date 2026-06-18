@@ -41,8 +41,8 @@ SOURCES_FILE = AINEWS_DIR / "sources.json"  # per-feed fetch metadata
 SUMMARY_FILE = AINEWS_DIR / "summary_today.json"  # cached "today" summary
 READER_CACHE = AINEWS_DIR / "reader-cache"
 
-_ARTICLE_LIMIT = 200    # rolling history cap; pagination shows 20/page → ~10 pages
-_DAILY_FETCH_CAP = 20   # per-fetch ceiling: top-N by tier × freshness
+_ARTICLE_LIMIT = 400    # rolling history cap (raised: ~83 feeds now)
+_DAILY_FETCH_CAP = 60   # per-fetch ceiling: top-N by tier × freshness
 
 
 # ── Defaults seed ───────────────────────────────────────────────────
@@ -68,49 +68,103 @@ DEFAULT_TRACKS: list[dict] = [
 ]
 
 # ── RSS feed registry ─────────────────────────────────────────────
-# Tier semantics:
-#   high — trusted AI source, articles pass without LLM relevance check
-#   med  — AI-adjacent (arXiv broad, Reddit), keyword pre-filter + LLM judge
-#   low  — generic firehose (HN keyword stream, GitHub changelog),
-#          strict keyword + LLM judge required
+# Source categories (category field drives UI grouping; tier=high means the
+# fetcher accepts everything from the feed — keyword filtering is disabled now
+# that every feed is a hand-picked AI source):
+#   vendor / media / blog / paper / community / expert / x-ai / trending
 DEFAULT_FEED_SPECS: list[dict] = [
-    # ── high: official AI labs / vendors
-    {"url": "https://openai.com/blog/rss.xml",                          "name": "OpenAI News",         "tier": "high", "category": "vendor",    "description": "OpenAI 官方博客 · GPT 系列、API、新产品发布的第一手信息"},
-    {"url": "https://huggingface.co/blog/feed.xml",                     "name": "Hugging Face Blog",   "tier": "high", "category": "vendor",    "description": "HF 官方博客 · 开源模型、Transformers/Diffusers 库、社区工程实践"},
-    {"url": "https://blog.research.google/feeds/posts/default?alt=rss", "name": "Google Research",     "tier": "high", "category": "vendor",    "description": "Google Research 博客 · Gemini 之外的基础研究和长文"},
-    {"url": "https://www.deepmind.com/blog/rss.xml",                    "name": "Google DeepMind",     "tier": "high", "category": "vendor",    "description": "DeepMind 博客 · AlphaFold、Gemini、强化学习、AI 安全等前沿研究"},
-    {"url": "https://blogs.nvidia.com/feed/",                           "name": "NVIDIA Blog",         "tier": "high", "category": "vendor",    "description": "英伟达企业博客 · GPU、CUDA、AI 行业动态"},
-    {"url": "https://developer.nvidia.com/blog/feed",                   "name": "NVIDIA Developer",    "tier": "high", "category": "vendor",    "description": "NVIDIA 开发者博客 · 推理优化、TensorRT、CUDA kernel 等工程实战"},
-    {"url": "https://www.microsoft.com/en-us/research/feed/",           "name": "Microsoft Research",  "tier": "high", "category": "vendor",    "description": "微软研究院 · Phi 系列、Azure AI、系统级研究"},
-    # ── high: AI media
-    {"url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml", "name": "The Verge AI", "tier": "high", "category": "media",     "description": "Verge AI 栏目 · 科技媒体视角，重点关注产品发布和行业大事"},
-    {"url": "https://venturebeat.com/category/ai/feed/",                "name": "VentureBeat AI",      "tier": "high", "category": "media",     "description": "VentureBeat AI · 企业级 AI、融资、商业落地新闻"},
-    {"url": "https://techcrunch.com/category/artificial-intelligence/feed/", "name": "TechCrunch AI",  "tier": "high", "category": "media",     "description": "TechCrunch AI · 创业公司、投资、产品发布快讯"},
+    # ── vendor: 官方实验室/厂商
+    {"url": "https://rsshub.app/anthropic/research", "name": "Anthropic Research", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
+    {"url": "https://rsshub.app/claude/blog", "name": "Claude Blog", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
+    {"url": "https://rsshub.app/github/file/anthropics/claude-code/main/CHANGELOG.md", "name": "Claude Code CHANGELOG", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
+    {"url": "https://api.xgo.ing/rss/user/01f60d63a61b44d692cc35c7feb0b4a4", "name": "Claude(@claudeai)", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
+    {"url": "https://rsshub.app/deepseek/news", "name": "DeepSeek 新闻", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
+    {"url": "https://github.blog/changelog/feed/", "name": "GitHub Changelog", "tier": "high", "category": "vendor", "description": "GitHub 产品 changelog · Copilot/Actions 新功能上线公告"},
+    {"url": "https://www.deepmind.com/blog/rss.xml", "name": "Google DeepMind", "tier": "high", "category": "vendor", "description": "DeepMind 博客 · AlphaFold、Gemini、强化学习、AI 安全等前沿研究"},
+    {"url": "https://blog.research.google/feeds/posts/default?alt=rss", "name": "Google Research", "tier": "high", "category": "vendor", "description": "Google Research 博客 · Gemini 之外的基础研究和长文"},
+    {"url": "https://huggingface.co/blog/feed.xml", "name": "Hugging Face Blog", "tier": "high", "category": "vendor", "description": "HF 官方博客 · 开源模型、Transformers/Diffusers 库、社区工程实践"},
+    {"url": "https://www.microsoft.com/en-us/research/feed/", "name": "Microsoft Research", "tier": "high", "category": "vendor", "description": "微软研究院 · Phi 系列、Azure AI、系统级研究"},
+    {"url": "https://blogs.nvidia.com/feed/", "name": "NVIDIA Blog", "tier": "high", "category": "vendor", "description": "英伟达企业博客 · GPU、CUDA、AI 行业动态"},
+    {"url": "https://developer.nvidia.com/blog/feed", "name": "NVIDIA Developer", "tier": "high", "category": "vendor", "description": "NVIDIA 开发者博客 · 推理优化、TensorRT、CUDA kernel 等工程实战"},
+    {"url": "https://api.xgo.ing/rss/user/971dc1fc90da449bac23e5fad8a33d55", "name": "OpenAI Developers(@OpenAIDevs)", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
+    {"url": "https://openai.com/blog/rss.xml", "name": "OpenAI News", "tier": "high", "category": "vendor", "description": "OpenAI 官方博客 · GPT 系列、API、新产品发布的第一手信息"},
+    {"url": "https://openai.com/news/rss.xml", "name": "OpenAI News", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
+    # ── media: AI 媒体
+    {"url": "https://arstechnica.com/ai/feed/", "name": "Ars Technica AI", "tier": "high", "category": "media", "description": "Ars Technica AI · 技术深度评测，重视一手数据和复盘"},
     {"url": "https://www.technologyreview.com/topic/artificial-intelligence/feed", "name": "MIT Tech Review AI", "tier": "high", "category": "media", "description": "MIT Tech Review · 长篇深度报道与影响分析"},
-    {"url": "https://arstechnica.com/ai/feed/",                         "name": "Ars Technica AI",     "tier": "high", "category": "media",     "description": "Ars Technica AI · 技术深度评测，重视一手数据和复盘"},
-    # ── high: AI experts / blogs
-    {"url": "https://www.latent.space/feed",                            "name": "Latent Space",        "tier": "high", "category": "blog",      "description": "Latent Space 播客博客 · swyx 与 Alessio 的 AI 工程师播客与短文"},
-    {"url": "https://magazine.sebastianraschka.com/feed",               "name": "Sebastian Raschka",   "tier": "high", "category": "blog",      "description": "Raschka 通讯 · LLM 内部机制、训练 trick、技术综述"},
-    {"url": "https://lilianweng.github.io/index.xml",                   "name": "Lilian Weng",         "tier": "high", "category": "blog",      "description": "OpenAI Lilian Weng 个人博客 · agent / hallucination / safety 级综述长文"},
-    {"url": "https://karpathy.github.io/feed.xml",                      "name": "Andrej Karpathy",     "tier": "high", "category": "blog",      "description": "Karpathy 个人博客 · 从零写 LLM、micrograd、教学性内容"},
-    {"url": "https://simonwillison.net/atom/everything/",               "name": "Simon Willison",      "tier": "high", "category": "blog",      "description": "Simon Willison 博客 · LLM 工具评测、prompt 技巧、每日观察"},
-    # ── med: arXiv core ML categories
-    {"url": "http://export.arxiv.org/rss/cs.CL",                        "name": "arXiv cs.CL",         "tier": "med",  "category": "paper",     "description": "arXiv 计算语言学（NLP/LLM 论文主战场）"},
-    {"url": "http://export.arxiv.org/rss/cs.LG",                        "name": "arXiv cs.LG",         "tier": "med",  "category": "paper",     "description": "arXiv 机器学习类目（覆盖训练、优化、新架构论文）"},
-    {"url": "http://export.arxiv.org/rss/cs.AI",                        "name": "arXiv cs.AI",         "tier": "med",  "category": "paper",     "description": "arXiv 人工智能类目（规划、知识表示、智能体）"},
-    {"url": "http://export.arxiv.org/rss/cs.CV",                        "name": "arXiv cs.CV",         "tier": "med",  "category": "paper",     "description": "arXiv 计算机视觉类目（多模态 / 图像生成相关论文）"},
-    # ── med: community
-    {"url": "https://www.reddit.com/r/LocalLLaMA/.rss",                 "name": "r/LocalLLaMA",        "tier": "med",  "category": "community", "description": "Reddit 本地大模型社区 · 开源权重、量化、推理硬件经验"},
-    {"url": "https://www.reddit.com/r/MachineLearning/.rss",            "name": "r/MachineLearning",   "tier": "med",  "category": "community", "description": "Reddit ML 社区 · 论文讨论、招聘、求建议帖"},
-    # ── low: keyword firehose
-    {"url": "https://hnrss.org/newest?q=AI+OR+LLM+OR+GPT+OR+Claude+OR+Gemini", "name": "HN: AI keyword", "tier": "low", "category": "community", "description": "Hacker News AI 关键词搜索流 · 杂噪较高但覆盖广，靠相关性过滤"},
-    {"url": "https://github.blog/changelog/feed/",                      "name": "GitHub Changelog",    "tier": "low",  "category": "vendor",    "description": "GitHub 产品 changelog · Copilot/Actions 新功能上线公告"},
-    # ── high: GitHub Trending (community signal of what people are building)
-    {"url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml",        "name": "GH Trending · All",    "tier": "high", "category": "trending", "description": "GitHub 每日热门仓库 · 全语言榜，社区在用什么的风向标"},
-    {"url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/python.xml",     "name": "GH Trending · Python", "tier": "high", "category": "trending", "description": "GitHub Python 每日热门 · AI/ML 项目集中地"},
-    {"url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/javascript.xml", "name": "GH Trending · JS",     "tier": "high", "category": "trending", "description": "GitHub JavaScript 每日热门 · AI 前端 / agent UI / 工具链"},
+    {"url": "https://techcrunch.com/category/artificial-intelligence/feed/", "name": "TechCrunch AI", "tier": "high", "category": "media", "description": "TechCrunch AI · 创业公司、投资、产品发布快讯"},
+    {"url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml", "name": "The Verge AI", "tier": "high", "category": "media", "description": "Verge AI 栏目 · 科技媒体视角，重点关注产品发布和行业大事"},
+    {"url": "https://venturebeat.com/category/ai/feed/", "name": "VentureBeat AI", "tier": "high", "category": "media", "description": "VentureBeat AI · 企业级 AI、融资、商业落地新闻"},
+    # ── blog: AI 博客(原)
+    {"url": "https://karpathy.github.io/feed.xml", "name": "Andrej Karpathy", "tier": "high", "category": "blog", "description": "Karpathy 个人博客 · 从零写 LLM、micrograd、教学性内容"},
+    {"url": "https://www.latent.space/feed", "name": "Latent Space", "tier": "high", "category": "blog", "description": "Latent Space 播客博客 · swyx 与 Alessio 的 AI 工程师播客与短文"},
+    {"url": "https://lilianweng.github.io/index.xml", "name": "Lilian Weng", "tier": "high", "category": "blog", "description": "OpenAI Lilian Weng 个人博客 · agent / hallucination / safety 级综述长文"},
+    {"url": "https://magazine.sebastianraschka.com/feed", "name": "Sebastian Raschka", "tier": "high", "category": "blog", "description": "Raschka 通讯 · LLM 内部机制、训练 trick、技术综述"},
+    {"url": "https://simonwillison.net/atom/everything/", "name": "Simon Willison", "tier": "high", "category": "blog", "description": "Simon Willison 博客 · LLM 工具评测、prompt 技巧、每日观察"},
+    # ── paper: arXiv 论文
+    {"url": "http://export.arxiv.org/rss/cs.AI", "name": "arXiv cs.AI", "tier": "high", "category": "paper", "description": "arXiv 人工智能类目（规划、知识表示、智能体）"},
+    {"url": "http://export.arxiv.org/rss/cs.CL", "name": "arXiv cs.CL", "tier": "high", "category": "paper", "description": "arXiv 计算语言学（NLP/LLM 论文主战场）"},
+    {"url": "http://export.arxiv.org/rss/cs.CV", "name": "arXiv cs.CV", "tier": "high", "category": "paper", "description": "arXiv 计算机视觉类目（多模态 / 图像生成相关论文）"},
+    {"url": "http://export.arxiv.org/rss/cs.LG", "name": "arXiv cs.LG", "tier": "high", "category": "paper", "description": "arXiv 机器学习类目（覆盖训练、优化、新架构论文）"},
+    # ── community: 社区/周刊
+    {"url": "https://quaily.com/op7418/feed/atom", "name": "AIGC Weekly", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
+    {"url": "https://justlovemaki.github.io/CloudFlare-AI-Insight-Daily/rss.xml", "name": "AI资讯日报 RSS Feed", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
+    {"url": "https://aigc-weekly.agi.li/rss.xml", "name": "Agili 的 AIGC 周刊", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
+    {"url": "https://www.bestblogs.dev/en/feeds/rss?category=ai&minScore=90", "name": "BestBlogs.dev - Artificial Intelligence ", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
+    {"url": "https://hnrss.org/newest?q=AI+OR+LLM+OR+GPT+OR+Claude+OR+Gemini", "name": "HN: AI keyword", "tier": "high", "category": "community", "description": "Hacker News AI 关键词搜索流 · 杂噪较高但覆盖广，靠相关性过滤"},
+    {"url": "https://1dwws7216168.vicp.fun/infoq/topic/AI&LLM", "name": "InfoQ 话题 - AI&大模型", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
+    {"url": "https://show-your-chat.tokenroll.ai/atom.xml", "name": "Show Your Chat 周报", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
+    {"url": "https://rssweball.top/feed/7c354539-f320-4729-8a69-3639616541e0.xml", "name": "Way to AGI | 通往AGI之路", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
+    {"url": "https://www.reddit.com/r/LocalLLaMA/.rss", "name": "r/LocalLLaMA", "tier": "high", "category": "community", "description": "Reddit 本地大模型社区 · 开源权重、量化、推理硬件经验"},
+    {"url": "https://www.reddit.com/r/MachineLearning/.rss", "name": "r/MachineLearning", "tier": "high", "category": "community", "description": "Reddit ML 社区 · 论文讨论、招聘、求建议帖"},
+    {"url": "https://sanhua.himrr.com/daily-news/feed", "name": "三花 AI 快讯", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
+    {"url": "https://wechat2rss.bestblogs.dev/feed/484d4199ae6c0b72ea01e7e0597a1f74933dfb62.xml", "name": "刘小排r", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
+    {"url": "https://rsshub.app/yuque/wikidesign/vngzgk", "name": "大厂AI实践", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
+    {"url": "https://werss.bestblogs.dev/feeds/MP_WXS_2396422154.atom", "name": "快刀青衣", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
+    {"url": "https://rss.zslren.com/mp/feed/c849b842170d59c6820e070ae18ba18152041c38.xml", "name": "数字生命卡兹克", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
+    {"url": "https://quaily.com/ameow/feed/atom", "name": "猫鱼周刊", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
+    # ── expert: AI 专家博客
+    {"url": "https://gwern.substack.com/feed", "name": "Gwern.net Newsletter", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
+    {"url": "https://sunocean.life/blog/feed.xml", "name": "NoteAI", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
+    {"url": "https://www.dwarkesh.com/feed", "name": "dwarkesh.com", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
+    {"url": "https://garymarcus.substack.com/feed", "name": "garymarcus.substack.com", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
+    {"url": "https://geohot.github.io/blog/feed.xml", "name": "geohot.github.io", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
+    {"url": "https://minimaxir.com/index.xml", "name": "minimaxir.com", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
+    {"url": "https://www.wheresyoured.at/rss/", "name": "wheresyoured.at", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
+    {"url": "https://worksonmymachine.ai/feed", "name": "worksonmymachine.substack.com", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
+    {"url": "https://s.baoyu.io/feed.xml", "name": "宝玉的分享", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
+    # ── x-ai: X 上的 AI 大V
+    {"url": "https://api.xgo.ing/rss/user/341f7b9f8d9b477e8bb200caa7f32c6e", "name": "AK(@_akhaliq)", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/aaditsh", "name": "Aadit Sheth", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/alexalbert__", "name": "Alex Albert", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/karpathy", "name": "Andrej Karpathy", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://api.xgo.ing/rss/user/08b5488b20bc437c8bfc317a52e5c26d", "name": "Andrew Ng(@AndrewYNg)", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/heybarsee", "name": "Barsee 🐶", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rss.app/feeds/83CQGxSgKZmSqKb5.xml", "name": "Ethan Mollick (@emollick)", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/gregisenberg", "name": "GREG ISENBERG", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/hamelhusain", "name": "Hamel Husain", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://api.xgo.ing/rss/user/f299207df53745bca04a03db8d11c5aa", "name": "Harrison Chase(@hwchase17)", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/DrJimFan", "name": "Jim Fan", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/mckaywrigley", "name": "Mckay Wrigley", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/itspaulai", "name": "Paul Couvert", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/steipete", "name": "Peter Steinberger 🦞", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/petergyang", "name": "Peter Yang", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/rileybrown_ai", "name": "Riley Brown", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/goodside", "name": "Riley Goodside", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/rowancheung", "name": "Rowan Cheung", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://api.xgo.ing/rss/user/e30d4cd223f44bed9d404807105c8927", "name": "Sam Altman(@sama)", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://api.xgo.ing/rss/user/30ad80be93c84e44acc37d5ddf31db57", "name": "Simon Willison(@simonw)", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/jackfriks", "name": "jack friks", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/vasumanmoza", "name": "vas", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/hesamation", "name": "ℏεsam", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/lxfater", "name": "铁锤人", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    # ── trending: GitHub 风向
+    {"url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml", "name": "GH Trending · All", "tier": "high", "category": "trending", "description": "GitHub 每日热门仓库 · 全语言榜，社区在用什么的风向标"},
+    {"url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/javascript.xml", "name": "GH Trending · JS", "tier": "high", "category": "trending", "description": "GitHub JavaScript 每日热门 · AI 前端 / agent UI / 工具链"},
+    {"url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/python.xml", "name": "GH Trending · Python", "tier": "high", "category": "trending", "description": "GitHub Python 每日热门 · AI/ML 项目集中地"},
+    {"url": "https://mshibanami.github.io/GitHubTrendingRSS/weekly/all.xml", "name": "GitHub All Languages Weekly Trending", "tier": "high", "category": "trending", "description": "风向标 · GitHub 热门与社区信号"},
+    {"url": "https://rsshub.app/github/trending/daily/any", "name": "trending", "tier": "high", "category": "trending", "description": "风向标 · GitHub 热门与社区信号"},
 ]
-# Backwards-compat: many callers still expect a flat URL list
 DEFAULT_FEEDS: list[str] = [f["url"] for f in DEFAULT_FEED_SPECS]
 # Quick lookup by url
 FEED_SPEC_BY_URL: dict[str, dict] = {f["url"]: f for f in DEFAULT_FEED_SPECS}
@@ -183,6 +237,7 @@ def list_articles(
     q: str | None = None,
     pinned_only: bool = False,
     tier: str | None = None,
+    category: str | None = None,
     offset: int = 0,
     limit: int = 20,
 ) -> dict:
@@ -207,6 +262,15 @@ def list_articles(
     if tier:
         wanted = {t.strip() for t in tier.split(",") if t.strip()}
         articles = [a for a in articles if (a.get("tier") or "med") in wanted]
+    if category:
+        wanted_c = {c.strip() for c in category.split(",") if c.strip()}
+        # Resolve each article's category: prefer the field stored on the
+        # article; fall back to the feed spec keyed by source name.
+        cat_by_name = {s.get("name"): s.get("category") for s in DEFAULT_FEED_SPECS}
+        articles = [
+            a for a in articles
+            if (a.get("category") or cat_by_name.get(a.get("source")) or "") in wanted_c
+        ]
     # newest first; pinned bubble up
     articles.sort(key=lambda a: (not a.get("pinned"), -(_parse_ts(a.get("date") or ""))))
     total = len(articles)

@@ -87,13 +87,11 @@ async def _fetch_feed(
 
 
 def _decide_relevance(entry: dict, tier: str) -> tuple[bool, str]:
-    """Return (accept?, reason). reason ∈ keyword|trusted|rejected."""
+    """Accept everything: every feed is now a hand-picked AI source, so the
+    keyword pre-filter is disabled. We still tag whether an AI keyword fired
+    (a weak UI signal), but it never rejects an article."""
     hit = _is_ai_relevant_keywords(entry.get("title") or "", entry.get("summary") or "")
-    if tier == "high":
-        # Trusted source: accept everything; tag whether keyword fired
-        return True, ("keyword" if hit else "trusted")
-    # med + low: keyword required
-    return (hit, "keyword" if hit else "rejected")
+    return True, ("keyword" if hit else "curated")
 
 
 async def fetch_once(feeds: Iterable[str] | None = None) -> int:
@@ -152,6 +150,8 @@ async def fetch_once(feeds: Iterable[str] | None = None) -> int:
             entry["tier"] = tier
             entry["ai_relevance"] = reason
             entry["translation_status"] = "pending"
+            if category:
+                entry["category"] = category
             if configured_name:
                 entry["source"] = configured_name
             ts = _parse_ts(entry.get("date") or "") or 0.0

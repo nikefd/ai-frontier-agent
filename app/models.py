@@ -35,7 +35,8 @@ class Article(BaseModel):
     pinned: bool = False
     # tier + relevance + translation (all optional / backwards-compat)
     tier: str | None = None  # high | med | low (origin feed tier)
-    ai_relevance: str | None = None  # keyword | llm | unknown | rejected
+    category: str | None = None  # vendor | media | expert | x-ai | community | paper | trending
+    ai_relevance: str | None = None  # keyword | curated | unknown | rejected
     title_zh: str | None = None
     summary_zh: str | None = None
     translation_status: str | None = None  # pending | ok | failed | skipped

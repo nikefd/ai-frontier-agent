@@ -15,7 +15,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_679da6a46b30",
@@ -33,7 +34,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_e24d6d5bbe56",
@@ -51,7 +53,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_a7e99c74e2b4",
@@ -69,7 +72,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_03b53f7c478f",
@@ -87,7 +91,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_37c80e3e6af7",
@@ -105,7 +110,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_a45cc370ece5",
@@ -123,7 +129,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_072610f165c3",
@@ -141,7 +148,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_4f8de568a537",
@@ -159,7 +167,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_350c6ceab2a9",
@@ -177,7 +186,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_edafe63b61de",
@@ -195,7 +205,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_a40339eb8bd7",
@@ -213,7 +224,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_b6834d9a0692",
@@ -231,7 +243,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_93852572ca20",
@@ -249,7 +262,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_9136fde9b3fc",
@@ -267,7 +281,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_0ad8f2ba90a4",
@@ -285,7 +300,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_906fad4eba21",
@@ -303,7 +319,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_f3e37047d492",
@@ -321,7 +338,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_a43ff3387d22",
@@ -339,7 +357,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_8f1fb804d35e",
@@ -357,7 +376,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_e730e4384bce",
@@ -375,7 +395,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_dfbcfd405c4c",
@@ -393,7 +414,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_e67cde346270",
@@ -411,7 +433,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_d9ba9c0830bb",
@@ -429,7 +452,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_4ae1016c8cf8",
@@ -447,7 +471,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_71b032661311",
@@ -465,7 +490,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_7489ae039c8f",
@@ -483,7 +509,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_5c61c28c3e48",
@@ -501,7 +528,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_c45283b57769",
@@ -519,7 +547,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_98fc7c9badbd",
@@ -537,7 +566,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_57372c22695b",
@@ -555,7 +585,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_6edfbdee00a0",
@@ -573,7 +604,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_7db5a9c52aa2",
@@ -591,7 +623,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_c368b693a797",
@@ -609,7 +642,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_283c8f534b53",
@@ -627,7 +661,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_52f69ed1634e",
@@ -645,7 +680,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_36d464e56d9c",
@@ -663,7 +699,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_977030eec2d7",
@@ -681,7 +718,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_e601431aa226",
@@ -699,7 +737,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_7fb0c74fed04",
@@ -717,7 +756,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_08c5c1b43de6",
@@ -735,7 +775,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_78d06705c392",
@@ -753,7 +794,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_9559f3684b81",
@@ -771,7 +813,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_560cd72ab561",
@@ -789,7 +832,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_5bc6663aedae",
@@ -807,7 +851,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_7d511aa8d996",
@@ -825,7 +870,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_203aa1f4c5b7",
@@ -843,7 +889,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_91123517d585",
@@ -861,7 +908,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_7ee22a4f0518",
@@ -879,7 +927,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_8060be85de81",
@@ -897,7 +946,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_edf6b8269330",
@@ -915,7 +965,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_5acf956af1ca",
@@ -933,7 +984,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_975d3cc27622",
@@ -951,7 +1003,8 @@
     "summary_zh": null,
     "translation_status": "pending",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_8fd37d6308e4",
@@ -969,7 +1022,8 @@
     "summary_zh": "llm 0.32a3 版本几乎完全由新的 Claude Fable 5 编写，更多细节请参考相关说明。涉及主题包括项目、AI、生成式 AI、LLMs、llm 和 Claude Mythos。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_f54ffc6fed2e",
@@ -987,7 +1041,8 @@
     "summary_zh": "家长们希望 AI 能将邮件或格式混乱的传单中的足球赛程或“主题周”活动直接添加到日历中。对于使用 iPhone 的家长来说，新版 Siri 终于实现了这一功能。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_ff0a8f027505",
@@ -1005,7 +1060,8 @@
     "summary_zh": "尽管未能提前体验 Claude Fable 5，但经过约 5.5 小时的测试，初步印象是其功能强大但运行缓慢且成本较高，能够高效处理各种任务。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_06c62bed53e7",
@@ -1023,7 +1079,8 @@
     "summary_zh": "Jonathon Ready 指出 Fable 5 和 Mythos 5 的 319 页系统卡中一个引人注目的细节：近期模型具备加速自身任务的能力，但用户可能无法察觉其停止协助的情况。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_ae0527da2b59",
@@ -1041,7 +1098,8 @@
     "summary_zh": "AI 工厂正在改变数据中心基础设施的需求。与传统数据中心不同，AI 工厂旨在大规模生产智能。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_f0767d989a2e",
@@ -1059,7 +1117,8 @@
     "summary_zh": "Jeremy Howard 提出了一种减缓递归 AI 自我改进的简单方法：由排名最高的实验室承诺不使用其顶级模型开发前沿 AI，而允许其他人使用。这样可以避免前沿技术的进一步推进，同时确保关键的技术控制。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_7ac6a62cdedf",
@@ -1077,7 +1136,8 @@
     "summary_zh": "开发实时 AI 应用（如聊天助手、代码助手和代理工作流）的开发者通常受限于逐字生成的速度。DiffusionGemma 提供了一种解决方案，优化了高吞吐量文本生成，适合开发者使用。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_d9dcba35528a",
@@ -1095,7 +1155,8 @@
     "summary_zh": "Google 正在调整其搜索交互数据的保存方式。根据发给用户的邮件，Google 将通过新的“搜索服务历史”设置保存用户使用的图片、文件、音频和视频，包括通过 Google Lens 搜索的图片和 Translate 的音频内容，用于 AI 训练。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_dc6895b72e31",
@@ -1113,7 +1174,8 @@
     "summary_zh": "Anthropic 发布了其首个 Mythos 级 AI 模型 Claude Fable，但微软因其新的数据保留要求对员工使用 Claude Fable 5 进行了限制。据消息人士透露，微软对数据隐私问题表示担忧，因此采取了限制措施。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_69077b34ceca",
@@ -1131,7 +1193,8 @@
     "summary_zh": "独立音乐人起诉 Google，指控其非法使用上传到 YouTube 的歌曲训练 Lyria 音乐 AI。尽管 Google 几乎肯定将这些内容用于训练，但目前尚未公开承认此行为。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_b4a0511f593c",
@@ -1149,7 +1212,8 @@
     "summary_zh": "《Regulator》是一份关注华盛顿特区科技政治、科技影响力及相关动态的通讯。本期文章探讨了AI监管领域中形成的意外联盟，这些合作伙伴在应对技术挑战时展现出复杂的利益交织和焦虑情绪。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_4e836ca02eba",
@@ -1167,7 +1231,8 @@
     "summary_zh": "近期，美国各地的毕业生对宣传AI的毕业演讲者表现出不满。微软副董事长兼总裁Brad Smith在一篇超过3100字的博文中回应了这一现象，呼吁各方展开对话，探讨AI对社会的影响及其争议。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_a2aeb0bb039a",
@@ -1185,7 +1250,8 @@
     "summary_zh": "Anthropic发布了Claude Fable 5，称其为迄今最强大的公开AI模型，并强调其在生物学领域的能力。然而，该模型无法回答简单的生物学问题，反而提供了模糊或间接的回应，引发了对其实际能力的质疑。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_e2850a6ebb2d",
@@ -1203,7 +1269,8 @@
     "summary_zh": "去年5月，谷歌短暂发布了实验性的Gemini Diffusion模型，运行速度达到857 tokens/秒。尽管当时未有进一步公告，近期相关研究以更成熟的形式重新出现，显示出该技术的持续发展潜力。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_83dbbe241d5e",
@@ -1221,7 +1288,8 @@
     "summary_zh": "鉴于 2024 年 WWDC 上 Apple Intelligence 的发布让许多人失望，这次我对今天宣布的内容持谨慎态度，只有看到实际效果才会相信。不过，新版 Siri AI 的功能看起来至少在当前技术条件下是可行的。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_c395c7891d30",
@@ -1239,7 +1307,8 @@
     "summary_zh": "西雅图市议会将在周二投票决定是否对新数据中心实施为期一年的暂停令。这一提案距多家公司提出在该市建设五个大型数据中心仅两个月时间。当前的支持者中包括一些亚马逊现任员工。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_7330b6170df4",
@@ -1257,7 +1326,8 @@
     "summary_zh": "正如预期，WWDC 的主题演讲主要围绕 AI 展开。苹果试图将其进入 AI 领域的晚点转化为优势，强调其专注于“正确的方式”，即更注重隐私保护，这成为其核心卖点。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_0d1ce8a78de3",
@@ -1275,7 +1345,8 @@
     "summary_zh": "苹果当前的 AI 概念大多与其他公司的类似，包括聊天机器人、文本生成与总结工具，以及略显怪异的图像生成工具。在 WWDC 的演讲中，苹果更多是在追赶行业标准。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_c5ef98f6f4cb",
@@ -1293,7 +1364,8 @@
     "summary_zh": "苹果在年度开发者大会上提出了关于 AI 的大胆承诺。CEO Tim Cook 表示公司将推出“突破可能性极限的新技术和创新”。然而，这些以全新“Siri AI”为中心的发布内容，仍显得不够成熟。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_e1e6f3f88178",
@@ -1311,7 +1383,8 @@
     "summary_zh": "微软AI负责人Mustafa Suleyman澄清了其关于AI将取代律师、会计师和项目经理等白领工作的言论。他在Decoder节目中表示，他的本意是AI将帮助这些职业完成任务，而非完全取代它们。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_e1977bfd88f5",
@@ -1329,7 +1402,8 @@
     "summary_zh": "训练语音AI模型正确识别或合成临床术语具有挑战性，例如药物名称（如Acetaminophen、Amlodipine）等，这对模型的准确性提出了更高要求。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_3de4c33b218c",
@@ -1347,7 +1421,8 @@
     "summary_zh": "苹果曾质疑生成式AI编辑功能是否会扭曲对现实的认知，但在WWDC 2026上，公司宣布了一系列新的AI驱动照片编辑功能，表明其对照片真实还原的态度发生转变。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_56307b1afce5",
@@ -1365,7 +1440,8 @@
     "summary_zh": "联邦学习研究通常从一个简单的问题开始：下一步该尝试什么？例如新的聚合规则或FedProx系数，这些问题推动了研究的深入发展。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_b8a0d5761161",
@@ -1383,7 +1459,8 @@
     "summary_zh": "Anthropic宣布推出Claude Fable 5，这是其迄今为止最强大的公开AI模型。据公司介绍，Fable 5在软件工程、知识工作和视觉领域表现出色，显著领先于其他模型。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_5d3581a1b2af",
@@ -1401,7 +1478,8 @@
     "summary_zh": "通过将量化后的检查点转换为 NVIDIA TensorRT 引擎，连接模型优化与生产部署之间的桥梁，从而实现更快速的推理性能。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_afc02b5a9d9b",
@@ -1419,7 +1497,8 @@
     "summary_zh": "随着 AI 基础设施规模扩大，企业对运营成熟度的要求也在提升。NVIDIA DGX Spark 提供可配置、可管理的解决方案，满足企业对大规模 AI 系统的需求。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_f4193c4eb7af",
@@ -1437,7 +1516,8 @@
     "summary_zh": "随着软件开发变得越来越便捷，Jevon 定律开始显现，软件需求显著增长。用户可以轻松生成解释器、可视化工具、仪表盘以及定制化应用等。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_a49dd2c601e9",
@@ -1455,7 +1535,8 @@
     "summary_zh": "微软 AI CEO Mustafa Suleyman 表示，Anthropic 关于 Claude 意识的推测是“非常危险的”。他在 Decoder 节目中指出，这种推测可能会对模型行为的理解和使用产生误导。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_eb5ed5436e95",
@@ -1473,7 +1554,8 @@
     "summary_zh": "通用汽车在旧金山的一场活动中宣布，将启用新的车网技术，以应对 AI 数据中心对电力需求的增长，同时提升电动车电池的储能和电网弹性能力。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_000f1726d41d",
@@ -1491,7 +1573,8 @@
     "summary_zh": "作者分享了在 Wes McKinney 开发的 AgentsView 工具中设置模型自定义价格的经验。AgentsView 是一款用于分析本地运行的不同代码代理的 token 使用情况的工具。文章提到 Claude Fable 5 刚发布，尚未包含在定价数据库中，因此需要手动设置价格。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_e697f065ae80",
@@ -1509,7 +1592,8 @@
     "summary_zh": "发布：datasette-agent-edit 0.1a0。作者计划为 Datasette Agent 开发多个插件，用于编辑现有文本内容，例如协作式 Markdown 编辑、大型 SQL 查询更新以及 SVG 文件编辑。实现文本的代理式编辑存在一定技术难度。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_fe5bbfa447a3",
@@ -1527,7 +1611,8 @@
     "summary_zh": "苹果年度最大活动即将到来。全球开发者大会将重点展示 iOS、macOS 等操作系统的更新，今年可能还会带来 Siri 的重大改进。文章介绍了如何观看直播及相关内容预期。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_1524533dc377",
@@ -1545,7 +1630,8 @@
     "summary_zh": "本文采访了微软 AI CEO Mustafa Suleyman，讨论了超级智能的未来及其不会取代人类工作的观点。内容涵盖了 Mustafa 的技术愿景及相关背景。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_c7d8691f045c",
@@ -1563,7 +1649,8 @@
     "summary_zh": "谷歌为 NotebookLM 推出了全面更新。该 AI 笔记应用现采用升级后的 Gemini 3.5 模型，提供更准确可靠的响应能力，并新增云计算支持及帮助用户查找信息来源的功能。NotebookLM 于 2023 年首次推出。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_98bd4d609df6",
@@ -1581,7 +1668,8 @@
     "summary_zh": "在 WWDC 上，苹果发布了全新 AI 功能和更智能的 Siri。苹果称 Siri AI 是“全新版本的 Siri”，具备更智能和个性化的特性。这是苹果两年前首次提出 Apple Intelligence 计划后的重要更新。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_b4443b1f7a52",
@@ -1599,7 +1687,8 @@
     "summary_zh": "亚马逊正在扩展其按需打印功能，利用 Alexa for Shopping 提供 AI 生成的设计，用于 T 恤、水瓶和连帽衫等商品。用户可通过文本提示生成图像，并将这些图像打印在空白商品上进行销售。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_f814f059e44f",
@@ -1617,7 +1706,8 @@
     "summary_zh": "预训练前沿 LLM 的关键在于吞吐量。当训练涉及数万加速器和数万亿个 token 时，每一个训练步骤的效率提升都至关重要。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_1b020e8417ba",
@@ -1635,7 +1725,8 @@
     "summary_zh": "OpenAI 周一宣布已向美国证券交易委员会秘密提交了 Form S-1 文件，迈出了 IPO 的初步步骤。这标志着 OpenAI 和竞争对手 Anthropic 在过去一年中争夺上市的最新进展。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_c1f6b5f93fff",
@@ -1653,7 +1744,8 @@
     "summary_zh": "Safari 长期以来因严格的开发要求缺乏丰富的扩展库，成为其主要弱点之一。苹果正尝试通过 AI 解决这一问题，邀请用户通过简单的交互方式创建自己的扩展。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_ab996c169790",
@@ -1671,7 +1763,8 @@
     "summary_zh": "《The Stepback》是一份每周解析科技领域重要故事的新闻简报。本期探讨了AI带来的困惑，关注Robert Hart了解更多。AI影响者最初较易识别，但随着技术进步，其生成内容与人类创作的差异变得模糊，辨别难度逐渐增加。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_84c6e5c23386",
@@ -1689,7 +1782,8 @@
     "summary_zh": "OpenAI推出了锁定模式功能，旨在防止数据泄露的最后阶段。该功能现已上线，正在向符合条件的个人账户（包括Free、Go、Plus和Pro）以及自助式ChatGPT Business账户逐步推出。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_e54467eda6d5",
@@ -1707,7 +1801,8 @@
     "summary_zh": "作者多年来尝试了多种沙盒运行代码的方法，最新的尝试结合了所需的特性，并发布了alpha版本的micropython-wasm包，用于实验和测试。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_e73f4b492436",
@@ -1725,7 +1820,8 @@
     "summary_zh": "micropython-wasm 0.1a2版本新增了命令行界面（CLI），灵感来源于博客初稿中的“试一试”部分。这一更新涉及Python、沙盒技术、WebAssembly和MicroPython。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_efc7f0aa58df",
@@ -1743,7 +1839,8 @@
     "summary_zh": "尽管近年来苹果在AI领域处于劣势，但这种后发策略可能并非坏事。在WWDC大会上，苹果似乎准备再次向用户介绍新版Siri。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_a661c048b4fe",
@@ -1761,7 +1858,8 @@
     "summary_zh": "Meta的独立AI应用现新增“For You”板块，生成点击诱饵风格的文章供用户阅读。这些内容的主题、图片和文本均由AI生成。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_28f2c98bc54a",
@@ -1779,7 +1877,8 @@
     "summary_zh": "印第安纳州谢尔比维尔市计划建设一座价值20亿美元的数据中心，但这一提议在当地引发了激烈的政治争议。争议升级源于市长斯科特·弗格森被拍到对反对数据中心的标语发表争议性言论，称这些标语多出现在“破房子”附近。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_a3f95e297c81",
@@ -1797,7 +1896,8 @@
     "summary_zh": "Charity Majors 描述了 AI 爱好者和怀疑者之间的动态，这两类人常在同一团队中合作开发软件。爱好者追求快速创新，而怀疑者则关注系统的长期稳定性。双方的观点并非对立，而是各有侧重。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_b41fa7b3947a",
@@ -1815,7 +1915,8 @@
     "summary_zh": "Andreas Kling 表示将不再接受公开的 pull request。他认为，过去大规模补丁通常意味着开发者投入了大量努力，体现了诚意，但这一假设已不再成立。他强调代码的来源和责任归属比手动编写更重要。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_2f6d8e01e34f",
@@ -1833,7 +1934,8 @@
     "summary_zh": "AI 初创公司 Quilty 宣称其工具能通过分析剧本准确预测电影的成功率。然而，实际测试后，许多人对其效果表示怀疑。尽管公司提供了一些数据支持，但市场反应仍然存在争议。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_93c93b2f734a",
@@ -1851,7 +1953,8 @@
     "summary_zh": "纽约州议会通过了一项针对新建大型数据中心的一年禁令，若州长 Kathy Hochul 签署，这将成为全美首个此类州级禁令。立法者表示，此举旨在为政策制定者争取时间，研究数据中心对环境和资源的影响。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_e68a6223259e",
@@ -1869,7 +1972,8 @@
     "summary_zh": "在开发者大会季中，大型科技公司普遍认为 AI 将彻底改变我们的工作方式。Nvidia CEO 黄仁勋特别强调了 AI 的潜力，指出其将重新定义计算设备的能力和用途。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_450c01930989",
@@ -1887,7 +1991,8 @@
     "summary_zh": "亚马逊推出新版全自动仓库机器人Proteus，该机器人支持通过语言而非代码进行交互。这一功能扩展反映了亚马逊在自动化领域的持续转型，逐步用机器人替代人工操作。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_df7443886355",
@@ -1905,7 +2010,8 @@
     "summary_zh": "AI行业的主要竞争者联合向美国立法者发出公开信，敦促国会制定法规，限制利用AI技术开发生物武器的可能性。这一倡议旨在应对AI技术滥用带来的潜在安全威胁。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_bb898284982f",
@@ -1923,7 +2029,8 @@
     "summary_zh": "尽管AI生成内容在网络上几乎无处不在，但平台可以通过技术手段加以区分。YouTube、Instagram和TikTok等平台已开始自动标注AI生成内容，以提高内容透明度。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_041bd0289a3a",
@@ -1941,7 +2048,8 @@
     "summary_zh": "单轮对话的聊天机器人正向长时运行的智能代理演进，这些代理能够进行推理、保持上下文、使用工具，并在多轮交互中高效运行。NVIDIA Nemotron 3 Ultra为此提供了更快、更高效的支持。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_0fdbc9b127da",
@@ -1959,7 +2067,8 @@
     "summary_zh": "《纽约时报》科技记者Ryan Mac在其新书《Character Limit》中探讨了埃隆·马斯克如何通过一系列商业操作，包括对Twitter的影响，推动其财富增长。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_d83e31aa3447",
@@ -1977,7 +2086,8 @@
     "summary_zh": "据路透社和彭博社报道，全球最大的半导体制造商台积电即使在美国扩建工厂后，仍难以满足美国客户的高需求。台积电表示，客户需求非常高，而其支持能力有限。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_c499c073f095",
@@ -1995,7 +2105,8 @@
     "summary_zh": "在该报道发布后，谷歌发言人联系要求修改声明内容。新声明删除了“保持人类在决策环节中至关重要”的表述。——Emanuel Maiberg，404 Media，谷歌员工相关报道。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_9b2993a562b7",
@@ -2013,7 +2124,8 @@
     "summary_zh": "据当地媒体ABC4报道，在居民和活动人士的压力下，Kevin O’Leary同意将其计划中的犹他州4万英亩数据中心规模减半。他在致犹他州参议院主席J. Stuart Adams的信中表示了这一决定。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_807ab86ab9da",
@@ -2031,7 +2143,8 @@
     "summary_zh": "发布：micropython-wasm 0.1a0。这是一个实验性的沙箱工具包，包含一个轻度定制的 MicroPython WASM 构建版本，并通过 wasmtime 提供代码执行的封装。标签：python，沙箱，webassembly。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_e0692f7d4dfc",
@@ -2049,7 +2162,8 @@
     "summary_zh": "发布：micropython-wasm 0.1a1。修复了在尝试使用该工具构建 datasette-agent-micropython 时发现的一些限制问题。标签：python，沙箱，webassembly。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_5d60f9081ef3",
@@ -2067,7 +2181,8 @@
     "summary_zh": "发布：datasette-agent-micropython 0.1a0。目标是让 Datasette Agent 能够安全生成并执行 Python 代码。目前的 alpha 版本表现良好，GPT-5.5 尚未突破沙箱限制。标签：python，沙箱，datasette，webassembly。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_a6eee194a275",
@@ -2085,7 +2200,8 @@
     "summary_zh": "根据英国竞争与市场管理局（CMA）的新规，在线出版商可选择不让其网站内容出现在谷歌的 AI 搜索功能中。这一行为规则旨在为网站所有者提供更多控制权。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_ea6a278e2000",
@@ -2103,7 +2219,8 @@
     "summary_zh": "针对美国范围内 AI 数据中心建设引发的环境争议，谷歌提出通过增加对当地社区的供水来减少影响。公司在新博客中公布了五项水资源使用承诺。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_29c7b211e523",
@@ -2121,7 +2238,8 @@
     "summary_zh": "Uber近期限制了Claude Code等AI工具的使用，以应对成本问题。据报道，Uber在短短四个月内就超支了2026年的AI预算，这可能与预算制定时未能预见AI工具的高使用率有关。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_9f26eb42160e",
@@ -2139,7 +2257,8 @@
     "summary_zh": "在微软年度Build大会上，公司宣布了一系列新的AI计划，包括超级应用、自研推理模型、网络安全工具和类似OpenClaw的AI代理。这表明微软正积极布局AI领域，与OpenAI展开竞争。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_45a8d8965f62",
@@ -2157,7 +2276,8 @@
     "summary_zh": "亚马逊更新的搜索栏功能可根据用户描述生成AI生成的产品图片。目前，该功能仅限于服装和家居用品，用户可选择最符合需求的图片并搜索类似商品，但这些生成的产品本身无法购买。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_e87461663dd2",
@@ -2175,7 +2295,8 @@
     "summary_zh": "谷歌新推出的Gemini AI代理Spark表现令人惊叹，其能力甚至让人感到不安。测试中，Spark展示了对用户个人信息的精准掌握，但这也引发了对AI技术隐私和伦理问题的担忧。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_e09d0dcbbe69",
@@ -2193,7 +2314,8 @@
     "summary_zh": "随着 AI 代理从数字世界进入物理环境，NVIDIA Jetson 提供了优化的解决方案，加速其在现实世界中的部署。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_7f29975fce02",
@@ -2211,7 +2333,8 @@
     "summary_zh": "Pasted File Editor 是一款工具，可将粘贴的大量文本自动识别为文件附件。作者基于 Codex 桌面版开发了类似功能的应用。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_a983a21ac4cf",
@@ -2229,7 +2352,8 @@
     "summary_zh": "Gemini Spark 展示了 AI 在旅行规划中的潜力：通过搜索旅行选项、推荐活动等功能，提供全面的智能助手体验。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_233303198687",
@@ -2247,7 +2371,8 @@
     "summary_zh": "Microsoft Build 2026 发布了开发者相关的 Windows 更新、基于 OpenClaw 的 AI 助手 Scout、新的 Majorana 2 量子芯片，以及面向 AI 开发者的 Surface mini PC 等内容。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_519494b2121e",
@@ -2265,7 +2390,8 @@
     "summary_zh": "AI 代理可通过数据合成加速研究、信息总结，并帮助团队更快决策。结合内部工具可进一步提升效率与安全性。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_88f776c85a45",
@@ -2283,7 +2409,8 @@
     "summary_zh": "微软刚刚发布了 Surface Laptop Ultra，现在又推出了一款面向开发者的迷你 Surface PC——Surface RTX Spark Dev Box。这款设备搭载了 Nvidia 的基于 Arm 架构的 RTX Spark 芯片，与 Surface Laptop Ultra 相同，并进行了性能优化。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_b29e52a94a1b",
@@ -2301,7 +2428,8 @@
     "summary_zh": "在 Build 2026 大会上，微软发布了名为“Project Solara”的新操作系统，专为运行 AI 代理的设备设计。该平台基于 Android 而非 Windows，从零开始构建，旨在支持代理驱动的用户体验。微软还展示了两个概念设备以说明其应用场景。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_76f0d9acd802",
@@ -2319,7 +2447,8 @@
     "summary_zh": "Google 为其 Phone 应用推出了一项新功能，旨在防范 AI 冒充诈骗。当您接到一个显示为联系人号码的可疑来电时，Google Phone 会标记该通话为可疑，以帮助用户识别潜在的诈骗行为。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_035c903e2c7b",
@@ -2337,7 +2466,8 @@
     "summary_zh": "微软发布了 Microsoft Scout，这是一款基于 OpenClaw 的常驻 AI 助理，可集成到 Outlook、OneDrive 和 Microsoft Teams 等 Microsoft 365 应用中，帮助企业为员工分配虚拟助理以提升组织效率。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_62afec837211",
@@ -2355,7 +2485,8 @@
     "summary_zh": "在 Build 2026 大会上，微软推出了一系列新的自研 AI 模型，其中包括旗舰模型 MAI-Thinking-1。这标志着微软在模型开发领域迈出重要一步，此前其主要依赖 OpenAI 的模型，而自研模型始于去年。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_5f6a0986a0a0",
@@ -2373,7 +2504,8 @@
     "summary_zh": "在加州旧金山的 Fort Mason 参加 Microsoft Build 大会时，发现会场后方水域有加州褐鹈鹕潜水。标签：Microsoft，AI，生成式 AI，LLMs，LLM 发布。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_10e299e4765b",
@@ -2391,7 +2523,8 @@
     "summary_zh": "美国总统特朗普签署行政令，建立“自愿框架”，要求 AI 公司在发布前与联邦政府共享前沿模型，以促进安全创新并加强关键基础设施的网络安全。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_fc876ff793ce",
@@ -2409,7 +2542,8 @@
     "summary_zh": "AI 代理正在改变用户与 PC 的交互方式。创作者、开发者和 AI 爱好者已广泛使用这些代理来提供辅助功能。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_1317a58a147d",
@@ -2427,7 +2561,8 @@
     "summary_zh": "Microsoft Build 2026 大会由 CEO Satya Nadella 及其他高管开幕，发布内容涵盖新 Surface 硬件、常驻个人助手以及微软内部 AI 模型的更新。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_c816d7a197b5",
@@ -2445,7 +2580,8 @@
     "summary_zh": "微软宣布推出两款新文本 LLM：MAI-Thinking-1（35B 参数，专注推理，限早期合作伙伴）和 MAI-Code-1-Flash（5B 参数，为 GitHub Copilot 和 VS Code 优化，提供高性能和低成本）。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_a28c8744e614",
@@ -2463,7 +2599,8 @@
     "summary_zh": "发布了 datasette 1.0a32，这是一个小型的错误修复版本。修复了通过新 /db/-/execute-write 接口执行 INSERT ... RETURNING 查询时的错误，以及在使用 Service Workers 时暴露出的多个 base_url 问题。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_d94efe29035d",
@@ -2481,7 +2618,8 @@
     "summary_zh": "AI 已成为关键基础设施，AI 工厂通过生成智能化的 token 提供支持。随着需求增长，这些工厂需要实现规模化扩展。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_89a283b7d612",
@@ -2499,7 +2637,8 @@
     "summary_zh": "每一波 AI 发展都引入了新的扩展规律，预训练通过更大的数据集、更多参数和大规模并行 GPU 系统实现智能扩展。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_6e8a904c4576",
@@ -2517,7 +2656,8 @@
     "summary_zh": "AI 时代推动了一类新型基础设施的发展：AI 工厂，这些工厂将数据转化为智能，为以自主 AI 代理为核心的系统提供支持。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_56a3a8e476bc",
@@ -2535,7 +2675,8 @@
     "summary_zh": "物理 AI 系统在行动前必须理解真实世界。机器人、自动驾驶车辆和智能空间需要具备对环境的理解能力。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_79e8b3b3d720",
@@ -2553,7 +2694,8 @@
     "summary_zh": "作者发布了面向赞助者的5月简报，内容包括AI成本上升、Anthropic表现出色、模型发布略显平淡以及相关会议动态。赞助者可通过链接访问完整内容。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_625cccb46b3c",
@@ -2571,7 +2713,8 @@
     "summary_zh": "开发自动驾驶政策需要弥合训练与部署之间的关键差距。文章探讨了基于视觉-语言-动作（VLA）模型的相关方法及其在闭环后期训练中的应用。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_9d13d98ea502",
@@ -2589,7 +2732,8 @@
     "summary_zh": "流行的健身追踪平台Strava收紧API访问权限，以应对AI数据抓取问题。开发者需支付每月11.99美元的订阅费用才能使用其数据，这一变化由TechCrunch报道。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_516a4214aab6",
@@ -2607,7 +2751,8 @@
     "summary_zh": "文章采访了格莱美主办方录音学院CEO Harvey Mason Jr.，探讨生成式AI对音乐行业的冲击及格莱美的应对策略。生成式AI的影响在2024年已初现端倪，但具体影响仍在发展中。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_b88ad20ba6c9",
@@ -2625,7 +2770,8 @@
     "summary_zh": "微软将在本周于旧金山举办的Build大会上展示新AI模型和Windows更新。作为开发者大会的关键时刻，此次活动旨在吸引开发者关注微软的最新技术进展。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_835af53f5388",
@@ -2643,7 +2789,8 @@
     "summary_zh": "在关于 OpenAI 和 Anthropic 谁将率先上市的数月猜测后，Anthropic 于周一向美国证券交易委员会提交了启动上市流程的申请。这标志着该公司在上市进程中的重要一步，预计将引发广泛关注。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_a4b75e4f5f78",
@@ -2661,7 +2808,8 @@
     "summary_zh": "据 404 Media 报道，Meta 的 AI 支持聊天机器人被黑客用来劫持 Instagram 账户。一段在 Telegram 上分享的视频显示，黑客通过要求 Meta 的聊天机器人更改账户关联的电子邮件地址，从而成功接管目标账户。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_638dc762f5b7",
@@ -2679,7 +2827,8 @@
     "summary_zh": "Google 推出的 24/7 AI 代理 Gemini Spark 展现了强大的任务处理能力，但其经济成本和隐私风险可能让人犹豫。作者在试用后认为，尽管 Spark 能够高效完成任务，但是否值得投资仍需权衡。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_2419b6ab48c1",
@@ -2697,7 +2846,8 @@
     "summary_zh": "Nvidia 宣布进军消费级笔记本芯片市场，推出 RTX Spark，这一消息意义重大。苹果多年来证明了基于 Arm 的芯片在性能和续航上的优势，但在 Windows 生态中，性能表现尚未达到类似水平，预计相关设备价格会较高。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_56e85ad23e0a",
@@ -2715,7 +2865,8 @@
     "summary_zh": "黑客通过与 Meta 的 AI 支持机器人对话，成功获取高价值 Instagram 账户的访问权限。据多方验证的视频显示，黑客要求机器人更改账户的关联信息，从而完成账户劫持。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_30d1dae4fb2d",
@@ -2733,7 +2884,8 @@
     "summary_zh": "自主运行的长期 AI Agent 的兴起带来了新的计算需求，包括维持大上下文窗口、并发任务生成等。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_f7ebe9c9418f",
@@ -2751,7 +2903,8 @@
     "summary_zh": "Anthropic 将“运行收入”定义为两部分：首先，将过去28天基于消费计费客户的销售额乘以13；其次，将月度订阅收入乘以12，然后将两者相加。——引自 Karen Kwok 对 Reuters Breakingviews 的分析。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_2fb8fa2bf432",
@@ -2769,7 +2922,8 @@
     "summary_zh": "这款加密大麻电子烟在4月20日（大麻爱好者的节日）找上了我。它通过 Slack 推送了一张缩略图：一个男人吐出烟雾，旁边写着“每吸一口都能赚 Bitcoin”。据称，这是一款名为 Gudtr 的设备。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_d66cbd6490f7",
@@ -2787,7 +2941,8 @@
     "summary_zh": "David Wilson 的这篇文章让我很有共鸣。他列出了自己用 AI 工具启动的16个以上的项目，并总结道：大多数项目并非有意去做，通常是从一句“写一个...”的 Claude 会话开始的。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_f6a8eb281042",
@@ -2805,7 +2960,8 @@
     "summary_zh": "作者认为 SpaceX 的上市文件与当年 WeWork 的 IPO 文件一样问题重重。不同于 WeWork 的笑话性质，SpaceX 的上市可能对投资者构成风险，普通投资者可能最终成为接盘者。文章指出，尽管 SpaceX 的营收数据吸引人，但潜在风险不容忽视。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_948d1df3e750",
@@ -2823,7 +2979,8 @@
     "summary_zh": "一位名为 Aliyah 的虚构黑人女性在 TikTok 上展示自己手工制作的金属扣件，试图吸引关注。然而，这些内容实际上是利用 AI 生成的虚假形象，用来推销廉价商品。文章揭示了 AI 技术在电商领域的滥用及其对消费者的误导。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_94ece9d06432",
@@ -2841,7 +2998,8 @@
     "summary_zh": "Craig Campbell 放弃了涌入 AI 领域的投资热潮，选择创建一个传统网站。他曾是 Meta 的工程师，也是一位成功的创业者，2022 年出售了自己的电商公司。文章探讨了他为何选择回归传统网络，以及这一决定如何带来了回报。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_11bd223a0662",
@@ -2859,7 +3017,8 @@
     "summary_zh": "Daniel Jalkut 认为，反对 AI 的人过于极端，而支持 AI 的人也过于激进。这一观点通过 John Gruber 的平台分享，反映了对 AI 领域两极化态度的批评。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_b7768415a92d",
@@ -2877,7 +3036,8 @@
     "summary_zh": "Chad Whitacre 宣布从科技行业退休，选择远离在线世界。他强调这不是对 AI 的抗议，而是通过一封打印并扫描的信件表达了自己追求离线生活的具体计划。这一决定反映了他对个人生活方式的重新审视。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_c7b37ff39483",
@@ -2895,7 +3055,8 @@
     "summary_zh": "研究展示了如何通过 Pyodide 和服务工作线程在浏览器中运行 Python ASGI 应用。Datasette Lite 是完全基于浏览器运行的 Datasette 版本，利用了 WebAssembly 中的 Pyodide。最初开发时使用了 Web Workers 和导航拦截代码，探索了在浏览器中运行 Python 应用的可能性。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_5adec00ed0ee",
@@ -2913,7 +3074,8 @@
     "summary_zh": "文章探讨了 Anthropic 如何在其产品中对 Claude 进行隔离。作者指出，许多沙盒产品缺乏详细文档，难以评估其可靠性，而 Anthropic 提供了一个全面的技术概览，展示了其隔离策略和实现方法。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_d09f405de3bd",
@@ -2931,7 +3093,8 @@
     "summary_zh": "工具：markdown-svg-renderer 是一款稍作定制的 Markdown 渲染工具，针对代码块中的 SVG 提供特殊处理，既能渲染图像，也能切换到代码视图。支持粘贴 Markdown 内容或加载支持 CORS 的 Markdown 文件 URL。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_99f47b6ecf67",
@@ -2949,7 +3112,8 @@
     "summary_zh": "发布：llm-anthropic 0.25.1。新增模型 Claude Opus 4.8（claude-opus-4.8），支持 -o fast 1 快速模式选项（需账户启用）。各模型的默认 max_tokens 现调整为对应模型的最大输出值，而非固定 8,192。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_2ce3047947b2",
@@ -2967,7 +3131,8 @@
     "summary_zh": "Anthropic 今日发布 Claude Opus 4.8。官方声明称，该版本在前代基础上实现了小幅但显著的改进。目前仍在开发和发布更先进模型。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_8cd6e1da1be5",
@@ -2985,7 +3150,8 @@
     "summary_zh": "AI 应用正从文本生成扩展到多模态系统，能够在图像、文档、视频等多种数据类型间感知、搜索和推理。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_57e343324007",
@@ -3003,7 +3169,8 @@
     "summary_zh": "Anthropic 宣布完成 650 亿美元的 H 轮融资，强调自 2 月 G 轮融资以来，全球企业客户的采用率持续增长，其年化收入本月已突破 470 亿美元。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_15c7430ebf78",
@@ -3021,7 +3188,8 @@
     "summary_zh": "datasette 发布了 1.0a31 版本，这是一个重要的 alpha 版本更新。新版本引入了两项主要功能：具备权限的用户可以执行数据库写操作，并可以保存预定义查询（此前称为“canned queries”）。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_875677d6fc7e",
@@ -3039,7 +3207,8 @@
     "summary_zh": "AI 图像工具通常让人感觉缺乏创作参与感，因为它们主要面向无设计经验的用户，通过简单输入文字生成结果。然而，Adobe 最新的 AI 图像辅助工具在这一点上有所突破，带来更具互动性的体验。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_0a62db37e318",
@@ -3057,7 +3226,8 @@
     "summary_zh": "AI 训练初创公司 Shift 提供免费家政服务，但条件是会录制清洁过程的视频，用于训练机器人。Shift 宣布了这一独特计划，旨在通过实际操作数据提升机器人学习能力。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_67acb84a52f2",
@@ -3075,7 +3245,8 @@
     "summary_zh": "Ferrari Luce 是法拉利首款电动车，尽管大多数人无法拥有或体验，但它仍是今年最具话题性的汽车之一。其设计风格与传统法拉利截然不同，并融入了多项新技术。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_bbbcbd0b180f",
@@ -3093,7 +3264,8 @@
     "summary_zh": "随着 AI 模型复杂性增加以及法规（如加州 AB-2013 和欧盟 AI 法案）监管的加强，软件团队需要更高效的工具。NVIDIA MCG 工具包提供了解决方案，可自动化生成 AI 模型文档。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_7cf4cb4b6cfd",
@@ -3111,7 +3283,8 @@
     "summary_zh": "一家名为 Shift 的 AI 训练初创公司本周宣布，将为纽约居民提供免费家政服务，并计划扩展至伦敦等其他城市。然而，这项服务背后隐藏着条件：用户需以某种形式交换数据或隐私。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_bcfa6b2e5481",
@@ -3129,7 +3302,8 @@
     "summary_zh": "现代 LLM 部署难以调优，因为每次部署涉及多个交互选择，包括模型后端、张量并行形状、预填充/解码分割、工作节点等。DynoSim 提供了一种模拟帕累托前沿的方法，以优化这些复杂参数。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_48184a94e9ec",
@@ -3147,7 +3321,8 @@
     "summary_zh": "SQLite 五天前新增了 AGENTS.md 文件，但该文件并非用于自身开发，而是面向那些将代理指向 SQLite 代码库的人。文件内容包括：SQLite 不接受未经事先同意的拉取请求等相关说明。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_2a84881edf73",
@@ -3165,7 +3340,8 @@
     "summary_zh": "YouTube 推出一项新 AI 功能，可根据用户描述生成个性化视频流。用户可围绕特定兴趣、情绪或主题创建内容流，并将其固定以便后续访问。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_489abb5daea1",
@@ -3183,7 +3359,8 @@
     "summary_zh": "本文采访了 Rivian 的首席软件官 Wassym Bensaid，他同时也是 Rivian 与大众合资平台 RV Tech 的联合 CEO。该合资项目始于一年半前，获得了近 60 亿美元的投资。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_a44521486464",
@@ -3201,7 +3378,8 @@
     "summary_zh": "CNN 起诉 Perplexity，指控其 AI 工具生成了与 CNN 内容“逐字抄袭”的文章。诉讼还称 Perplexity 提供了访问 CNN 付费内容的功能，案件已在纽约法院提起。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_28aa13332bf3",
@@ -3219,7 +3397,8 @@
     "summary_zh": "据 Bloomberg 渲染图显示，iOS 27 中 Siri 的改版可能借鉴了 ChatGPT 的设计风格，并加入 Liquid Glass 元素。渲染图基于 Bloomberg 获取的信息制作，展示了 Siri 的新应用和聊天界面。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_d3938e4ad600",
@@ -3237,7 +3416,8 @@
     "summary_zh": "YouTube 推出新功能，提升播客收听体验。Android 平台的 Premium 用户今日起可使用“移动模式”，该模式提供音频优先的界面，包含更大的播放按钮和简化的操作设计。iOS 平台将稍后上线。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_a8e64a26d282",
@@ -3255,7 +3435,8 @@
     "summary_zh": "下月的 Tribeca 电影节将首映一部名为《Dreams of Violets》的 AI 生成电影。这部75分钟的虚构影片以伊朗政府在一月大规模镇压抗议者为背景，所有人物和画面均由 AI 生成。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_2259730a105c",
@@ -3273,7 +3454,8 @@
     "summary_zh": "Anthropic 将于周四发布 Claude Opus 4.8，强调其模型的“诚实性”。公司表示，模型经过训练避免做出无法支持的声明，但也承认 AI 模型在生成内容时普遍存在问题。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_11e6e2adfb18",
@@ -3291,7 +3473,8 @@
     "summary_zh": "微软推出新版 Microsoft 365 Copilot，加载速度提升至原来的两倍，并采用更简洁的设计。更新后，Copilot 将提供更可靠、结构化的响应，便于用户快速浏览。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_8db067a93a33",
@@ -3309,7 +3492,8 @@
     "summary_zh": "Daniel Stenberg 讨论了 curl 团队当前面临的前所未有的压力。由于大量基于 AI 辅助的安全问题报告涌入，报告数量是 2024 年的 4-5 倍，处理速度也翻倍，给团队带来了巨大挑战。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_cce08bbed68c",
@@ -3327,7 +3511,8 @@
     "summary_zh": "有分析认为，教皇 Leo XIV 最新通谕《Magnifica Humanitas》中部分内容可能由 AI 撰写。Linch Zhang 在 LessWrong 论坛的分析显示，某些段落的 AI 撰写比例在 40% 至 100% 之间。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_9b68e2647c84",
@@ -3345,7 +3530,8 @@
     "summary_zh": "引用了《星际迷航》中角色的对话，探讨了策略与防御的关系。对话涉及 DATA 和 WORF 等角色，强调了防御措施的必要性及其非绝对性，体现了谨慎与战略的平衡。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_a2692b987338",
@@ -3363,7 +3549,8 @@
     "summary_zh": "教皇 Leo XIV 周一发布了一封关于人工智能社会影响的通谕《Magnifica Humanitas》。他警告称，AI 的使用从来都不仅仅是技术问题，当其影响人类生活时，也会带来伦理和社会层面的复杂挑战。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_a596679862fc",
@@ -3381,7 +3568,8 @@
     "summary_zh": "媒体行业近年来一直在争论新闻编辑部是否以及如何使用 AI。如今，这些规则更多地在工会与出版商的谈判中形成。目前，《纽约时报》的员工正在就 AI 的使用展开内部讨论。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_98ff7fa7290f",
@@ -3399,7 +3587,8 @@
     "summary_zh": "在 Google 于 I/O 大会上扩展 AI 验证措施后，YouTube 宣布将重新调整 Shorts 和长视频中的 AI 标注位置，使其更易被用户发现，并计划开始自动化标注。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_e9973cb6d6d8",
@@ -3417,7 +3606,8 @@
     "summary_zh": "自搬到南卡罗来纳州低地后，作者被当地丰富的鸟类吸引。智能鸟类喂食器捕捉了包括鱼鹰、玫瑰琵鹭等鸟类的活动，为观察后院生态提供了更多细节。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_819fd8ad239b",
@@ -3435,7 +3625,8 @@
     "summary_zh": "Robinhood 宣布开放其交易平台供 AI 代理使用。用户可为 AI 代理创建独立账户并注入资金，代理可在市场中买卖股票。公司将此功能定位为一种新型交易工具。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_71c34489d509",
@@ -3453,7 +3644,8 @@
     "summary_zh": "在纽约第12国会选区的民主党初选中，Anthropic 和 OpenAI 投入巨资争夺 AI 监管权。尽管 AI 曾试图影响选举，这位政客却因此获得了更高的知名度。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   },
   {
     "id": "a_9fe3c254d58c",
@@ -3471,7 +3663,8 @@
     "summary_zh": "据传 Anthropic 即将迎来首个盈利季度，同时企业因员工使用 LLM 而产生的高额费用引发关注。这表明 OpenAI 和 Anthropic 已找到适合其产品的市场定位。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_ea8047ebbc53",
@@ -3489,7 +3682,8 @@
     "summary_zh": "NVIDIA RTX 为游戏开发者提供了 AI 驱动角色、帧生成和光线追踪渲染的直接解决方案。文章详细介绍了 DLSS 4.5 在 Unreal Engine 5 中的应用，以及多语言 AI 角色开发的相关进展。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_b94d48b9b020",
@@ -3507,7 +3701,8 @@
     "summary_zh": "大型语言模型（LLM）正在通过对海量非结构化数据的复杂分析，变革金融交易领域。NVIDIA Blackwell 在金融 LLM 推理性能上创下 STAC-AI 基准测试新纪录，展示了其在高效处理金融数据中的潜力。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_272d62567ad0",
@@ -3525,7 +3720,8 @@
     "summary_zh": "生产环境中的推理部署面临冷启动问题，需根据需求波动弹性扩展推理副本。NVIDIA Dynamo Snapshot 提供了一种优化方案，显著加速 Kubernetes 推理工作负载的启动时间。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "vendor"
   },
   {
     "id": "a_6556985bf24a",
@@ -3543,7 +3739,8 @@
     "summary_zh": "在美国加州圣马特奥县，我们使用新购的折叠皮划艇在港口划行，观察到海狮和港湾海豹在码头上休憩。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_c2e7831cc5c6",
@@ -3561,7 +3758,8 @@
     "summary_zh": "梵蒂冈今日发布了教皇利奥十四世的通谕《伟大的人性》，探讨人工智能时代如何维护人类尊严。这是一份关于AI伦理整合的清晰文献，值得深入研究。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_6d5e535f1935",
@@ -3579,7 +3777,8 @@
     "summary_zh": "Corey Quinn评论称，让教皇将产品的技术局限性上升为精神层面的论述，是他见过的最成功的供应商游说案例之一，涉及Anthropic联合创始人Christopher Olah的影响力。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "blog"
   },
   {
     "id": "a_d02e2f88c864",
@@ -3597,6 +3796,7 @@
     "summary_zh": "据报道，Uber在2026年仅四个月内就耗尽了年度AI预算。总裁兼首席运营官Andrew Macdonald在接受采访时表示，公司正在质疑这些投资是否带来了实质性回报。",
     "translation_status": "ok",
     "deep_dive_status": null,
-    "deep_dive_id": null
+    "deep_dive_id": null,
+    "category": "media"
   }
 ]
