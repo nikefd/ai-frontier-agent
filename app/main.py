@@ -61,6 +61,14 @@ app.add_middleware(
 
 app.include_router(ai_news.router)
 
+# Conversational agent (sparrow-powered ReAct). Imported lazily-safe: if the
+# sparrow package is missing the app still serves the news API.
+try:
+    from .agent_chat import router as agent_router
+    app.include_router(agent_router)
+except Exception as e:  # noqa: broad-except
+    logging.getLogger("aif").warning("agent chat router not loaded: %s", e)
+
 
 @app.get("/api/health")
 def health() -> dict:
