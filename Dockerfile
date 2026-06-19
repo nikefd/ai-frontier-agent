@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir \
     "fastapi>=0.115" "uvicorn[standard]>=0.30" "httpx>=0.27" \
     "feedparser>=6.0" "beautifulsoup4>=4.12" "apscheduler>=3.10" \
     "pydantic-settings>=2.5" "python-dateutil>=2.9" "lxml>=5.3" \
-    "sparrow-agent>=0.1.0"
+    "sparrow-agent>=0.2.0"
 
 COPY app/ app/
 COPY agent/ agent/

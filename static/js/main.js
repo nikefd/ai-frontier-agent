@@ -4,8 +4,7 @@ import { api } from './api.js';
 import { state } from './state.js';
 import { refreshList } from './feed.js';
 import { loadSummary, regenSummary, loadGuides, genGuide, loadSources } from './views.js';
-import { initChat, chatSend, startNewConversation, loadConversationMessages } from './chat.js';
-import { chat } from './state.js';
+// Chat is provided by the bundled sparrow-chat.js component (mounted in index.html).
 
 if (window.mermaid) {
   window.mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
@@ -80,28 +79,6 @@ $('#btn-translate').addEventListener('click', async () => {
 
 $('#btn-regen-summary').addEventListener('click', regenSummary);
 $('#btn-gen-guide').addEventListener('click', genGuide);
-
-// ── Chat (floating dock) ─────────────────────────────────────────────
-let chatOpened = false;
-function toggleChatDock(force) {
-  const dock = $('#chat-dock'), fab = $('#chat-fab');
-  const open = force !== undefined ? force : dock.classList.contains('hidden');
-  dock.classList.toggle('hidden', !open);
-  fab.classList.toggle('active', open);
-  if (open && !chatOpened) { initChat(); chatOpened = true; }
-}
-$('#chat-fab').addEventListener('click', () => toggleChatDock());
-$('#btn-chat-close').addEventListener('click', () => toggleChatDock(false));
-$('#btn-chat-send').addEventListener('click', chatSend);
-$('#chat-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') chatSend(); });
-$('#btn-conv-new').addEventListener('click', startNewConversation);
-$('#conv-select').addEventListener('change', (e) => {
-  const id = e.target.value;
-  if (!id) return;
-  chat.convId = id;
-  localStorage.setItem('aif_conv_id', id);
-  loadConversationMessages(id);
-});
 
 // ── Boot ─────────────────────────────────────────────────────────────
 refreshList();

@@ -85,6 +85,22 @@ STATIC_DIR = Path(__file__).parent.parent / "static"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def _sync_sparrow_assets() -> None:
+    """Copy the bundled sparrow-chat.js into our static dir so the page can
+    serve it from /ui/js/. Done at startup so a sparrow upgrade auto-propagates."""
+    try:
+        import shutil
+        from sparrow.web import asset_path
+        dst = STATIC_DIR / "js"
+        dst.mkdir(parents=True, exist_ok=True)
+        shutil.copy(asset_path("sparrow-chat.js"), dst / "sparrow-chat.js")
+    except Exception as e:  # noqa: broad-except
+        logging.getLogger("aif").warning("could not sync sparrow-chat.js: %s", e)
+
+
+_sync_sparrow_assets()
+
+
 @app.get("/")
 def root() -> RedirectResponse:
     return RedirectResponse("/ui/")

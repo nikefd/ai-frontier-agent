@@ -11,9 +11,3 @@ export const state = {
   items: [],
   selectedId: null,
 };
-
-export const chat = {
-  convId: localStorage.getItem('aif_conv_id') || '',
-  busy: false,
-  inited: false,
-};
