@@ -10,12 +10,13 @@ from __future__ import annotations
 import json
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from sparrow import AgentConfig, Harness, Memory, configure as llm_configure
 
 from .agent_tools import ALL_TOOLS
+from .auth import require_user
 from .llm_client import llm_configured
 from .models import ChatRequest
 from .settings import settings
@@ -58,7 +59,7 @@ def _build_config() -> AgentConfig:
     )
 
 
-@router.post("/chat")
+@router.post("/chat", dependencies=[Depends(require_user)])
 async def chat(req: ChatRequest):
     if not llm_configured():
         from fastapi import HTTPException
@@ -113,7 +114,7 @@ def get_conversation(conv_id: str):
     return {"messages": _memory.get_messages(conv_id)}
 
 
-@router.delete("/conversations/{conv_id}")
+@router.delete("/conversations/{conv_id}", dependencies=[Depends(require_user)])
 def delete_conversation(conv_id: str):
     return _memory.delete_conversation(conv_id)
 

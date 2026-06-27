@@ -53,13 +53,20 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten if bound to a public IP without auth in front
-    allow_credentials=False,
+    # Cookie auth needs explicit origins + credentials ("*" is invalid with
+    # credentials). Empty list = same-origin only (the bundled UI), no extra
+    # origins allowed. Configure AIF_CORS_ORIGINS for cross-origin frontends.
+    allow_origins=settings.cors_origin_list,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(ai_news.router)
+
+# Auth (register / login / logout / me + session dependencies).
+from .auth import router as auth_router
+app.include_router(auth_router)
 
 # Conversational agent (sparrow-powered ReAct). Imported lazily-safe: if the
 # sparrow package is missing the app still serves the news API.

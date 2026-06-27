@@ -18,10 +18,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
+from ..auth import require_user
 from ..llm_client import LLMUnavailable, chat_complete, chat_stream, llm_configured
 from ..models import Article, ChatRequest, Guide, Track
 from ..settings import settings
@@ -296,7 +297,7 @@ def _parse_ts(ts: str) -> float:
         return 0.0
 
 
-@router.post("/articles")
+@router.post("/articles", dependencies=[Depends(require_user)])
 def add_article(article: Article) -> dict:
     """Manual add — for openclaw-compat write API and for the fetcher worker."""
     articles = _load_articles()
@@ -316,7 +317,7 @@ def add_article(article: Article) -> dict:
     return {"ok": True, "id": aid}
 
 
-@router.delete("/articles/{aid}")
+@router.delete("/articles/{aid}", dependencies=[Depends(require_user)])
 def delete_article(aid: str) -> dict:
     articles = _load_articles()
     new = [a for a in articles if a.get("id") != aid]
@@ -326,7 +327,7 @@ def delete_article(aid: str) -> dict:
     return {"ok": True}
 
 
-@router.post("/articles/{aid}/pin")
+@router.post("/articles/{aid}/pin", dependencies=[Depends(require_user)])
 def toggle_pin(aid: str) -> dict:
     articles = _load_articles()
     found = False
@@ -368,7 +369,7 @@ def list_tracks() -> list[dict]:
     return _load_tracks()
 
 
-@router.put("/tracks")
+@router.put("/tracks", dependencies=[Depends(require_user)])
 def put_tracks(tracks: list[Track]) -> dict:
     payload = [t.model_dump() for t in tracks]
     for t in payload:
@@ -384,7 +385,7 @@ def list_guides() -> list[dict]:
     return _load_guides()
 
 
-@router.post("/guides")
+@router.post("/guides", dependencies=[Depends(require_user)])
 def add_guide(guide: Guide) -> dict:
     guides = _load_guides()
     payload = guide.model_dump()
@@ -401,7 +402,7 @@ def add_guide(guide: Guide) -> dict:
     return {"ok": True, "id": payload["id"]}
 
 
-@router.delete("/guides/{gid}")
+@router.delete("/guides/{gid}", dependencies=[Depends(require_user)])
 def delete_guide(gid: str) -> dict:
     guides = _load_guides()
     new = [g for g in guides if g.get("id") != gid]
@@ -412,7 +413,7 @@ def delete_guide(gid: str) -> dict:
 
 
 # ── Fetcher trigger ────────────────────────────────────────────────
-@router.post("/fetch")
+@router.post("/fetch", dependencies=[Depends(require_user)])
 async def trigger_fetch() -> dict:
     from ..workers.ai_news_fetcher import fetch_once  # local import to avoid cycle
     added = await fetch_once()
@@ -429,7 +430,7 @@ SYSTEM_PROMPT = (
 )
 
 
-@router.post("/chat")
+@router.post("/chat", dependencies=[Depends(require_user)])
 async def chat(req: ChatRequest):
     if not llm_configured():
         raise HTTPException(503, "LLM not configured")
@@ -564,7 +565,7 @@ def get_today_summary() -> dict:
     }
 
 
-@router.post("/summary/today")
+@router.post("/summary/today", dependencies=[Depends(require_user)])
 async def regenerate_today_summary() -> dict:
     if not llm_configured():
         raise HTTPException(503, "LLM not configured")
@@ -651,7 +652,7 @@ def get_long_guide(slug: str) -> dict:
     return data
 
 
-@router.delete("/guides/long/{slug}")
+@router.delete("/guides/long/{slug}", dependencies=[Depends(require_user)])
 def delete_long_guide(slug: str) -> dict:
     p = GUIDES_DIR / f"{slug}.json"
     if not p.exists():
@@ -667,7 +668,7 @@ class GuideGenRequest(BaseModel):
     tags: list[str] = Field(default_factory=list)
 
 
-@router.post("/guides/generate")
+@router.post("/guides/generate", dependencies=[Depends(require_user)])
 async def generate_long_guide(req: GuideGenRequest) -> dict:
     """LLM-generated long-form learning guide on `topic`.
 
@@ -755,7 +756,7 @@ async def generate_long_guide(req: GuideGenRequest) -> dict:
 
 
 # ── Translation control ───────────────────────────────────────────
-@router.post("/translate/run")
+@router.post("/translate/run", dependencies=[Depends(require_user)])
 async def translate_run() -> dict:
     """Manually trigger one translation batch (admin-style)."""
     from ..workers.ai_news_translator import translate_once
@@ -763,7 +764,7 @@ async def translate_run() -> dict:
     return {"ok": True, "translated": n}
 
 
-@router.post("/articles/{aid}/retranslate")
+@router.post("/articles/{aid}/retranslate", dependencies=[Depends(require_user)])
 def retranslate_article(aid: str) -> dict:
     """Reset translation status so the worker picks the article up again."""
     articles = _load_articles()
@@ -857,7 +858,7 @@ def get_deep_dive(aid: str) -> dict:
     return {"status": "ok", **data}
 
 
-@router.post("/articles/{aid}/deep-dive")
+@router.post("/articles/{aid}/deep-dive", dependencies=[Depends(require_user)])
 async def generate_deep_dive(aid: str) -> dict:
     """Generate (or regenerate) a per-article deep dive with a mermaid diagram."""
     if not llm_configured():
@@ -943,7 +944,7 @@ async def generate_deep_dive(aid: str) -> dict:
     return {"ok": True, **payload}
 
 
-@router.delete("/articles/{aid}/deep-dive")
+@router.delete("/articles/{aid}/deep-dive", dependencies=[Depends(require_user)])
 def delete_deep_dive(aid: str) -> dict:
     p = DEEP_DIVES_DIR / f"{aid}.json"
     if p.exists():
@@ -963,7 +964,7 @@ class ManualDeepDiveRequest(BaseModel):
     topic: str                       # the headline / question / paper title
     context: str | None = None       # optional pasted abstract / notes / link
 
-@router.post("/manual-dive")
+@router.post("/manual-dive", dependencies=[Depends(require_user)])
 async def manual_deep_dive(req: ManualDeepDiveRequest) -> dict:
     """Generate a deep-dive article from a user-supplied topic (no RSS source).
 

@@ -1667,3 +1667,71 @@ body[data-agent="ai-news"] .article-item.is-active {
   .btn-card { padding: 5px 9px; font-size: 12px; }
 }
 
+/* ── Auth: header bar + login/register modal ──────────────────────── */
+.auth-slot { display: flex; align-items: center; gap: 8px; }
+.auth-user {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+}
+.auth-modal.hidden { display: none; }
+.auth-card {
+  position: relative;
+  width: min(360px, 92vw);
+  background: var(--surface, #fff);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 24px 22px 18px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.auth-card h3 { margin: 0; font-size: 17px; color: var(--text); }
+.auth-close {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+}
+.auth-msg {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--danger);
+  background: var(--danger-soft);
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+}
+.auth-msg.hidden { display: none; }
+.auth-card .field { display: flex; flex-direction: column; gap: 4px; }
+.auth-card .field span { font-size: 12px; color: var(--text-dim); }
+.auth-card .field input {
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: 14px;
+}
+.auth-switch { margin: 2px 0 0; font-size: 12.5px; color: var(--text-dim); text-align: center; }
+.auth-switch a { color: var(--accent); font-weight: 600; }
+
+/* Grey out write controls for anonymous users (still clickable → 401 → modal) */
+body.is-anon .pin-btn { opacity: 0.5; }
+
+
