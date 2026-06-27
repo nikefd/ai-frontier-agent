@@ -27,6 +27,7 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 | `feed.js` | 文章流：列表渲染、卡片 HTML、收藏 `togglePin`、分页 `renderPageNav`。深度解读按钮只**触发跳转**（`jumpToDive`），不再卡片内展开 |
 | `dives.js` | **深度解读库**（独立视图）：`loadDives`（拉 `/deep-dives` 渲染列表）、点击展开阅读、删除、重新生成、`manualNewDive`（手动输入主题新建）、`jumpToDive`（从文章流跳来并打开/触发某篇） |
 | `views.js` | 次要视图：今日速报 `loadSummary/regenSummary`、数据源健康 `loadSources` |
+| `auth.js` | **登录态 + 鉴权 UI**：启动 `GET /api/auth/me`、顶栏登录态、登录/注册弹窗、登出。`api.js` 的 401 经 `setUnauthorizedHandler` 弹登录。登录/登出派发 `aif:auth-changed` 让 `main.js` 重载 |
 | `util.js` | DOM helper（`$`/`$$`）、`escapeHtml`、相对时间 `fmtDate`、分类徽章 `catBadge` |
 | `sparrow-chat.js` | **不手动维护**：sparrow 官方对话组件，后端启动时从 sparrow 包拷入（见第 5 节） |
 

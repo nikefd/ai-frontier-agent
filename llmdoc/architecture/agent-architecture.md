@@ -92,7 +92,7 @@ system prompt（英文写，见 `agent_chat.py`）给 agent 定了几条铁律�
 
 ## 3. 工具集（`agent_tools.py`）
 
-用 sparrow 的 `@tool` 装饰器声明，分读写两组，**写工具只碰用户自有配置**（tracks.json / 文章 pin），不动抓取产物。每个结果都带 `source` 供 agent 引用。
+用 sparrow 的 `@tool` 装饰器声明，**每请求按当前用户构造**：`build_tools(uid)` 返回一组绑定了 uid 的工具闭包（多用户隔离，见 [认证架构](auth-architecture.md) 第 4 节）。分读写两组，**写工具只碰该用户自有配置**（其 tracks.json / pins.json），不动全局抓取产物。每个结果都带 `source` 供 agent 引用。
 
 | 工具 | 组 | 作用 | 触碰 |
 |---|---|---|---|
@@ -102,11 +102,13 @@ system prompt（英文写，见 `agent_chat.py`）给 agent 定了几条铁律�
 | `query_guides` | 读 | 列用户保存的指南 | guides.json |
 | `query_sources` | 读 | 列 feed 及其分类/健康 | sources.json |
 | `create_track` | 写 | 建追踪主题（用户同意后） | tracks.json |
-| `pin_article` | 写 | 收藏/取消收藏文章 | articles.json |
+| `pin_article` | 写 | 收藏/取消收藏文章 | pins.json |
 
 实现细节：
 
-- 工具复用 `routers/ai_news.py` 的 `_load_articles` / `_load_tracks` / `_parse_ts` 等，逻辑单一来源。
+- 工具复用 `routers/ai_news.py` 的 `_load_articles` / `_load_tracks(uid)` / `_load_pins(uid)` / `_parse_ts` 等，逻辑单一来源。
+- 工具按 `build_tools(uid)` 绑定当前用户：读 tracks/guides/deep-dives、pin 状态都用该 uid；query_articles 读全局文章但按 uid 叠加 pin。`/api/agent/chat` 经 `require_user` 拿 uid。
+- 对话记忆 `ui.db` 也按用户隔离（每用户一个 `users/<uid>/ui.db`），见 [认证架构](auth-architecture.md) 第 4 节。
 - `_MAX_ARTICLES=15` 限制单次返回条数，控制 context 预算；返回字段裁剪（标题优先中文、摘要截 200 字）。
 - `create_track` 对 keywords 参数做了**强健归一化**：有的模型会把 list 序列化成逗号/JSON 字符串，代码兼容 `["a","b"]` JSON、`a,b,c` 逗号（含中文逗号、顿号、分号）等多种形态。
 - 写工具签名带 `conversation_id` 参数（sparrow 注入），但当前实现未用它做按会话隔离。
