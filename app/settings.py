@@ -45,12 +45,36 @@ class Settings(BaseSettings):
 
     log_level: str = "INFO"
 
+    # ── Auth / multi-user ──────────────────────────────────────────────
+    # Secret used to sign session cookies (itsdangerous). When empty a random
+    # key is generated and persisted to <data_dir>/auth/secret.key so restarts
+    # keep sessions valid; set explicitly in production to survive container
+    # rebuilds (otherwise everyone gets logged out on redeploy).
+    secret_key: str | None = None
+    # Session cookie lifetime in days.
+    session_max_age_days: int = 30
+    # Mark the session cookie Secure (HTTPS only). True in production behind TLS.
+    cookie_secure: bool = False
+    # The email that inherits the legacy single-user data on registration. When
+    # empty the first account to register inherits it.
+    admin_email: str | None = None
+    # CORS allowed origins (comma-separated). Cookies require explicit origins +
+    # allow_credentials; "*" is invalid with credentials. Empty = same-origin
+    # only (no CORS headers needed for the bundled UI).
+    cors_origins: str = ""
+
     def model_post_init(self, __ctx) -> None:  # pydantic v2 hook
         # Allow the conventional DeepSeek env var as a fallback so the same key
         # configured for finance-agent / workers also lights up the chat agent.
         if not self.llm_api_key:
             self.llm_api_key = os.environ.get("DEEPSEEK_API_KEY")
         self.data_dir.mkdir(parents=True, exist_ok=True)
+        if self.admin_email:
+            self.admin_email = self.admin_email.strip().lower()
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
 
 # Module-level singleton (cheap; settings construction is sub-ms)

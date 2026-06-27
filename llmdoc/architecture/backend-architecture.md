@@ -43,7 +43,7 @@ flowchart TD
 - **agent 路由是「软挂载」**：`app/main.py` 用 try/except 包住 `from .agent_chat import router`。如果 sparrow 包缺失或初始化失败，只打一条 warning，**新闻 API 照常工作**。这让「没装 sparrow 也能浏览新闻」成立。
 - **sparrow-chat.js 启动时自动同步**：`_sync_sparrow_assets()` 在 import 期从 sparrow 包里 `asset_path("sparrow-chat.js")` 拷到 `static/js/`。好处是 sparrow 升级后前端组件自动跟着更新，不用手动维护一份拷贝。
 - **`/` 与 `/ui` 的挂载顺序**：先显式注册 `GET /` → redirect 到 `/ui/`、`GET /ui/` → 返回 index.html，**再** `app.mount("/ui", StaticFiles(...))`。顺序很重要，否则 StaticFiles 会吃掉 `/ui/` 导致重定向逻辑失效。
-- **CORS 当前是 `allow_origins=["*"]`**（`allow_credentials=False`）。绑公网且前面没有鉴权时要收紧，见 [known-issues](../reference/known-issues.md)。
+- **CORS 现按配置收口**：`allow_origins=settings.cors_origin_list` + `allow_credentials=True`（cookie 鉴权必需）。默认 `AIF_CORS_ORIGINS` 为空 = 仅同源。鉴权改动见 [认证架构](auth-architecture.md)。
 
 ## 3. 模块职责与依赖方向
 
@@ -51,18 +51,25 @@ flowchart TD
 main.py ──┬─> routers/ai_news.py ──┬─> models.py
           │                        ├─> storage.py
           │                        ├─> llm_client.py
+          │                        ├─> auth.py（require_user / current_user_optional 守卫）
           │                        └─> settings.py
-          ├─> agent_chat.py ───────┬─> agent_tools.py ──> routers/ai_news.py（复用其 _load_* 与常量）
+          ├─> auth.py ─────────────┬─> models.py / storage.py / settings.py
+          │                        └─> migrate.py（注册时继承 _legacy）
+          ├─> agent_chat.py ───────┬─> agent_tools.py ──> routers/ai_news.py（复用其 _load_* 与路径函数）
+          │                        ├─> auth.py（require_user）
           │                        ├─> llm_client.py / settings.py
           │                        └─> sparrow（Harness/AgentConfig/Memory/tool）
           └─> scheduler.py ────────> workers/ai_news_fetcher.py ──> routers/ai_news.py（复用 add_article 等）
                                      workers/ai_news_translator.py ──> routers/ai_news.py
 ```
 
-**`routers/ai_news.py` 是事实上的核心模块**，不只是路由：
+**鉴权层（`app/auth.py`）**：自带 `/api/auth/*` 路由 + 两个 FastAPI 依赖。写 / LLM 端点用 `Depends(require_user)`（匿名 401），用户产物的读用 `Depends(current_user_optional)`（匿名得空）。会话是无状态签名 cookie，无服务端 session 表。详见 [认证架构](auth-architecture.md)。
 
-- 它持有 feed 清单（`DEFAULT_FEED_SPECS`）、关键词表（`AI_KEYWORDS`）、所有文件路径常量（`ARTICLES_FILE` 等）、容量参数（`_ARTICLE_LIMIT` / `_DAILY_FETCH_CAP` / `_PER_FEED_CAP`）。
-- worker 和 agent tools 都**反向 import** 它的 `_load_articles()` / `add_article()` / `_parse_ts()` 等内部函数来复用逻辑（带下划线但被跨模块使用，属约定俗成的「包内公开」）。改这些函数签名时注意三处调用方。
+**`routers/ai_news.py` 仍是事实上的核心模块**，不只是路由：
+
+- 它持有 feed 清单（`DEFAULT_FEED_SPECS`）、关键词表（`AI_KEYWORDS`）、全局路径常量（`ARTICLES_FILE` / `SOURCES_FILE` / `SUMMARY_FILE`）、容量参数（`_ARTICLE_LIMIT` / `_DAILY_FETCH_CAP` / `_PER_FEED_CAP`）。
+- **用户产物路径已从常量改为按 uid 求值的函数**：`tracks_file(uid)` / `pins_file(uid)` / `guides_file(uid)` / `guides_dir(uid)` / `deep_dives_dir(uid)`，落在 `users/<uid>/`。改这些前查三处调用方（routers / agent_tools / migrate）。
+- worker 和 agent tools 都**反向 import** 它的 `_load_articles()` / `add_article()` / `_parse_ts()` / `_load_pins()` 等内部函数来复用逻辑（带下划线但被跨模块使用，属约定俗成的「包内公开」）。改这些函数签名时注意三处调用方。worker 只碰全局 articles/sources，不受用户隔离影响。
 
 为避免 import 环：`POST /fetch` 和 `POST /translate/run` 在**函数体内**才 import worker（`from ..workers.ai_news_fetcher import fetch_once`），而不是模块顶部。
 

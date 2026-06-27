@@ -18,12 +18,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
+from ..auth import current_user_optional, require_user
 from ..llm_client import LLMUnavailable, chat_complete, chat_stream, llm_configured
-from ..models import Article, ChatRequest, Guide, Track
+from ..models import Article, ChatRequest, Guide, Track, UserPublic
 from ..settings import settings
 from ..storage import read_json, write_json_atomic
 
@@ -32,14 +33,40 @@ log = logging.getLogger("zyb.ai_news")
 router = APIRouter(prefix="/api/ai-news", tags=["ai-news"])
 
 AINEWS_DIR = settings.data_dir / "ai-news"
+# ── Global, shared by everyone ──────────────────────────────────────
 ARTICLES_FILE = AINEWS_DIR / "articles.json"
-TRACKS_FILE = AINEWS_DIR / "tracks.json"
-GUIDES_FILE = AINEWS_DIR / "guides.json"
-GUIDES_DIR = AINEWS_DIR / "guides"          # one JSON per long-form guide
-DEEP_DIVES_DIR = AINEWS_DIR / "deep-dives"  # one JSON per per-article deep dive
 SOURCES_FILE = AINEWS_DIR / "sources.json"  # per-feed fetch metadata
 SUMMARY_FILE = AINEWS_DIR / "summary_today.json"  # cached "today" summary
 READER_CACHE = AINEWS_DIR / "reader-cache"
+
+# ── Per-user artifacts: <data_dir>/users/<uid>/… ────────────────────
+# These used to be module-level constants under ai-news/; they are now keyed by
+# the logged-in user. Callers (routers / agent_tools) resolve them with a uid.
+USERS_DIR = settings.data_dir / "users"
+
+
+def user_dir(uid: str) -> Path:
+    return USERS_DIR / uid
+
+
+def tracks_file(uid: str) -> Path:
+    return user_dir(uid) / "tracks.json"
+
+
+def pins_file(uid: str) -> Path:
+    return user_dir(uid) / "pins.json"
+
+
+def guides_file(uid: str) -> Path:
+    return user_dir(uid) / "guides.json"
+
+
+def guides_dir(uid: str) -> Path:
+    return user_dir(uid) / "guides"
+
+
+def deep_dives_dir(uid: str) -> Path:
+    return user_dir(uid) / "deep-dives"
 
 _ARTICLE_LIMIT = 400    # rolling history cap (raised: ~83 feeds now)
 _DAILY_FETCH_CAP = 150  # per-fetch global ceiling (per-feed quota fills first)
@@ -225,17 +252,60 @@ def _load_articles() -> list[dict]:
     return data if isinstance(data, list) else []
 
 
-def _load_tracks() -> list[dict]:
-    data = read_json(TRACKS_FILE, None)
+def _load_tracks(uid: str) -> list[dict]:
+    data = read_json(tracks_file(uid), None)
     if data is None or not isinstance(data, list):
-        write_json_atomic(TRACKS_FILE, DEFAULT_TRACKS)
+        # New users get the default tracking topics seeded once.
+        write_json_atomic(tracks_file(uid), DEFAULT_TRACKS)
         return list(DEFAULT_TRACKS)
     return data
 
 
-def _load_guides() -> list[dict]:
-    data = read_json(GUIDES_FILE, [])
+def _load_guides(uid: str) -> list[dict]:
+    data = read_json(guides_file(uid), [])
     return data if isinstance(data, list) else []
+
+
+# ── Per-user pins (article ids) ─────────────────────────────────────
+def _load_pins(uid: str) -> set[str]:
+    data = read_json(pins_file(uid), [])
+    return set(data) if isinstance(data, list) else set()
+
+
+def _save_pins(uid: str, pins: set[str]) -> None:
+    write_json_atomic(pins_file(uid), sorted(pins))
+
+
+def _all_pinned_ids() -> set[str]:
+    """Union of every user's pinned article ids — used to protect pinned
+    articles from the global rolling-history eviction."""
+    ids: set[str] = set()
+    if not USERS_DIR.exists():
+        return ids
+    for d in USERS_DIR.iterdir():
+        if not d.is_dir():
+            continue
+        data = read_json(d / "pins.json", [])
+        if isinstance(data, list):
+            ids.update(data)
+    return ids
+
+
+def _overlay_user_state(articles: list[dict], uid: str | None) -> None:
+    """Stamp per-user `pinned` + `deep_dive_status` onto article dicts for the
+    response. These are NOT persisted to the global articles.json (pins live in
+    the user's pins.json; deep-dives in the user's deep-dives/)."""
+    pins = _load_pins(uid) if uid else set()
+    ddir = deep_dives_dir(uid) if uid else None
+    for a in articles:
+        aid = a.get("id")
+        a["pinned"] = aid in pins
+        if ddir is not None and aid and (ddir / f"{aid}.json").exists():
+            a["deep_dive_status"] = "ok"
+            a["deep_dive_id"] = aid
+        else:
+            a["deep_dive_status"] = None
+            a["deep_dive_id"] = None
 
 
 # ── Articles ───────────────────────────────────────────────────────
@@ -247,15 +317,19 @@ def list_articles(
     category: str | None = None,
     offset: int = 0,
     limit: int = 20,
+    user: UserPublic | None = Depends(current_user_optional),
 ) -> dict:
     """Paginated article listing.
 
-    Returns ``{total, offset, limit, items}``. The legacy flat-list response
-    has been retired in favor of explicit pagination metadata because the
-    feed is now permanently displayed (not in an overlay) and the UI needs to
-    know total counts to render page controls.
+    Returns ``{total, offset, limit, items}``. The article store is global, but
+    each item is stamped with the current user's `pinned` / `deep_dive_status`
+    (anonymous users see everything unpinned). The legacy flat-list response was
+    retired in favor of explicit pagination metadata so the always-on feed can
+    render page controls.
     """
+    uid = user.id if user else None
     articles = _load_articles()
+    _overlay_user_state(articles, uid)
     if pinned_only:
         articles = [a for a in articles if a.get("pinned")]
     if q:
@@ -296,7 +370,7 @@ def _parse_ts(ts: str) -> float:
         return 0.0
 
 
-@router.post("/articles")
+@router.post("/articles", dependencies=[Depends(require_user)])
 def add_article(article: Article) -> dict:
     """Manual add — for openclaw-compat write API and for the fetcher worker."""
     articles = _load_articles()
@@ -306,17 +380,21 @@ def add_article(article: Article) -> dict:
     payload = article.model_dump()
     payload["id"] = aid
     payload["date"] = payload.get("date") or _now_iso()
+    # Per-user state never lives on the global article record.
+    for k in ("pinned", "deep_dive_status", "deep_dive_id"):
+        payload.pop(k, None)
     articles.insert(0, payload)
     if len(articles) > _ARTICLE_LIMIT:
-        # Keep pinned articles even if over cap
-        pinned = [a for a in articles if a.get("pinned")]
-        kept = [a for a in articles if not a.get("pinned")][: _ARTICLE_LIMIT - len(pinned)]
-        articles = pinned + kept
+        # Keep any article pinned by *any* user even if over cap.
+        protected = _all_pinned_ids()
+        kept_pinned = [a for a in articles if a.get("id") in protected]
+        rest = [a for a in articles if a.get("id") not in protected][: _ARTICLE_LIMIT - len(kept_pinned)]
+        articles = kept_pinned + rest
     write_json_atomic(ARTICLES_FILE, articles)
     return {"ok": True, "id": aid}
 
 
-@router.delete("/articles/{aid}")
+@router.delete("/articles/{aid}", dependencies=[Depends(require_user)])
 def delete_article(aid: str) -> dict:
     articles = _load_articles()
     new = [a for a in articles if a.get("id") != aid]
@@ -327,18 +405,20 @@ def delete_article(aid: str) -> dict:
 
 
 @router.post("/articles/{aid}/pin")
-def toggle_pin(aid: str) -> dict:
-    articles = _load_articles()
-    found = False
-    for a in articles:
-        if a.get("id") == aid:
-            a["pinned"] = not a.get("pinned", False)
-            found = True
-            break
-    if not found:
+def toggle_pin(aid: str, user: UserPublic = Depends(require_user)) -> dict:
+    """Toggle the current user's pin on an article (stored in their pins.json,
+    not on the global article record)."""
+    if not any(a.get("id") == aid for a in _load_articles()):
         raise HTTPException(404, "article not found")
-    write_json_atomic(ARTICLES_FILE, articles)
-    return {"ok": True}
+    pins = _load_pins(user.id)
+    if aid in pins:
+        pins.discard(aid)
+        pinned = False
+    else:
+        pins.add(aid)
+        pinned = True
+    _save_pins(user.id, pins)
+    return {"ok": True, "pinned": pinned}
 
 
 @router.get("/reader/{aid}", response_class=HTMLResponse)
@@ -364,29 +444,33 @@ async def reader(aid: str) -> HTMLResponse:
 
 # ── Tracks ─────────────────────────────────────────────────────────
 @router.get("/tracks")
-def list_tracks() -> list[dict]:
-    return _load_tracks()
+def list_tracks(user: UserPublic | None = Depends(current_user_optional)) -> list[dict]:
+    if not user:
+        return []
+    return _load_tracks(user.id)
 
 
 @router.put("/tracks")
-def put_tracks(tracks: list[Track]) -> dict:
+def put_tracks(tracks: list[Track], user: UserPublic = Depends(require_user)) -> dict:
     payload = [t.model_dump() for t in tracks]
     for t in payload:
         if not t.get("id"):
             t["id"] = "t_" + secrets.token_hex(4)
-    write_json_atomic(TRACKS_FILE, payload)
+    write_json_atomic(tracks_file(user.id), payload)
     return {"ok": True, "count": len(payload)}
 
 
 # ── Guides ─────────────────────────────────────────────────────────
 @router.get("/guides")
-def list_guides() -> list[dict]:
-    return _load_guides()
+def list_guides(user: UserPublic | None = Depends(current_user_optional)) -> list[dict]:
+    if not user:
+        return []
+    return _load_guides(user.id)
 
 
 @router.post("/guides")
-def add_guide(guide: Guide) -> dict:
-    guides = _load_guides()
+def add_guide(guide: Guide, user: UserPublic = Depends(require_user)) -> dict:
+    guides = _load_guides(user.id)
     payload = guide.model_dump()
     payload["id"] = payload.get("id") or "g_" + secrets.token_hex(4)
     payload["updated_at"] = _now_iso()
@@ -397,22 +481,22 @@ def add_guide(guide: Guide) -> dict:
             break
     else:
         guides.insert(0, payload)
-    write_json_atomic(GUIDES_FILE, guides)
+    write_json_atomic(guides_file(user.id), guides)
     return {"ok": True, "id": payload["id"]}
 
 
 @router.delete("/guides/{gid}")
-def delete_guide(gid: str) -> dict:
-    guides = _load_guides()
+def delete_guide(gid: str, user: UserPublic = Depends(require_user)) -> dict:
+    guides = _load_guides(user.id)
     new = [g for g in guides if g.get("id") != gid]
     if len(new) == len(guides):
         raise HTTPException(404, "guide not found")
-    write_json_atomic(GUIDES_FILE, new)
+    write_json_atomic(guides_file(user.id), new)
     return {"ok": True}
 
 
 # ── Fetcher trigger ────────────────────────────────────────────────
-@router.post("/fetch")
+@router.post("/fetch", dependencies=[Depends(require_user)])
 async def trigger_fetch() -> dict:
     from ..workers.ai_news_fetcher import fetch_once  # local import to avoid cycle
     added = await fetch_once()
@@ -429,7 +513,7 @@ SYSTEM_PROMPT = (
 )
 
 
-@router.post("/chat")
+@router.post("/chat", dependencies=[Depends(require_user)])
 async def chat(req: ChatRequest):
     if not llm_configured():
         raise HTTPException(503, "LLM not configured")
@@ -564,7 +648,7 @@ def get_today_summary() -> dict:
     }
 
 
-@router.post("/summary/today")
+@router.post("/summary/today", dependencies=[Depends(require_user)])
 async def regenerate_today_summary() -> dict:
     if not llm_configured():
         raise HTTPException(503, "LLM not configured")
@@ -617,11 +701,14 @@ async def regenerate_today_summary() -> dict:
 
 # ── Long-form guides (deep-dive learning notes) ────────────────────
 @router.get("/guides/long")
-def list_long_guides() -> list[dict]:
-    """List on-disk deep-dive guides stored under guides/*.json (openclaw-compat)."""
-    GUIDES_DIR.mkdir(parents=True, exist_ok=True)
+def list_long_guides(user: UserPublic | None = Depends(current_user_optional)) -> list[dict]:
+    """List the current user's on-disk deep-dive guides (users/<uid>/guides/*.json)."""
+    if not user:
+        return []
+    gdir = guides_dir(user.id)
+    gdir.mkdir(parents=True, exist_ok=True)
     items: list[dict] = []
-    for p in sorted(GUIDES_DIR.glob("guide_*.json")):
+    for p in sorted(gdir.glob("guide_*.json")):
         data = read_json(p, None)
         if not isinstance(data, dict):
             continue
@@ -640,9 +727,10 @@ def list_long_guides() -> list[dict]:
 
 
 @router.get("/guides/long/{slug}")
-def get_long_guide(slug: str) -> dict:
-    GUIDES_DIR.mkdir(parents=True, exist_ok=True)
-    p = GUIDES_DIR / f"{slug}.json"
+def get_long_guide(slug: str, user: UserPublic | None = Depends(current_user_optional)) -> dict:
+    if not user:
+        raise HTTPException(404, "guide not found")
+    p = guides_dir(user.id) / f"{slug}.json"
     if not p.exists():
         raise HTTPException(404, "guide not found")
     data = read_json(p, None)
@@ -652,8 +740,8 @@ def get_long_guide(slug: str) -> dict:
 
 
 @router.delete("/guides/long/{slug}")
-def delete_long_guide(slug: str) -> dict:
-    p = GUIDES_DIR / f"{slug}.json"
+def delete_long_guide(slug: str, user: UserPublic = Depends(require_user)) -> dict:
+    p = guides_dir(user.id) / f"{slug}.json"
     if not p.exists():
         raise HTTPException(404, "guide not found")
     p.unlink()
@@ -668,7 +756,7 @@ class GuideGenRequest(BaseModel):
 
 
 @router.post("/guides/generate")
-async def generate_long_guide(req: GuideGenRequest) -> dict:
+async def generate_long_guide(req: GuideGenRequest, user: UserPublic = Depends(require_user)) -> dict:
     """LLM-generated long-form learning guide on `topic`.
 
     If `article_ids` is given, those articles are used as anchor context;
@@ -749,13 +837,14 @@ async def generate_long_guide(req: GuideGenRequest) -> dict:
         ],
         "body": body,
     }
-    GUIDES_DIR.mkdir(parents=True, exist_ok=True)
-    write_json_atomic(GUIDES_DIR / f"{slug}.json", payload)
+    gdir = guides_dir(user.id)
+    gdir.mkdir(parents=True, exist_ok=True)
+    write_json_atomic(gdir / f"{slug}.json", payload)
     return {"ok": True, "guide": payload}
 
 
 # ── Translation control ───────────────────────────────────────────
-@router.post("/translate/run")
+@router.post("/translate/run", dependencies=[Depends(require_user)])
 async def translate_run() -> dict:
     """Manually trigger one translation batch (admin-style)."""
     from ..workers.ai_news_translator import translate_once
@@ -763,7 +852,7 @@ async def translate_run() -> dict:
     return {"ok": True, "translated": n}
 
 
-@router.post("/articles/{aid}/retranslate")
+@router.post("/articles/{aid}/retranslate", dependencies=[Depends(require_user)])
 def retranslate_article(aid: str) -> dict:
     """Reset translation status so the worker picks the article up again."""
     articles = _load_articles()
@@ -808,20 +897,22 @@ DEEP_DIVE_SYSTEM = (
 
 
 @router.get("/deep-dives")
-def list_deep_dives() -> list[dict]:
-    """List every stored deep-dive as an independent library.
+def list_deep_dives(user: UserPublic | None = Depends(current_user_optional)) -> list[dict]:
+    """List the current user's stored deep-dives as an independent library.
 
-    Reads ``deep-dives/*.json`` directly (NOT filtered through articles.json), so
-    a deep-dive survives even after its origin article is rolled out of the feed.
-    Each payload already carries title/source/url/body, so no article lookup is
-    needed. ``has_origin_article`` tells the UI whether the feed still has a card
-    that can link here.
+    Reads the user's ``deep-dives/*.json`` directly (NOT filtered through the
+    global articles.json), so a deep-dive survives even after its origin article
+    rolls out of the feed. ``has_origin_article`` tells the UI whether the global
+    feed still has a card that can link here. Anonymous users get an empty list.
     """
-    if not DEEP_DIVES_DIR.exists():
+    if not user:
+        return []
+    ddir = deep_dives_dir(user.id)
+    if not ddir.exists():
         return []
     live_ids = {a.get("id") for a in _load_articles()}
     items: list[dict] = []
-    for p in DEEP_DIVES_DIR.glob("*.json"):
+    for p in ddir.glob("*.json"):
         data = read_json(p, None)
         if not isinstance(data, dict):
             continue
@@ -842,11 +933,13 @@ def list_deep_dives() -> list[dict]:
 
 
 @router.get("/articles/{aid}/deep-dive")
-def get_deep_dive(aid: str) -> dict:
-    """Return stored deep-dive if any."""
-    p = DEEP_DIVES_DIR / f"{aid}.json"
+def get_deep_dive(aid: str, user: UserPublic | None = Depends(current_user_optional)) -> dict:
+    """Return the current user's stored deep-dive for an article, if any."""
+    if not user:
+        return {"status": "none", "article_id": aid}
+    p = deep_dives_dir(user.id) / f"{aid}.json"
     if not p.exists():
-        # Distinguish: article exists but no deep-dive yet
+        # Distinguish: article exists but this user has no deep-dive yet
         article = next((a for a in _load_articles() if a.get("id") == aid), None)
         if not article:
             raise HTTPException(404, "article not found")
@@ -858,15 +951,17 @@ def get_deep_dive(aid: str) -> dict:
 
 
 @router.post("/articles/{aid}/deep-dive")
-async def generate_deep_dive(aid: str) -> dict:
-    """Generate (or regenerate) a per-article deep dive with a mermaid diagram."""
+async def generate_deep_dive(aid: str, user: UserPublic = Depends(require_user)) -> dict:
+    """Generate (or regenerate) the current user's per-article deep dive with a
+    mermaid diagram. Stored under users/<uid>/deep-dives/{aid}.json."""
     if not llm_configured():
         raise HTTPException(503, "LLM not configured")
     articles = _load_articles()
     article = next((a for a in articles if a.get("id") == aid), None)
 
-    DEEP_DIVES_DIR.mkdir(parents=True, exist_ok=True)
-    p = DEEP_DIVES_DIR / f"{aid}.json"
+    ddir = deep_dives_dir(user.id)
+    ddir.mkdir(parents=True, exist_ok=True)
+    p = ddir / f"{aid}.json"
 
     # The deep-dive library is independent of the feed: if the origin article has
     # rolled out, fall back to the existing deep-dive payload's metadata so the
@@ -885,16 +980,6 @@ async def generate_deep_dive(aid: str) -> dict:
     url = _meta("url", "article_url")
     source = _meta("source", "article_source")
 
-    # Mark article as generating so the UI can show spinner if it polls (only
-    # when the origin article still lives in the feed).
-    if article:
-        for a in articles:
-            if a.get("id") == aid:
-                a["deep_dive_status"] = "generating"
-                a["deep_dive_id"] = aid
-                break
-        write_json_atomic(ARTICLES_FILE, articles)
-
     user_block = (
         f"文章标题：{title}\n"
         f"来源：{source}\n"
@@ -911,13 +996,6 @@ async def generate_deep_dive(aid: str) -> dict:
     try:
         body = await chat_complete(messages, max_tokens=2800, temperature=0.4)
     except LLMUnavailable as e:
-        # Roll back generating flag
-        if article:
-            for a in articles:
-                if a.get("id") == aid:
-                    a["deep_dive_status"] = "failed"
-                    break
-            write_json_atomic(ARTICLES_FILE, articles)
         raise HTTPException(503, str(e))
 
     payload = {
@@ -931,30 +1009,14 @@ async def generate_deep_dive(aid: str) -> dict:
         "body": body,
     }
     write_json_atomic(p, payload)
-
-    if article:
-        articles = _load_articles()  # reload in case it changed
-        for a in articles:
-            if a.get("id") == aid:
-                a["deep_dive_status"] = "ok"
-                a["deep_dive_id"] = aid
-                break
-        write_json_atomic(ARTICLES_FILE, articles)
     return {"ok": True, **payload}
 
 
 @router.delete("/articles/{aid}/deep-dive")
-def delete_deep_dive(aid: str) -> dict:
-    p = DEEP_DIVES_DIR / f"{aid}.json"
+def delete_deep_dive(aid: str, user: UserPublic = Depends(require_user)) -> dict:
+    p = deep_dives_dir(user.id) / f"{aid}.json"
     if p.exists():
         p.unlink()
-    articles = _load_articles()
-    for a in articles:
-        if a.get("id") == aid:
-            a["deep_dive_status"] = None
-            a["deep_dive_id"] = None
-            break
-    write_json_atomic(ARTICLES_FILE, articles)
     return {"ok": True}
 
 
@@ -964,12 +1026,12 @@ class ManualDeepDiveRequest(BaseModel):
     context: str | None = None       # optional pasted abstract / notes / link
 
 @router.post("/manual-dive")
-async def manual_deep_dive(req: ManualDeepDiveRequest) -> dict:
-    """Generate a deep-dive article from a user-supplied topic (no RSS source).
+async def manual_deep_dive(req: ManualDeepDiveRequest, user: UserPublic = Depends(require_user)) -> dict:
+    """Generate a deep-dive from a user-supplied topic (no RSS source).
 
-    Persists as a synthetic article (``source='手动输入'``, ``manual=True``,
-    ``tier='high'``, ``pinned=True``) so it shows up at the top of the feed
-    and shares the per-article deep-dive UI / storage path.
+    Persists only as a deep-dive under the user's library (``source='手动输入'``).
+    It is NOT inserted into the global article feed — it shows up solely in the
+    user's "深度解读" view (the feed stays purely RSS / global).
     """
     topic = (req.topic or "").strip()
     if not topic:
@@ -977,7 +1039,7 @@ async def manual_deep_dive(req: ManualDeepDiveRequest) -> dict:
     if not llm_configured():
         raise HTTPException(503, "LLM not configured")
 
-    # Synthetic article ID — same scheme as RSS so frontend treats it uniformly
+    # Synthetic article ID — same scheme as RSS so the frontend treats it uniformly
     seed = f"manual::{topic}::{_now_iso()}"
     aid = "a_" + hashlib.sha1(seed.encode("utf-8")).hexdigest()[:12]
 
@@ -996,7 +1058,8 @@ async def manual_deep_dive(req: ManualDeepDiveRequest) -> dict:
         raise HTTPException(503, str(e))
 
     now = _now_iso()
-    DEEP_DIVES_DIR.mkdir(parents=True, exist_ok=True)
+    ddir = deep_dives_dir(user.id)
+    ddir.mkdir(parents=True, exist_ok=True)
     payload = {
         "article_id": aid,
         "article_title": topic,
@@ -1007,32 +1070,5 @@ async def manual_deep_dive(req: ManualDeepDiveRequest) -> dict:
         "model": settings.llm_model,
         "body": body,
     }
-    write_json_atomic(DEEP_DIVES_DIR / f"{aid}.json", payload)
-
-    # Insert synthetic article record so the UI shows it in the feed list
-    articles = _load_articles()
-    articles.insert(0, {
-        "id": aid,
-        "title": topic,
-        "title_zh": topic,
-        "summary": (req.context or "")[:600],
-        "summary_zh": (req.context or "")[:600],
-        "url": None,
-        "source": "手动输入",
-        "date": now,
-        "tier": "high",
-        "tags": ["manual"],
-        "manual": True,
-        "pinned": True,
-        "translation_status": "ok",
-        "deep_dive_status": "ok",
-        "deep_dive_id": aid,
-    })
-    # Cap rolling history
-    if len(articles) > _ARTICLE_LIMIT:
-        pinned = [a for a in articles if a.get("pinned")]
-        kept = [a for a in articles if not a.get("pinned")][: _ARTICLE_LIMIT - len(pinned)]
-        articles = pinned + kept
-    write_json_atomic(ARTICLES_FILE, articles)
-
+    write_json_atomic(ddir / f"{aid}.json", payload)
     return {"ok": True, **payload}

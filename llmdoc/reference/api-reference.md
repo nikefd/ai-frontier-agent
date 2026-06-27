@@ -5,6 +5,17 @@
 
 约定：除特别说明，请求/响应均为 JSON。所有 LLM 相关端点在未配置 key 时返回 **503**。
 
+**鉴权约定（多用户后）**：写操作（POST/PUT/DELETE）和所有 LLM 端点要求登录，未登录返回 **401**；只读端点公开（用户产物的读如 tracks/deep-dives/conversations 未登录返回**空**）。下表「🔒」列标注：`写` = 需登录写，`读*` = 按当前用户过滤的读（匿名得空），空 = 公开读。鉴权细节见 [认证架构](../architecture/auth-architecture.md)。
+
+## 0. 认证（prefix `/api/auth`）
+
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| POST | `/register` | — | 注册 `{email, password}`；首个账号自动为 admin 并继承老数据；成功下发会话 cookie。限流 8 次/60s |
+| POST | `/login` | — | 登录 `{email, password}`；成功下发会话 cookie。错误统一文案防枚举。限流 8 次/60s（按 IP+邮箱） |
+| POST | `/logout` | — | 清除会话 cookie |
+| GET | `/me` | — | 返回当前用户 `{user: {id,email,role} | null}` |
+
 ## 1. 系统 / 静态
 
 | 方法 | 路径 | 说明 |
@@ -16,76 +27,76 @@
 
 ## 2. 文章（prefix `/api/ai-news`）
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/articles` | 分页列表。query：`q` / `pinned_only` / `tier` / `category`（逗号分隔多值）/ `offset` / `limit`（1–100）。返回 `{total, offset, limit, items}`，pinned 置顶、新→旧 |
-| POST | `/articles` | 手动新增一篇（`Article` body）；按 id/url 去重；超 400 滚动淘汰（pinned 不淘汰）。也是 fetcher worker 入库的入口 |
-| DELETE | `/articles/{aid}` | 删除一篇 |
-| POST | `/articles/{aid}/pin` | 收藏/取消收藏（toggle） |
-| GET | `/reader/{aid}` | 尽力而为的「阅读原文」：先查 `reader-cache/`，否则代理抓取原 URL 并缓存，返回 HTML（失败 502） |
-| POST | `/articles/{aid}/retranslate` | 把翻译状态重置回 `pending`，让翻译 worker 重新翻 |
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| GET | `/articles` | 读* | 分页列表。query：`q` / `pinned_only` / `tier` / `category`（逗号分隔多值）/ `offset` / `limit`（1–100）。返回 `{total, offset, limit, items}`，pinned 置顶、新→旧。**每项的 `pinned`/`deep_dive_status` 按当前用户叠加**（匿名全为未 pin/无解读） |
+| POST | `/articles` | 写 | 手动新增一篇（`Article` body）；按 id/url 去重；超 400 滚动淘汰（被**任一用户** pin 的不淘汰）。也是 fetcher worker 入库的入口 |
+| DELETE | `/articles/{aid}` | 写 | 删除一篇（全局文章） |
+| POST | `/articles/{aid}/pin` | 写 | 收藏/取消收藏（toggle）。pin 存当前用户的 `pins.json`，不写全局文章对象 |
+| GET | `/reader/{aid}` | — | 尽力而为的「阅读原文」：先查 `reader-cache/`，否则代理抓取原 URL 并缓存，返回 HTML（失败 502） |
+| POST | `/articles/{aid}/retranslate` | 写 | 把翻译状态重置回 `pending`，让翻译 worker 重新翻 |
 
 ## 3. 深度解读（prefix `/api/ai-news`）
 
-深度解读是一个**独立内容库**（数据直接来自 `deep-dives/*.json`，不随文章流滚动淘汰）。
+深度解读是一个**按用户独立的内容库**（数据来自该用户的 `users/<uid>/deep-dives/*.json`，不随文章流滚动淘汰）。
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/deep-dives` | **列出全部深度解读**（扫 `deep-dives/*.json`，按 `generated_at` 倒序）。每项含 `article_id/title/title_zh/source/url/generated_at/model/is_manual/has_origin_article`。`has_origin_article`=该文章是否仍在 `articles.json`（决定文章流卡片是否能跳来）。前端「🧠 深度解读」视图的数据源 |
-| GET | `/articles/{aid}/deep-dive` | 取已生成的深度解读；没有则 `{status:"none"}` |
-| POST | `/articles/{aid}/deep-dive` | **LLM** 生成（或重生成）单篇深度解读（带 mermaid 图），存 `deep-dives/{aid}.json`。原文章已淘汰时回退用已存解读的元信息，**仍可重生成**（不再 404）；仅在文章和解读文件都不存在时 404 |
-| DELETE | `/articles/{aid}/deep-dive` | 删除深度解读 |
-| POST | `/manual-dive` | **LLM** 由用户输入主题生成深度解读（`{topic, context?}`），合成一条 `source="手动输入"` 的 pinned 文章。前端入口在「🧠 深度解读」视图 |
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| GET | `/deep-dives` | 读* | **列出当前用户的全部深度解读**（扫其 `deep-dives/*.json`，按 `generated_at` 倒序）。匿名返回空。每项含 `article_id/title/title_zh/source/url/generated_at/model/is_manual/has_origin_article`。`has_origin_article`=该文章是否仍在全局 `articles.json` |
+| GET | `/articles/{aid}/deep-dive` | 读* | 取当前用户已生成的深度解读；没有则 `{status:"none"}` |
+| POST | `/articles/{aid}/deep-dive` | 写 | **LLM** 生成（或重生成）当前用户的单篇深度解读（带 mermaid 图），存其 `deep-dives/{aid}.json`。原文章已淘汰时回退用已存解读的元信息仍可重生成 |
+| DELETE | `/articles/{aid}/deep-dive` | 写 | 删除当前用户的该深度解读 |
+| POST | `/manual-dive` | 写 | **LLM** 由用户输入主题生成深度解读（`{topic, context?}`），只写当前用户的深度解读库（`source="手动输入"`），**不再插入全局文章流** |
 
 ## 4. 今日速报（prefix `/api/ai-news`）
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/summary/today` | 返回缓存速报 + 今日候选元数据（`cohort_size` / `cohort_preview` / `today`） |
-| POST | `/summary/today` | **LLM** 基于最近 30h 文章（最多 25 篇）生成中文速报，存 `summary_today.json` |
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| GET | `/summary/today` | — | 返回缓存速报 + 今日候选元数据（`cohort_size` / `cohort_preview` / `today`）。全局共享 |
+| POST | `/summary/today` | 写 | **LLM** 基于最近 30h 文章（最多 25 篇）生成中文速报，存全局 `summary_today.json` |
 
 ## 5. 追踪主题 tracks（prefix `/api/ai-news`）
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/tracks` | 列追踪主题；为空则写入并返回默认三条（大模型/Agent/Infra） |
-| PUT | `/tracks` | 整体覆盖写入（`list[Track]`），自动补 id |
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| GET | `/tracks` | 读* | 列当前用户的追踪主题；匿名返回空。新用户首次读会初始化默认三条（大模型/Agent/Infra） |
+| PUT | `/tracks` | 写 | 整体覆盖写入当前用户的 tracks（`list[Track]`），自动补 id |
 
 ## 6. 指南 guides（prefix `/api/ai-news`）
 
-短笔记型 guides（`guides.json`）与长文型 deep-dive guides（`guides/guide_*.json`）是两套：
+短笔记型 guides（`users/<uid>/guides.json`）与长文型 deep-dive guides（`users/<uid>/guides/guide_*.json`）是两套，均按用户独立：
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/guides` | 列短笔记型 guides |
-| POST | `/guides` | upsert 一条短笔记（`Guide` body） |
-| DELETE | `/guides/{gid}` | 删一条短笔记 |
-| GET | `/guides/long` | 列长文型深度指南（读 `guides/guide_*.json`） |
-| GET | `/guides/long/{slug}` | 取单篇长文指南 |
-| DELETE | `/guides/long/{slug}` | 删单篇长文指南 |
-| POST | `/guides/generate` | **LLM** 按主题生成长文学习指南（`{topic, article_ids?, depth, tags}`，depth=brief/deep），存 `guides/guide_*.json` |
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| GET | `/guides` | 读* | 列当前用户的短笔记型 guides；匿名空 |
+| POST | `/guides` | 写 | upsert 一条短笔记（`Guide` body） |
+| DELETE | `/guides/{gid}` | 写 | 删一条短笔记 |
+| GET | `/guides/long` | 读* | 列当前用户的长文型深度指南；匿名空 |
+| GET | `/guides/long/{slug}` | 读* | 取当前用户的单篇长文指南 |
+| DELETE | `/guides/long/{slug}` | 写 | 删当前用户的单篇长文指南 |
+| POST | `/guides/generate` | 写 | **LLM** 按主题生成长文学习指南（`{topic, article_ids?, depth, tags}`，depth=brief/deep），存当前用户的 `guides/guide_*.json` |
 
 ## 7. 数据源 / 抓取 / 翻译（prefix `/api/ai-news`）
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/sources` | 列 feed 及健康度（合并 `DEFAULT_FEED_SPECS` 与 `sources.json` 元数据 + 每源文章计数） |
-| POST | `/fetch` | 立即跑一轮抓取，返回 `{ok, added}` |
-| POST | `/translate/run` | 手动跑一批翻译，返回 `{ok, translated}` |
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| GET | `/sources` | — | 列 feed 及健康度（合并 `DEFAULT_FEED_SPECS` 与 `sources.json` 元数据 + 每源文章计数）。全局共享 |
+| POST | `/fetch` | 写 | 立即跑一轮抓取，返回 `{ok, added}` |
+| POST | `/translate/run` | 写 | 手动跑一批翻译，返回 `{ok, translated}` |
 
 ## 8. legacy 直通 chat（prefix `/api/ai-news`）
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/chat` | **旧版**无工具直通 LLM（塞最近 ~10 篇做上下文）；`{message, stream}`，stream=true 返回纯文本流。**前端已不用**，保留作 openclaw 兼容 |
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| POST | `/chat` | 写 | **旧版**无工具直通 LLM（塞最近 ~10 篇做上下文）；`{message, stream}`，stream=true 返回纯文本流。**前端已不用**，保留作 openclaw 兼容 |
 
 ## 9. 对话 agent（prefix `/api/agent`）
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/chat` | **前端在用**的对话入口：sparrow ReAct agent，`{message, conversation_id?}`，返回 **SSE**（`title`/`tool_call`/`tool_result`/`final`/`error` 事件） |
-| GET | `/conversations` | 列历史会话 |
-| GET | `/conversations/{conv_id}` | 取单个会话的消息 |
-| DELETE | `/conversations/{conv_id}` | 删会话 |
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| POST | `/chat` | 写 | **前端在用**的对话入口：sparrow ReAct agent，`{message, conversation_id?}`，返回 **SSE**（`title`/`tool_call`/`tool_result`/`final`/`error` 事件）。工具按当前用户绑定数据源 |
+| GET | `/conversations` | 读* | 列当前用户的历史会话（其独立 `ui.db`）；匿名空 |
+| GET | `/conversations/{conv_id}` | 读* | 取当前用户某会话的消息；匿名空 |
+| DELETE | `/conversations/{conv_id}` | 写 | 删当前用户的会话 |
 
 > agent 细节见 [Agent 架构](../architecture/agent-architecture.md)；两个 chat 端点并存的来龙去脉见 [backend-architecture](../architecture/backend-architecture.md) 第 6 节。

@@ -10,21 +10,22 @@ from __future__ import annotations
 import json
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from sparrow import AgentConfig, Harness, Memory, configure as llm_configure
 
-from .agent_tools import ALL_TOOLS
+from .agent_tools import build_tools
+from .auth import current_user_optional, require_user
 from .llm_client import llm_configured
-from .models import ChatRequest
+from .models import ChatRequest, UserPublic
 from .settings import settings
 
 log = logging.getLogger("aif.agent")
 
 router = APIRouter(prefix="/api/agent", tags=["agent"])
 
-UI_DB = settings.data_dir / "ai-news" / "ui.db"
+USERS_DIR = settings.data_dir / "users"
 
 SYSTEM_PROMPT = """You are an AI-frontier research assistant. You help the user \
 track the AI landscape: latest papers, model releases, tools, and expert takes \
@@ -47,46 +48,58 @@ natural language.
 llm_configure(base_url=settings.llm_base_url, api_key=settings.llm_api_key,
               model=settings.llm_model)
 
-_memory = Memory(str(UI_DB))
+# sparrow's Memory has no user dimension (conversations / journal are keyed only
+# on conversation_id), so isolation is done with one ui.db per user. The Memory
+# objects are cached so each user's db opens once.
+_memories: dict[str, Memory] = {}
 
 
-def _build_config() -> AgentConfig:
+def _memory_for(uid: str) -> Memory:
+    mem = _memories.get(uid)
+    if mem is None:
+        mem = Memory(str(USERS_DIR / uid / "ui.db"))
+        _memories[uid] = mem
+    return mem
+
+
+def _build_config(uid: str, memory: Memory) -> AgentConfig:
     return AgentConfig(
         system_prompt=SYSTEM_PROMPT,
-        tools=ALL_TOOLS,
-        recall_provider=_memory.journal_summary_for_prompt,
+        tools=build_tools(uid),
+        recall_provider=memory.journal_summary_for_prompt,
     )
 
 
 @router.post("/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, user: UserPublic = Depends(require_user)):
     if not llm_configured():
         from fastapi import HTTPException
         raise HTTPException(503, "LLM not configured")
 
+    memory = _memory_for(user.id)
     conv_id = req.conversation_id or ""
     messages = [{"role": "user", "content": req.message}]
 
     # Persist the user message + auto-title on first turn.
     is_first = False
     if conv_id:
-        is_first = _memory.message_count(conv_id) == 0
-        _memory.add_message(conv_id, "user", req.message)
+        is_first = memory.message_count(conv_id) == 0
+        memory.add_message(conv_id, "user", req.message)
 
-    harness = Harness(_build_config(), journal_fn=_memory.journal_append)
+    harness = Harness(_build_config(user.id, memory), journal_fn=memory.journal_append)
 
     def event_stream():
         # Title event first (best-effort).
         if is_first and conv_id:
             try:
-                title = _memory.auto_title(conv_id, req.message)
+                title = memory.auto_title(conv_id, req.message)
                 yield _sse({"type": "title", "title": title})
             except Exception:
                 pass
 
         tool_steps, final_content, final_citations = [], "", []
         # sparrow's run() expects full message history; load it from memory.
-        history = _memory.get_messages(conv_id) if conv_id else messages
+        history = memory.get_messages(conv_id) if conv_id else messages
         run_msgs = [{"role": m["role"], "content": m["content"]} for m in history] or messages
         for event in harness.run(run_msgs, conversation_id=conv_id):
             yield _sse(event)
@@ -97,25 +110,29 @@ async def chat(req: ChatRequest):
                 final_citations = event.get("citations", [])
 
         if conv_id and final_content:
-            _memory.add_message(conv_id, "assistant", final_content,
-                                meta={"citations": final_citations, "tool_steps": tool_steps})
+            memory.add_message(conv_id, "assistant", final_content,
+                               meta={"citations": final_citations, "tool_steps": tool_steps})
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @router.get("/conversations")
-def list_conversations():
-    return _memory.list_conversations()
+def list_conversations(user: UserPublic | None = Depends(current_user_optional)):
+    if not user:
+        return []
+    return _memory_for(user.id).list_conversations()
 
 
 @router.get("/conversations/{conv_id}")
-def get_conversation(conv_id: str):
-    return {"messages": _memory.get_messages(conv_id)}
+def get_conversation(conv_id: str, user: UserPublic | None = Depends(current_user_optional)):
+    if not user:
+        return {"messages": []}
+    return {"messages": _memory_for(user.id).get_messages(conv_id)}
 
 
 @router.delete("/conversations/{conv_id}")
-def delete_conversation(conv_id: str):
-    return _memory.delete_conversation(conv_id)
+def delete_conversation(conv_id: str, user: UserPublic = Depends(require_user)):
+    return _memory_for(user.id).delete_conversation(conv_id)
 
 
 def _sse(obj: dict) -> str:

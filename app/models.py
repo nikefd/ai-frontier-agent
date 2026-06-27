@@ -57,3 +57,31 @@ class Guide(BaseModel):
     body: str = ""
     tags: list[str] = Field(default_factory=list)
     updated_at: str | None = None
+
+
+# ── Auth / users ─────────────────────────────────────────────────────
+class UserRecord(BaseModel):
+    """Stored shape in <data_dir>/auth/users.json (includes the hash)."""
+    id: str
+    email: str
+    password_hash: str
+    role: Literal["admin", "user"] = "user"
+    created_at: str | None = None
+    last_login_at: str | None = None
+
+
+class UserPublic(BaseModel):
+    """Safe shape returned to clients — never carries the password hash."""
+    id: str
+    email: str
+    role: Literal["admin", "user"] = "user"
+
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str

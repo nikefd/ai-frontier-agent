@@ -6,6 +6,7 @@ import { refreshList } from './feed.js';
 import { regenSummary } from './views.js';
 import { manualNewDive } from './dives.js';
 import { switchView } from './nav.js';
+import { initAuth } from './auth.js';
 // Chat is provided by the bundled sparrow-chat.js component (mounted in index.html).
 
 if (window.mermaid) {
@@ -73,4 +74,7 @@ $('#btn-regen-summary').addEventListener('click', regenSummary);
 $('#btn-new-dive').addEventListener('click', manualNewDive);
 
 // ── Boot ─────────────────────────────────────────────────────────────
+initAuth();
+// Re-load views when the logged-in identity changes (login / logout).
+window.addEventListener('aif:auth-changed', () => { state.offset = 0; refreshList(); });
 refreshList();
