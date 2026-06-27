@@ -37,6 +37,8 @@ async def lifespan(app: FastAPI):
         settings.host, settings.port, settings.data_dir,
         "yes" if llm_configured() else "no (chat endpoints will 503)",
     )
+    from .migrate import migrate_legacy_to_holding
+    migrate_legacy_to_holding()
     scheduler.start()
     try:
         yield

@@ -15,10 +15,10 @@ from fastapi.responses import StreamingResponse
 
 from sparrow import AgentConfig, Harness, Memory, configure as llm_configure
 
-from .agent_tools import ALL_TOOLS
+from .agent_tools import build_tools
 from .auth import require_user
 from .llm_client import llm_configured
-from .models import ChatRequest
+from .models import ChatRequest, UserPublic
 from .settings import settings
 
 log = logging.getLogger("aif.agent")
@@ -51,16 +51,16 @@ llm_configure(base_url=settings.llm_base_url, api_key=settings.llm_api_key,
 _memory = Memory(str(UI_DB))
 
 
-def _build_config() -> AgentConfig:
+def _build_config(uid: str) -> AgentConfig:
     return AgentConfig(
         system_prompt=SYSTEM_PROMPT,
-        tools=ALL_TOOLS,
+        tools=build_tools(uid),
         recall_provider=_memory.journal_summary_for_prompt,
     )
 
 
-@router.post("/chat", dependencies=[Depends(require_user)])
-async def chat(req: ChatRequest):
+@router.post("/chat")
+async def chat(req: ChatRequest, user: UserPublic = Depends(require_user)):
     if not llm_configured():
         from fastapi import HTTPException
         raise HTTPException(503, "LLM not configured")
@@ -74,7 +74,7 @@ async def chat(req: ChatRequest):
         is_first = _memory.message_count(conv_id) == 0
         _memory.add_message(conv_id, "user", req.message)
 
-    harness = Harness(_build_config(), journal_fn=_memory.journal_append)
+    harness = Harness(_build_config(user.id), journal_fn=_memory.journal_append)
 
     def event_stream():
         # Title event first (best-effort).
