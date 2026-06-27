@@ -37,7 +37,7 @@
         <div class="group">视图</div>
         <button class="on" data-view="feed"><span>📰</span> 文章流 <span class="count" id="cnt-feed">·</span></button>
         <button data-view="summary"><span>✨</span> 今日速报</button>
-        <button data-view="guides"><span>📚</span> 深度指南 <span class="count" id="cnt-guides">·</span></button>
+        <button data-view="dives"><span>🧠</span> 深度解读 <span class="count" id="cnt-dives">·</span></button>
         <button data-view="sources"><span>🔌</span> 数据源 <span class="count" id="cnt-sources">·</span></button>
       </div>
 
@@ -99,30 +99,23 @@
         </div>
       </div>
 
-      <!-- VIEW: GUIDES -->
-      <div class="view-pane hidden" id="view-guides">
+      <!-- VIEW: DEEP DIVES (independent reading library) -->
+      <div class="view-pane hidden" id="view-dives">
         <div class="card">
           <div class="card-head">
-            <h3>📚 生成深度指南</h3>
-            <span class="text-xs text-faint">LLM 会基于 RSS 锚定 + 通用知识展开</span>
+            <h3>🧠 深度解读</h3>
+            <span class="text-xs text-faint">你生成 / 收下的解读集中在这里读和管理 · 不随文章流淘汰</span>
           </div>
           <div class="row">
             <label class="field">
-              <span>主题 / 关键词</span>
-              <input id="guide-topic" placeholder="例：DSPy 自动 prompt 优化原理与上手" />
+              <span>手动新建 · 主题 / 标题</span>
+              <input id="dive-topic" placeholder="例：DSPy 自动 prompt 优化原理与上手" />
             </label>
-            <label class="field fixed" style="flex:0 0 140px">
-              <span>深度</span>
-              <select id="guide-depth">
-                <option value="deep" selected>深度（~2k 字）</option>
-                <option value="brief">简报（~800 字）</option>
-              </select>
-            </label>
-            <button class="primary fixed" id="btn-gen-guide" style="align-self:flex-end">⚡ 生成</button>
+            <button class="primary fixed" id="btn-new-dive" style="align-self:flex-end">⚡ 生成解读</button>
           </div>
-          <div id="guide-status" class="text-xs text-faint mt-8"></div>
+          <div id="dive-status" class="text-xs text-faint mt-8"></div>
           <hr class="hr">
-          <div id="guides-list"></div>
+          <div id="dives-list"></div>
         </div>
       </div>
 
@@ -131,7 +124,7 @@
         <div class="card">
           <div class="card-head">
             <h3>🔌 数据源状态</h3>
-            <span class="text-xs text-faint">每天一次定时抓取 · 全局 top 20 入库</span>
+            <span class="text-xs text-faint">每天一次定时抓取 · 每源最多 4 篇 · 全局 150 篇封顶</span>
           </div>
           <div id="sources-list"></div>
         </div>
@@ -150,8 +143,31 @@
     title: '💬 AI 助理',
     hint: '我能查文章/数据源/追踪主题，并帮你建追踪主题、收藏文章。试试「帮我盯住 RAG 进展」。',
     accent: '#7c3aed',
-    placeholder: '帮我查查最近的 Agent 进展…',
     storageKey: 'aif_conv_id',
+    i18n: {
+      send: '发送',
+      placeholder: '帮我查查最近的 Agent 进展…',
+      history: '历史会话',
+      newChat: '新对话',
+      resize: '放大 / 缩小',
+      close: '收起',
+      back: '返回',
+      thinking: '思考中',
+      emptyNew: '开始一段新对话，或点 🕘 查看历史。',
+      newStarted: '新对话已开始 ✨',
+      loading: '加载中…',
+      noConversations: '还没有历史会话。',
+      loadFailed: '加载失败。',
+      emptyConversation: '这个会话还没有消息。',
+      sources: '来源',
+      messages: '条',
+      untitled: '新对话',
+      del: '删除',
+      justNow: '刚刚',
+      minAgo: ' 分钟前',
+      hourAgo: ' 小时前',
+      dayAgo: ' 天前',
+    },
   });
 </script>
 <script type="module" src="/ui/js/main.js"></script>

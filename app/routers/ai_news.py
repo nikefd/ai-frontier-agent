@@ -807,6 +807,40 @@ DEEP_DIVE_SYSTEM = (
 )
 
 
+@router.get("/deep-dives")
+def list_deep_dives() -> list[dict]:
+    """List every stored deep-dive as an independent library.
+
+    Reads ``deep-dives/*.json`` directly (NOT filtered through articles.json), so
+    a deep-dive survives even after its origin article is rolled out of the feed.
+    Each payload already carries title/source/url/body, so no article lookup is
+    needed. ``has_origin_article`` tells the UI whether the feed still has a card
+    that can link here.
+    """
+    if not DEEP_DIVES_DIR.exists():
+        return []
+    live_ids = {a.get("id") for a in _load_articles()}
+    items: list[dict] = []
+    for p in DEEP_DIVES_DIR.glob("*.json"):
+        data = read_json(p, None)
+        if not isinstance(data, dict):
+            continue
+        aid = data.get("article_id") or p.stem
+        items.append({
+            "article_id": aid,
+            "title": data.get("article_title"),
+            "title_zh": data.get("article_title_zh"),
+            "source": data.get("article_source"),
+            "url": data.get("article_url"),
+            "generated_at": data.get("generated_at"),
+            "model": data.get("model"),
+            "is_manual": data.get("article_source") == "手动输入",
+            "has_origin_article": aid in live_ids,
+        })
+    items.sort(key=lambda x: x.get("generated_at") or "", reverse=True)
+    return items
+
+
 @router.get("/articles/{aid}/deep-dive")
 def get_deep_dive(aid: str) -> dict:
     """Return stored deep-dive if any."""
@@ -830,27 +864,44 @@ async def generate_deep_dive(aid: str) -> dict:
         raise HTTPException(503, "LLM not configured")
     articles = _load_articles()
     article = next((a for a in articles if a.get("id") == aid), None)
-    if not article:
-        raise HTTPException(404, "article not found")
 
     DEEP_DIVES_DIR.mkdir(parents=True, exist_ok=True)
     p = DEEP_DIVES_DIR / f"{aid}.json"
 
-    # Mark article as generating so the UI can show spinner if it polls
-    for a in articles:
-        if a.get("id") == aid:
-            a["deep_dive_status"] = "generating"
-            a["deep_dive_id"] = aid
-            break
-    write_json_atomic(ARTICLES_FILE, articles)
+    # The deep-dive library is independent of the feed: if the origin article has
+    # rolled out, fall back to the existing deep-dive payload's metadata so the
+    # user can still regenerate. Only 404 when we have neither.
+    existing = read_json(p, None) if p.exists() else None
+    if not article and not isinstance(existing, dict):
+        raise HTTPException(404, "article not found")
+
+    def _meta(key_article: str, key_dive: str):
+        if article:
+            return article.get(key_article)
+        return (existing or {}).get(key_dive)
+
+    title = _meta("title", "article_title")
+    title_zh = _meta("title_zh", "article_title_zh")
+    url = _meta("url", "article_url")
+    source = _meta("source", "article_source")
+
+    # Mark article as generating so the UI can show spinner if it polls (only
+    # when the origin article still lives in the feed).
+    if article:
+        for a in articles:
+            if a.get("id") == aid:
+                a["deep_dive_status"] = "generating"
+                a["deep_dive_id"] = aid
+                break
+        write_json_atomic(ARTICLES_FILE, articles)
 
     user_block = (
-        f"文章标题：{article.get('title')}\n"
-        f"来源：{article.get('source')}\n"
-        f"链接：{article.get('url')}\n"
-        f"原文摘要：{(article.get('summary') or '')[:1200]}\n"
-        + (f"中文标题：{article.get('title_zh')}\n" if article.get('title_zh') else "")
-        + (f"中文摘要：{article.get('summary_zh')}\n" if article.get('summary_zh') else "")
+        f"文章标题：{title}\n"
+        f"来源：{source}\n"
+        f"链接：{url}\n"
+        + (f"原文摘要：{(article.get('summary') or '')[:1200]}\n" if article else "")
+        + (f"中文标题：{title_zh}\n" if title_zh else "")
+        + (f"中文摘要：{article.get('summary_zh')}\n" if article and article.get('summary_zh') else "")
         + "\n请基于以上信息 + 你的公开知识开始撰写深度解读。"
     )
     messages = [
@@ -861,32 +912,34 @@ async def generate_deep_dive(aid: str) -> dict:
         body = await chat_complete(messages, max_tokens=2800, temperature=0.4)
     except LLMUnavailable as e:
         # Roll back generating flag
-        for a in articles:
-            if a.get("id") == aid:
-                a["deep_dive_status"] = "failed"
-                break
-        write_json_atomic(ARTICLES_FILE, articles)
+        if article:
+            for a in articles:
+                if a.get("id") == aid:
+                    a["deep_dive_status"] = "failed"
+                    break
+            write_json_atomic(ARTICLES_FILE, articles)
         raise HTTPException(503, str(e))
 
     payload = {
         "article_id": aid,
-        "article_title": article.get("title"),
-        "article_title_zh": article.get("title_zh"),
-        "article_url": article.get("url"),
-        "article_source": article.get("source"),
+        "article_title": title,
+        "article_title_zh": title_zh,
+        "article_url": url,
+        "article_source": source,
         "generated_at": _now_iso(),
         "model": settings.llm_model,
         "body": body,
     }
     write_json_atomic(p, payload)
 
-    articles = _load_articles()  # reload in case it changed
-    for a in articles:
-        if a.get("id") == aid:
-            a["deep_dive_status"] = "ok"
-            a["deep_dive_id"] = aid
-            break
-    write_json_atomic(ARTICLES_FILE, articles)
+    if article:
+        articles = _load_articles()  # reload in case it changed
+        for a in articles:
+            if a.get("id") == aid:
+                a["deep_dive_status"] = "ok"
+                a["deep_dive_id"] = aid
+                break
+        write_json_atomic(ARTICLES_FILE, articles)
     return {"ok": True, **payload}
 
 
