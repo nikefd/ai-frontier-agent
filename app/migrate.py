@@ -40,6 +40,7 @@ def migrate_legacy_to_holding() -> None:
     guides_dir = AINEWS_DIR / "guides"
     deep_dives_dir = AINEWS_DIR / "deep-dives"
     articles_file = AINEWS_DIR / "articles.json"
+    ui_db = AINEWS_DIR / "ui.db"
 
     articles = read_json(articles_file, [])
     if not isinstance(articles, list):
@@ -49,7 +50,7 @@ def migrate_legacy_to_holding() -> None:
 
     has_legacy = (
         tracks.exists() or guides_json.exists() or guides_dir.exists()
-        or deep_dives_dir.exists() or pinned_ids or has_manual
+        or deep_dives_dir.exists() or ui_db.exists() or pinned_ids or has_manual
     )
     if not has_legacy:
         return
@@ -64,6 +65,9 @@ def migrate_legacy_to_holding() -> None:
         shutil.move(str(guides_dir), str(LEGACY_DIR / "guides"))
     if deep_dives_dir.exists():
         shutil.move(str(deep_dives_dir), str(LEGACY_DIR / "deep-dives"))
+    if ui_db.exists():
+        # Conversation memory becomes the inheriting user's ui.db.
+        shutil.move(str(ui_db), str(LEGACY_DIR / "ui.db"))
 
     if pinned_ids:
         write_json_atomic(LEGACY_DIR / "pins.json", sorted(set(pinned_ids)))
