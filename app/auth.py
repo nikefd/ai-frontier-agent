@@ -16,6 +16,9 @@ from __future__ import annotations
 import logging
 import re
 import secrets
+import threading
+import time
+from collections import defaultdict, deque
 from datetime import datetime, timezone
 
 import bcrypt
@@ -33,6 +36,35 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 AUTH_DIR = settings.data_dir / "auth"
 USERS_FILE = AUTH_DIR / "users.json"
 SECRET_FILE = AUTH_DIR / "secret.key"
+
+# In-memory sliding-window rate limiter for auth endpoints. Single process, so a
+# dict of recent attempt timestamps per key is enough (no Redis). Bounds brute
+# force on /login and /register.
+_RATE_MAX = 8           # attempts...
+_RATE_WINDOW = 60.0     # ...per this many seconds, per key
+_rate_hits: dict[str, deque] = defaultdict(deque)
+_rate_lock = threading.Lock()
+
+
+def _rate_limit(key: str) -> None:
+    """Raise 429 if `key` exceeded _RATE_MAX attempts within _RATE_WINDOW."""
+    now = time.monotonic()
+    with _rate_lock:
+        dq = _rate_hits[key]
+        while dq and now - dq[0] > _RATE_WINDOW:
+            dq.popleft()
+        if len(dq) >= _RATE_MAX:
+            raise HTTPException(429, "尝试过于频繁，请稍后再试")
+        dq.append(now)
+
+
+def _client_ip(request: Request) -> str:
+    # Behind Traefik/Coolify the real IP is in X-Forwarded-For; fall back to the
+    # socket peer. Only the first hop is trusted enough for rate-limit keying.
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "?"
 
 COOKIE_NAME = "aif_session"
 _SESSION_SALT = "aif-session"
@@ -185,7 +217,8 @@ def _validate_credentials(email: str, password: str) -> tuple[str, str]:
 
 
 @router.post("/register")
-def register(req: RegisterRequest, response: Response) -> dict:
+def register(req: RegisterRequest, request: Request, response: Response) -> dict:
+    _rate_limit(f"register:{_client_ip(request)}")
     email, password = _validate_credentials(req.email, req.password)
     if find_by_email(email):
         raise HTTPException(409, "该邮箱已注册")
@@ -201,8 +234,11 @@ def register(req: RegisterRequest, response: Response) -> dict:
 
 
 @router.post("/login")
-def login(req: LoginRequest, response: Response) -> dict:
+def login(req: LoginRequest, request: Request, response: Response) -> dict:
     email = (req.email or "").strip().lower()
+    # Rate-limit per IP and per target email to blunt brute force / spraying.
+    _rate_limit(f"login-ip:{_client_ip(request)}")
+    _rate_limit(f"login-email:{email}")
     rec = find_by_email(email)
     # Always run a hash compare (dummy when unknown) → uniform timing + message.
     ok = verify_password(req.password or "", rec["password_hash"] if rec else _DUMMY_HASH)

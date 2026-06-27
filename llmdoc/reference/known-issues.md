@@ -4,7 +4,10 @@
 
 ## 1. CORS 全开（`allow_origins=["*"]`）
 
-`app/main.py` 的 CORS 中间件放开所有源（`allow_credentials=False`）。绑公网且前面没有鉴权层时是注入/滥用面。生产靠 Coolify/Traefik + 域名收口；若直接暴露 `:9702` 到公网，先收紧 origin 白名单。
+> ✅ 已收紧（多用户鉴权一期）。`app/main.py` 现在用 `allow_origins=settings.cors_origin_list`
+> + `allow_credentials=True`（cookie 鉴权必需）。默认 `AIF_CORS_ORIGINS` 为空 = 仅同源
+> （内置 UI 够用）。若有跨域前端，配 `AIF_CORS_ORIGINS=https://a.com,https://b.com`。
+> **注意**：`allow_credentials=True` 时不能再用 `"*"`，否则浏览器拒绝带 cookie 的请求。
 
 ## 2. 两个 chat 端点并存
 
@@ -59,3 +62,22 @@
 ## 12. `agent/` 是占位包
 
 `agent/__init__.py` 只有一行注释「LLM Harness 下个里程碑填充」。对话 agent 实际实现在 `app/agent_chat.py`（用 PyPI 的 sparrow），`agent/` 当前未被任何代码使用。
+
+## 13. 多用户鉴权：安全要点与约束
+
+鉴权实现在 `app/auth.py`（用户存储 `auth/users.json`、bcrypt 哈希、itsdangerous 签名 cookie、`require_user`/`current_user_optional` 依赖）。几条必须知道的点：
+
+- **`AIF_SECRET_KEY` 生产必须显式配**：留空时启动会自动生成并落 `<data_dir>/auth/secret.key`。容器**重建**（卷不变）时该文件还在 → 没问题；但如果连卷一起重建、或多副本各自生成，会话签名密钥不一致 → 全员被登出。生产环境用 env 显式注入同一个 key。
+- **HTTPS 部署设 `AIF_COOKIE_SECURE=1`**：否则会话 cookie 不带 `Secure`，明文 HTTP 下可被嗅探。本地开发默认 0。
+- **会话无法主动吊销**：采用无状态签名 cookie，登出只是清浏览器 cookie；服务端不存 session，所以**改密码/踢人无法让已签发 token 立即失效**（只能等过期或换 `AIF_SECRET_KEY`，后者会踢所有人）。需要「登出即失效」再考虑改服务端 session。
+- **限流是单进程内存滑窗**：`/login`、`/register` 限 8 次/60s（按 IP + 邮箱）。多副本部署时每副本独立计数，整体阈值 = 单值 × 副本数；且重启清零。够挡暴力破解，不是分布式限流。
+- **`X-Forwarded-For` 信任**：限流取 XFF 第一跳作为客户端 IP。**前面必须有可信反代**（Coolify/Traefik）才准；直接裸暴露时 XFF 可伪造，限流可被绕过 IP 维度（邮箱维度仍有效）。
+- **防枚举/防时序**：登录对「邮箱不存在」和「密码错」返回**同一文案**（`邮箱或密码错误`），且邮箱不存在时也跑一次 dummy bcrypt 比对，消除时序差。注册对已存在邮箱返回 409 `该邮箱已注册`——这本身是一个枚举面，但注册场景下属可接受取舍。
+- **未做**：邮箱验证、找回密码、2FA（需求明确「不必」，留待后续分期，且依赖 SMTP 基建，当前无邮件服务配置）。
+
+## 14. 数据迁移只跑一次（`_legacy` 哨兵）
+
+`app/migrate.py` 的 `migrate_legacy_to_holding()` 启动时把老单用户产物搬到 `<data_dir>/users/_legacy/`，**靠 `_legacy/` 是否存在判断幂等**。首个注册账号（或 `AIF_ADMIN_EMAIL` 指定者）注册时 `inherit_legacy_if_eligible()` 把 `_legacy/` 改名成其 uid 目录。两个隐含约束：
+
+- 迁移**只在 `_legacy/` 不存在时跑**。手动删了 `_legacy/` 又有老数据残留，会再迁一次。
+- 若**没人**匹配 `AIF_ADMIN_EMAIL`，`_legacy/` 会一直留着不被继承（数据不丢，但「无主」）。不配 `AIF_ADMIN_EMAIL` 时由首个注册者继承，最稳。
