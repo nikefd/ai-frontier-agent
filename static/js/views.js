@@ -1,7 +1,6 @@
-// Secondary views: today's summary, deep-dive guides, source health.
+// Secondary views: today's summary, source health.
 import { $, $$, escapeHtml, fmtDate, catBadge } from './util.js';
 import { api, renderMermaidInside } from './api.js';
-import { toggleDive } from './feed.js';
 
 // ── Today's summary ──────────────────────────────────────────────────
 export async function loadSummary() {
@@ -41,61 +40,6 @@ export async function regenSummary() {
   } catch (e) {
     body.innerHTML = '<div class="muted-card">❌ ' + escapeHtml(e.message) + '</div>';
   }
-}
-
-// ── Deep-dive guides ─────────────────────────────────────────────────
-export async function loadGuides() {
-  const listEl = $('#guides-list');
-  try {
-    const dived = await api('GET', '/api/ai-news/articles?limit=100');
-    const deepItems = (dived.items || []).filter(a => a.deep_dive_status === 'ok');
-    const deepHtml = deepItems.length
-      ? `<div class="group" style="margin:4px 0 8px">🧠 已深度解读的文章 (${deepItems.length})</div>`
-        + deepItems.map(a => `<div class="article-item" data-dive-aid="${escapeHtml(a.id)}" style="cursor:pointer">
-            <div class="article-main">
-              <div class="article-title">${escapeHtml(a.title_zh || a.title)}</div>
-              <div class="article-meta">${escapeHtml(a.source || '')} · ${fmtDate(a.date)}</div>
-            </div>
-            <span class="src-link">查看解读 ↗</span>
-          </div>`).join('')
-      : '';
-
-    const r = await api('GET', '/api/ai-news/guides');
-    const guideHtml = r.length
-      ? `<div class="group" style="margin:14px 0 8px">📚 主题指南 (${r.length})</div>`
-        + r.map(g => `<div class="article-item"><div class="article-main"><div class="article-title">${escapeHtml(g.topic)}</div><div class="article-meta">${escapeHtml(g.depth || '')} · ${fmtDate(g.generated_at)}</div></div></div>`).join('')
-      : '';
-
-    $('#cnt-guides').textContent = deepItems.length + (r.length || 0);
-    listEl.innerHTML = (deepHtml + guideHtml)
-      || '<div class="muted-card">还没有深度解读或指南。去文章流点「深度解读」，或在左上生成一篇指南。</div>';
-
-    $$('#guides-list [data-dive-aid]').forEach(el => {
-      el.addEventListener('click', () => {
-        const aid = el.dataset.diveAid;
-        // jump to the feed tab by clicking its nav button (avoids a circular import)
-        $('.side-nav button[data-view="feed"]')?.click();
-        setTimeout(() => {
-          const card = $(`.article-card[data-aid="${aid}"]`);
-          if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); toggleDive(aid, card); }
-        }, 300);
-      });
-    });
-  } catch (e) {
-    listEl.innerHTML = '<div class="muted-card">❌ ' + escapeHtml(e.message) + '</div>';
-  }
-}
-
-export async function genGuide() {
-  const topic = $('#guide-topic').value.trim();
-  const depth = $('#guide-depth').value;
-  if (!topic) return alert('请输入主题');
-  const s = $('#guide-status'); s.textContent = '⏳ 生成中…';
-  try {
-    await api('POST', '/api/ai-news/guides/generate', { topic, depth });
-    s.textContent = '✓ 已生成';
-    loadGuides();
-  } catch (e) { s.textContent = '❌ ' + e.message; }
 }
 
 // ── Source health ────────────────────────────────────────────────────

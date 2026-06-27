@@ -3,21 +3,13 @@ import { $, $$ } from './util.js';
 import { api } from './api.js';
 import { state } from './state.js';
 import { refreshList } from './feed.js';
-import { loadSummary, regenSummary, loadGuides, genGuide, loadSources } from './views.js';
+import { regenSummary } from './views.js';
+import { manualNewDive } from './dives.js';
+import { switchView } from './nav.js';
 // Chat is provided by the bundled sparrow-chat.js component (mounted in index.html).
 
 if (window.mermaid) {
   window.mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
-}
-
-function switchView(v) {
-  state.view = v;
-  $$('.side-nav button[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === v));
-  $$('.view-pane').forEach(p => p.classList.toggle('hidden', p.id !== 'view-' + v));
-  if (v === 'feed') refreshList();
-  if (v === 'summary') loadSummary();
-  if (v === 'guides') loadGuides();
-  if (v === 'sources') loadSources();
 }
 
 // ── Nav + filters ────────────────────────────────────────────────────
@@ -78,7 +70,7 @@ $('#btn-translate').addEventListener('click', async () => {
 });
 
 $('#btn-regen-summary').addEventListener('click', regenSummary);
-$('#btn-gen-guide').addEventListener('click', genGuide);
+$('#btn-new-dive').addEventListener('click', manualNewDive);
 
 // ── Boot ─────────────────────────────────────────────────────────────
 refreshList();

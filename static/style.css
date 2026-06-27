@@ -1611,50 +1611,47 @@ body[data-agent="ai-news"] .article-item.is-active {
   color: var(--good);
 }
 
-/* Inline deep-dive pane */
-.card-dive {
-  margin-top: 14px;
-  padding: 14px 16px 4px;
-  background: var(--bg-elev-2);
-  border-radius: var(--r-md);
+/* Deep-dive library (independent reading view) */
+.dive-row {
   border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  margin-bottom: 10px;
+  background: var(--bg-elev);
+  overflow: hidden;
 }
-.card-dive.hidden { display: none; }
-.card-dive .dive-head {
-  font-size: 12px;
+.dive-row-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.dive-row-main { flex: 1; min-width: 0; }
+.dive-row-title {
+  font-size: 15px;
   font-weight: 600;
-  color: var(--accent-strong);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.card-dive .dive-body {
-  font-size: 13.5px;
-  line-height: 1.65;
   color: var(--text);
+  line-height: 1.4;
 }
-.card-dive .dive-body h1,
-.card-dive .dive-body h2,
-.card-dive .dive-body h3 {
-  font-size: 14.5px;
-  margin: 16px 0 6px;
+.dive-row-meta {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
-.card-dive .dive-body p { margin: 8px 0; }
-.card-dive .dive-body code {
-  background: var(--bg-elev-3);
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-size: 12.5px;
+.dive-row-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+.dive-row-body {
+  padding: 4px 24px 20px;
+  border-top: 1px solid var(--border);
+  max-width: 760px;
+  margin: 0 auto;
+  font-size: 15px;
+  line-height: 1.75;
 }
-.card-dive .dive-body pre {
-  background: var(--bg-elev-3);
-  padding: 10px;
-  border-radius: var(--r-sm);
-  overflow-x: auto;
-}
-.card-dive .dive-body ul,
-.card-dive .dive-body ol { padding-left: 22px; }
-.card-dive .muted-card {
+.dive-row-body.hidden { display: none; }
+.dive-row-body .muted-card {
   background: transparent;
   border: 1px dashed var(--border);
   padding: 16px;

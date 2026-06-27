@@ -1,7 +1,9 @@
-// Article feed: list, render, deep-dive expansion, pin, pagination.
+// Article feed: list, render, pin, pagination. Deep-dives are read/managed in
+// the separate "深度解读" view (dives.js); the feed only triggers / links to them.
 import { $, escapeHtml, fmtDate, catBadge } from './util.js';
-import { api, renderMermaidInside } from './api.js';
+import { api } from './api.js';
 import { state } from './state.js';
+import { jumpToDive } from './dives.js';
 
 export async function refreshList() {
   const params = new URLSearchParams();
@@ -40,7 +42,7 @@ function articleCardHtml(a) {
     .replace(/\s+/g, ' ')
     .trim();
   const ddStatus = a.deep_dive_status;
-  const ddBtnLabel = ddStatus === 'ok' ? '🧠 查看深度解读'
+  const ddBtnLabel = ddStatus === 'ok' ? '🧠 查看解读 →'
     : ddStatus === 'generating' ? '⏳ 生成中…'
     : ddStatus === 'failed' ? '⚠️ 重试解读'
     : '🧠 深度解读';
@@ -82,7 +84,6 @@ function articleCardHtml(a) {
         ${transAction}
         <button class="btn-card ${ddActive ? 'success' : 'accent'} ${ddBusy}" data-action="dive">${ddBtnLabel}</button>
       </div>
-      <div class="card-dive hidden" data-dive-pane></div>
     </article>`;
 }
 
@@ -96,7 +97,11 @@ export function renderList() {
 
   listEl.querySelectorAll('.article-card').forEach(el => {
     const aid = el.dataset.aid;
-    el.querySelector('[data-action="dive"]')?.addEventListener('click', () => toggleDive(aid, el));
+    el.querySelector('[data-action="dive"]')?.addEventListener('click', () => {
+      const a = state.items.find(x => x.id === aid);
+      const generate = a?.deep_dive_status !== 'ok';
+      jumpToDive(aid, { generate });
+    });
     el.querySelector('[data-action="pin"]')?.addEventListener('click', () => togglePin(aid));
     el.querySelector('[data-action="copy"]')?.addEventListener('click', (e) => {
       e.preventDefault();
@@ -120,60 +125,6 @@ export function renderList() {
       }
     });
   });
-}
-
-export async function toggleDive(aid, cardEl) {
-  const pane = cardEl.querySelector('[data-dive-pane]');
-  if (!pane) return;
-  const a = state.items.find(x => x.id === aid);
-  if (!a) return;
-
-  if (!pane.classList.contains('hidden') && pane.dataset.loaded === 'true' && a.deep_dive_status === 'ok') {
-    pane.classList.add('hidden');
-    return;
-  }
-  pane.classList.remove('hidden');
-
-  if (a.deep_dive_status === 'ok') {
-    if (pane.dataset.loaded !== 'true') {
-      pane.innerHTML = '<div class="muted-card">⏳ 加载中…</div>';
-      try {
-        const r = await api('GET', `/api/ai-news/articles/${aid}/deep-dive`);
-        pane.innerHTML = `<div class="dive-head">🧠 深度解读</div><div class="dive-body">${marked.parse(r.body || '')}</div>`;
-        await renderMermaidInside(pane);
-        pane.dataset.loaded = 'true';
-      } catch (e) {
-        pane.innerHTML = '<div class="muted-card">❌ 加载失败：' + escapeHtml(e.message) + '</div>';
-      }
-    }
-    return;
-  }
-
-  // generate fresh
-  a.deep_dive_status = 'generating';
-  renderList();
-  const setPane = (html) => {
-    const card = $('#article-list').querySelector(`.article-card[data-aid="${CSS.escape(aid)}"]`);
-    const p = card?.querySelector('[data-dive-pane]');
-    if (p) { p.classList.remove('hidden'); p.innerHTML = html; }
-    return { card, p };
-  };
-  setPane('<div class="muted-card">⏳ 正在生成深度解读（约 20–30s）…</div>');
-  try {
-    const r = await api('POST', `/api/ai-news/articles/${aid}/deep-dive`);
-    a.deep_dive_status = 'ok';
-    renderList();
-    const { card, p } = setPane(`<div class="dive-head">🧠 深度解读</div><div class="dive-body">${marked.parse(r.body || '')}</div>`);
-    if (p) {
-      p.dataset.loaded = 'true';
-      await renderMermaidInside(p);
-      card?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  } catch (e) {
-    a.deep_dive_status = 'failed';
-    renderList();
-    setPane('<div class="muted-card">❌ 生成失败：' + escapeHtml(e.message) + '</div>');
-  }
 }
 
 export function renderPageNav() {
