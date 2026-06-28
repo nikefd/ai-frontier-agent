@@ -114,25 +114,10 @@ def health() -> dict:
 
 # ── Static frontend (Vite build output) ─────────────────────────────
 # Vite builds frontend/ → static/dist/ with content-hashed asset filenames.
+# The agent chat component (sparrow-chat.js) ships via frontend/public/, served
+# verbatim at /ui/sparrow-chat.js — no runtime asset sync needed.
 STATIC_DIR = Path(__file__).parent.parent / "static" / "dist"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def _sync_sparrow_assets() -> None:
-    """Copy the bundled sparrow-chat.js into the build dir so the page can
-    serve it from /ui/sparrow-chat.js. Done at startup so a sparrow upgrade
-    auto-propagates. It is referenced by a plain <script> (not a module import),
-    so Vite never bundles it — it lives alongside the build output at runtime."""
-    try:
-        import shutil
-        from sparrow.web import asset_path
-        STATIC_DIR.mkdir(parents=True, exist_ok=True)
-        shutil.copy(asset_path("sparrow-chat.js"), STATIC_DIR / "sparrow-chat.js")
-    except Exception as e:  # noqa: broad-except
-        logging.getLogger("aif").warning("could not sync sparrow-chat.js: %s", e)
-
-
-_sync_sparrow_assets()
 
 
 @app.get("/")

@@ -13,7 +13,7 @@ import logging
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
-from sparrow import AgentConfig, Harness, Memory, configure as llm_configure
+from .agent_runtime import AgentConfig, Harness, Memory, configure as llm_configure
 
 from .agent_tools import build_tools
 from .auth import current_user_optional, require_user

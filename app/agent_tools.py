@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import secrets
 
-from sparrow import tool
+from .agent_runtime import tool
 
 from .routers import ai_news as news
 from .storage import read_json, write_json_atomic
