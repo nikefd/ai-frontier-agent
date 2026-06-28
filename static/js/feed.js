@@ -87,6 +87,7 @@ function articleCardHtml(a) {
         ${originBtn}
         ${copyBtn}
         ${transAction}
+        <button class="btn-card ghost" data-action="srs" title="加入间隔复习库">🗂️ 加入复习</button>
         <button class="btn-card ${ddActive ? 'success' : 'accent'} ${ddBusy}" data-action="dive">${ddBtnLabel}</button>
       </div>
     </article>`;
@@ -108,6 +109,17 @@ export function renderList() {
       jumpToDive(aid, { generate });
     });
     el.querySelector('[data-action="pin"]')?.addEventListener('click', () => togglePin(aid));
+    el.querySelector('[data-action="srs"]')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget, orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ 加入中…';
+      try {
+        await api('POST', '/api/ai-news/review/cards', { source_type: 'article', source_id: aid });
+        btn.textContent = '✓ 已加入'; btn.classList.add('success');
+      } catch (err) {
+        btn.textContent = err.status === 409 ? '✓ 已在库' : '❌ 失败';
+        if (err.status !== 409) alert('加入复习失败：' + err.message);
+        setTimeout(() => { btn.disabled = false; btn.textContent = orig; btn.classList.remove('success'); }, 1600);
+      }
+    });
     el.querySelector('[data-action="copy"]')?.addEventListener('click', (e) => {
       e.preventDefault();
       const a = state.items.find(x => x.id === aid);

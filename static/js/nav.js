@@ -5,6 +5,7 @@ import { state } from './state.js';
 import { refreshList } from './feed.js';
 import { loadSummary, loadSources, loadProfile, loadForYou } from './views.js';
 import { loadDives } from './dives.js';
+import { loadReview } from './review.js';
 
 export function switchView(v) {
   state.view = v;
@@ -14,6 +15,7 @@ export function switchView(v) {
   if (v === 'foryou') loadForYou();
   if (v === 'summary') loadSummary();
   if (v === 'dives') loadDives();
+  if (v === 'review') loadReview();
   if (v === 'profile') loadProfile();
   if (v === 'sources') loadSources();
 }

@@ -1743,4 +1743,28 @@ body:not(.is-authed) .sp-dock { display: none !important; }
 .fy-title a:hover { color: var(--accent-strong); text-decoration: underline; }
 .fy-reasons { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 
+/* ── Spaced-repetition review cards ───────────────────────────────── */
+.srs-card {
+  padding: 24px;
+  text-align: center;
+  background: var(--bg-elev-2, #f8fafc);
+  border-radius: var(--r-md, 10px);
+}
+.srs-front { font-size: 18px; font-weight: 600; line-height: 1.6; }
+.srs-back { font-size: 15px; line-height: 1.7; color: var(--text-soft, #475569); }
+.srs-src { display: inline-block; margin-top: 8px; font-size: 12px; }
+.srs-controls { display: flex; justify-content: center; gap: 8px; margin-top: 18px; }
+.srs-progress { margin-top: 12px; font-size: 12px; }
+.srs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+.srs-row:last-child { border-bottom: none; }
+.srs-row-main { flex: 1; min-width: 0; }
+.srs-row-front { font-size: 14px; font-weight: 500; }
+.srs-row-meta { font-size: 12px; margin-top: 2px; }
+
 
