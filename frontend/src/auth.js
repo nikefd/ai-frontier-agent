@@ -18,6 +18,24 @@ export async function initAuth() {
   } catch (e) { currentUser = null; }
   renderAuthBar();
   applyGating();
+  _handleVerifyResult();
+}
+
+// Show a small toast when arriving from an email verification link, then clean
+// the query string so a refresh doesn't re-show it.
+function _handleVerifyResult() {
+  const params = new URLSearchParams(window.location.search);
+  const v = params.get('verify');
+  if (!v) return;
+  const msg = v === 'ok' ? '✅ 邮箱验证成功' : '❌ 验证链接无效或已过期';
+  const t = document.createElement('div');
+  t.className = 'verify-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+  params.delete('verify');
+  const qs = params.toString();
+  window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
 }
 
 // ── header bar (top-right) ─────────────────────────────────────────────
@@ -25,15 +43,31 @@ function renderAuthBar() {
   const slot = $('#auth-slot');
   if (!slot) return;
   if (currentUser) {
+    const unverified = !currentUser.email_verified
+      ? `<button class="ghost sm auth-unverified" id="btn-resend" title="邮箱未验证，点击重新发送验证邮件">📧 未验证</button>`
+      : '';
     slot.innerHTML = `
+      ${unverified}
       <span class="auth-user" title="${escapeAttr(currentUser.email)}">
         ${currentUser.role === 'admin' ? '👑 ' : '👤 '}${escapeAttr(currentUser.email)}
       </span>
       <button class="ghost sm" id="btn-logout">登出</button>`;
     $('#btn-logout').addEventListener('click', doLogout);
+    $('#btn-resend')?.addEventListener('click', resendVerification);
   } else {
     slot.innerHTML = `<button class="primary sm" id="btn-login">登录 / 注册</button>`;
     $('#btn-login').addEventListener('click', () => openAuthModal());
+  }
+}
+
+async function resendVerification(e) {
+  const btn = e.currentTarget; btn.disabled = true; const orig = btn.textContent; btn.textContent = '发送中…';
+  try {
+    const r = await api('POST', '/api/auth/resend-verification');
+    btn.textContent = r.already_verified ? '✓ 已验证' : '✓ 已发送，查收邮箱';
+  } catch (err) {
+    btn.textContent = '发送失败';
+    setTimeout(() => { btn.disabled = false; btn.textContent = orig; }, 2000);
   }
 }
 

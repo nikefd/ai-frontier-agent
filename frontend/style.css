@@ -1794,4 +1794,23 @@ body.is-admin .admin-only { display: flex; }
   font-size: 13px;
 }
 
+/* ── Email verification UI ─────────────────────────────────────────── */
+.auth-unverified {
+  color: var(--danger, #e5534b) !important;
+  border-color: var(--danger, #e5534b) !important;
+}
+.verify-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: var(--text, #1e293b);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: var(--r-md, 10px);
+  font-size: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .2);
+}
+
 
