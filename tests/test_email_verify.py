@@ -34,6 +34,16 @@ def test_session_token_not_valid_as_verify_token():
     assert a.read_verification_token(session) is None
 
 
+def test_reset_token_roundtrip_and_isolation():
+    a = _fresh_auth()
+    tok = a.make_reset_token("u_abc")
+    assert a.read_reset_token(tok) == "u_abc"
+    # The three token kinds (session / verify / reset) must not be interchangeable.
+    assert a.read_reset_token(a.issue_token("u_abc")) is None
+    assert a.read_reset_token(a.make_verification_token("u_abc")) is None
+    assert a.read_verification_token(a.make_reset_token("u_abc")) is None
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

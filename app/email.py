@@ -68,3 +68,25 @@ def send_verification_email(to: str, link: str) -> bool:
 </div>"""
     text = f"验证你的邮箱：{link}\n链接 24 小时内有效。"
     return send_email(to, subject, html, text)
+
+
+def send_password_reset_email(to: str, link: str) -> bool:
+    subject = "重置密码 · AI 前沿 Agent"
+    html = f"""\
+<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px">
+  <h2 style="margin:0 0 12px">重置你的密码</h2>
+  <p style="color:#475569;line-height:1.6">
+    我们收到了重置 <b>AI 前沿 Agent</b> 账号密码的请求。点击下面的按钮设置新密码：
+  </p>
+  <p style="margin:24px 0">
+    <a href="{link}" style="background:#7c3aed;color:#fff;text-decoration:none;
+       padding:10px 20px;border-radius:8px;display:inline-block">设置新密码</a>
+  </p>
+  <p style="color:#94a3b8;font-size:13px;line-height:1.6">
+    按钮无法点击？复制下面的链接到浏览器打开：<br>
+    <span style="word-break:break-all">{link}</span><br><br>
+    链接 1 小时内有效。<b>如果不是你本人操作，忽略此邮件即可</b>，你的密码不会改变。
+  </p>
+</div>"""
+    text = f"重置密码：{link}\n链接 1 小时内有效。如果不是你本人操作，忽略此邮件即可。"
+    return send_email(to, subject, html, text)

@@ -26,7 +26,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
-from .models import LoginRequest, RegisterRequest, UserPublic, UserRecord
+from .models import (
+    ChangePasswordRequest,
+    ForgotPasswordRequest,
+    LoginRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
+    UserPublic,
+    UserRecord,
+)
 from .settings import settings
 from .storage import read_json, write_json_atomic
 
@@ -93,6 +101,32 @@ _serializer = URLSafeTimedSerializer(_get_secret(), salt=_SESSION_SALT)
 # Separate salt so a session cookie can't be replayed as a verify token (or vice versa).
 _verify_serializer = URLSafeTimedSerializer(_get_secret(), salt="aif-email-verify")
 _VERIFY_MAX_AGE = 24 * 3600  # verification links valid 24h
+# Yet another salt for password-reset tokens — shorter-lived (more sensitive).
+_reset_serializer = URLSafeTimedSerializer(_get_secret(), salt="aif-pw-reset")
+_RESET_MAX_AGE = 3600  # reset links valid 1h
+
+
+def make_reset_token(uid: str) -> str:
+    return _reset_serializer.dumps({"uid": uid})
+
+
+def read_reset_token(token: str) -> str | None:
+    try:
+        data = _reset_serializer.loads(token, max_age=_RESET_MAX_AGE)
+    except (BadSignature, SignatureExpired):
+        return None
+    return data.get("uid") if isinstance(data, dict) else None
+
+
+def set_password(uid: str, new_password: str) -> bool:
+    """Replace a user's password hash. Returns False if the user is gone."""
+    users = load_users()
+    for u in users:
+        if u.get("id") == uid:
+            u["password_hash"] = hash_password(new_password)
+            _save_users(users)
+            return True
+    return False
 
 
 def make_verification_token(uid: str) -> str:
@@ -255,14 +289,19 @@ def count_admins() -> int:
 
 
 # ── endpoints ────────────────────────────────────────────────────────
-def _validate_credentials(email: str, password: str) -> tuple[str, str]:
-    email = (email or "").strip().lower()
-    if not _EMAIL_RE.match(email):
-        raise HTTPException(400, "邮箱格式不正确")
+def _validate_password(password: str) -> str:
     if len(password or "") < 8:
         raise HTTPException(400, "密码至少 8 位")
     if len(password) > 128:
         raise HTTPException(400, "密码过长")
+    return password
+
+
+def _validate_credentials(email: str, password: str) -> tuple[str, str]:
+    email = (email or "").strip().lower()
+    if not _EMAIL_RE.match(email):
+        raise HTTPException(400, "邮箱格式不正确")
+    _validate_password(password)
     return email, password
 
 
@@ -348,3 +387,57 @@ def resend_verification(request: Request, user: UserPublic = Depends(require_use
     if rec:
         _send_verification(rec)
     return {"ok": True}
+
+
+@router.post("/change-password")
+def change_password(req: ChangePasswordRequest, response: Response,
+                    user: UserPublic = Depends(require_user)) -> dict:
+    """Change the logged-in user's password (requires the current password)."""
+    rec = find_by_id(user.id)
+    if not rec or not verify_password(req.old_password or "", rec["password_hash"]):
+        raise HTTPException(400, "当前密码不正确")
+    _validate_password(req.new_password)
+    set_password(user.id, req.new_password)
+    # Re-issue the session cookie (keeps this session valid after the change).
+    _set_session_cookie(response, user.id)
+    return {"ok": True}
+
+
+def _send_password_reset(rec: dict) -> None:
+    base = settings.public_base_url.rstrip("/")
+    if not base:
+        log.warning("AIF_PUBLIC_BASE_URL not set — cannot build reset link")
+        return
+    token = make_reset_token(rec["id"])
+    link = f"{base}/ui/?reset={token}"
+    try:
+        from .email import send_password_reset_email
+        send_password_reset_email(rec["email"], link)
+    except Exception as e:  # noqa: broad-except
+        log.warning("password reset email failed for %s: %s", rec["email"], e)
+
+
+@router.post("/forgot-password")
+def forgot_password(req: ForgotPasswordRequest, request: Request) -> dict:
+    """Email a password-reset link. Always returns ok (no account enumeration)."""
+    email = (req.email or "").strip().lower()
+    _rate_limit(f"forgot-ip:{_client_ip(request)}")
+    _rate_limit(f"forgot-email:{email}")
+    rec = find_by_email(email)
+    if rec:
+        _send_password_reset(rec)
+    # Uniform response whether or not the email exists.
+    return {"ok": True}
+
+
+@router.post("/reset-password")
+def reset_password(req: ResetPasswordRequest, response: Response) -> dict:
+    """Set a new password from a valid reset token, then log the user in."""
+    uid = read_reset_token(req.token)
+    if not uid or not find_by_id(uid):
+        raise HTTPException(400, "重置链接无效或已过期")
+    _validate_password(req.new_password)
+    set_password(uid, req.new_password)
+    _set_session_cookie(response, uid)
+    rec = find_by_id(uid)
+    return {"ok": True, "user": _to_public(rec).model_dump()}
