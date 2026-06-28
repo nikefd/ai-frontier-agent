@@ -76,6 +76,11 @@ app.include_router(profile_router.router)
 from .routers import feed_personal
 app.include_router(feed_personal.router)
 
+# Knowledge cards + spaced-repetition review (SM-2). Per-user card store; zero
+# LLM cost. Split into its own module per the code-quality rules.
+from .routers import review
+app.include_router(review.router)
+
 # Auth (register / login / logout / me + session dependencies).
 from .auth import router as auth_router
 app.include_router(auth_router)
