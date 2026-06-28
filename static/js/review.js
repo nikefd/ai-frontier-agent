@@ -115,6 +115,7 @@ export async function addManualCard() {
   try {
     await api('POST', '/api/ai-news/review/cards', { front, back, source_type: 'manual' });
     $('#srs-new-front').value = ''; $('#srs-new-back').value = '';
+    $('#srs-new-form').classList.add('hidden');   // collapse after adding
     await renderManage();
     await renderDue();
   } catch (e) { alert('新建失败：' + e.message); }

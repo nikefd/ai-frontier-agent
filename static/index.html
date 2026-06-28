@@ -143,8 +143,11 @@
           <div id="review-due"></div>
         </div>
         <div class="card mt-12">
-          <div class="card-head"><h3>卡片管理</h3></div>
-          <div class="row">
+          <div class="card-head">
+            <h3>卡片管理</h3>
+            <button class="ghost sm" id="btn-toggle-newcard">✍️ 手动新建</button>
+          </div>
+          <div class="row hidden" id="srs-new-form">
             <label class="field" style="flex:1">
               <span>正面 · 问题</span>
               <input id="srs-new-front" placeholder="例：什么是 RAG？" />
@@ -153,7 +156,7 @@
               <span>背面 · 答案要点</span>
               <input id="srs-new-back" placeholder="检索增强生成：先检索再让 LLM 基于结果回答" />
             </label>
-            <button class="primary fixed" id="btn-new-card" style="align-self:flex-end">＋ 新建卡片</button>
+            <button class="primary fixed" id="btn-new-card" style="align-self:flex-end">＋ 添加</button>
           </div>
           <hr class="hr">
           <div id="review-list"></div>

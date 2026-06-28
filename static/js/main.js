@@ -83,6 +83,11 @@ $('#btn-regen-summary').addEventListener('click', regenSummary);
 $('#btn-regen-profile').addEventListener('click', regenProfile);
 $('#btn-new-dive').addEventListener('click', manualNewDive);
 $('#btn-new-card').addEventListener('click', addManualCard);
+$('#btn-toggle-newcard').addEventListener('click', () => {
+  const form = $('#srs-new-form');
+  form.classList.toggle('hidden');
+  if (!form.classList.contains('hidden')) $('#srs-new-front').focus();
+});
 
 // ── Boot ─────────────────────────────────────────────────────────────
 initAuth();
