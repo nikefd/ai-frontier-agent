@@ -8,13 +8,59 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head>
-<body data-agent="ai-news">
+<body data-agent="ai-news" class="landing-active">
 <header class="top">
   <h1 id="brand" title="返回首页"><span class="dot"></span> AI 前沿 Agent</h1>
   <div class="auth-slot" id="auth-slot"></div>
 </header>
 
 <main class="fluid">
+  <!-- ───────── Landing / Home (bilingual hero) ───────── -->
+  <section id="view-home">
+    <div class="hero">
+      <span class="hero-badge">🛰️ AI Frontier Agent · 每日更新 Daily</span>
+      <h1 class="hero-title">
+        跟住 AI 前沿，<span class="grad">一个页面就够</span>
+        <small>Stay on the AI frontier — all in one place</small>
+      </h1>
+      <p class="hero-lede">
+        每天自动抓取 80+ 精选 AI 源，自动中英双语、生成速报与深度解读，
+        还有一个能查资讯、帮你追踪主题的对话式智能体。
+        <br>
+        <span class="en">An AI companion that crawls 80+ curated sources daily,
+        translates them bilingually, writes briefings &amp; deep-dives,
+        and chats to track the topics you care about.</span>
+      </p>
+      <div class="hero-cta">
+        <button class="primary lg" id="btn-enter">进入信息站 · Enter →</button>
+        <span class="hero-cta-sub">无需安装 · 打开即用 / No setup, just open</span>
+      </div>
+
+      <div class="hero-features">
+        <div class="hf-card">
+          <span class="hf-ico">🌐</span>
+          <b>双语资讯流<small>Bilingual feed</small></b>
+          <p>官方实验室、专家博客、X 大 V、论文、社区周刊，自动中英对照。</p>
+        </div>
+        <div class="hf-card">
+          <span class="hf-ico">🧠</span>
+          <b>深度解读<small>Deep dives</small></b>
+          <p>对任意一篇或一个主题，一键生成带图的深度解读。</p>
+        </div>
+        <div class="hf-card">
+          <span class="hf-ico">💬</span>
+          <b>对话智能体<small>Chat agent</small></b>
+          <p>问它「最近的 Agent 进展」，它会查资讯、帮你建追踪主题。</p>
+        </div>
+        <div class="hf-card">
+          <span class="hf-ico">🗂️</span>
+          <b>记得住<small>Spaced review</small></b>
+          <p>知识卡 + 间隔重复 + 每周复盘，把读过的变成记得住的。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <div class="page-head">
     <div>
       <h2>🛰️ AI 前沿信息站</h2>
@@ -222,9 +268,9 @@
   </div>
 </main>
 
-<!-- ───────── Agent chat (sparrow-chat official component) ───────── -->
-<!-- Runtime-synced by the backend from the sparrow package; absolute path keeps
-     Vite from bundling it (it doesn't exist at build time). -->
+<!-- ───────── Agent chat (agent_runtime chat component) ───────── -->
+<!-- A plain IIFE script (window.SparrowChat), served verbatim from
+     frontend/public/. Not an ES module, so it's not bundled. -->
 <script src="/ui/sparrow-chat.js"></script>
 <script>
   window.__sparrowChat = SparrowChat.mount({

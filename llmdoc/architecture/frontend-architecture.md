@@ -41,16 +41,19 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 
 ## 3. 视图与状态
 
-四个视图（左侧 side-nav 切换），都在同一个 `index.html` 里用 `.view-pane` + `.hidden` 显隐：
+多个视图（左侧 side-nav 切换），都在同一个 `index.html` 里用 `.view-pane` + `.hidden` 显隐：
 
 | 视图 | DOM id | 数据来源 |
 |---|---|---|
+| 落地首页 | `#view-home` | 无（静态中英双语 hero + 功能介绍） |
 | 文章流 | `#view-feed` | `GET /api/ai-news/articles`（分页） |
 | 今日速报 | `#view-summary` | `GET/POST /api/ai-news/summary/today` |
 | 深度解读 | `#view-dives` | `GET /api/ai-news/deep-dives`（独立内容库，直接扫 `deep-dives/*.json`） |
 | 数据源 | `#view-sources` | `GET /api/ai-news/sources` |
 
 `state.js` 的单例对象在模块间共享。文章流的筛选（分类 `cat` / all-pinned-translated 的 `filter` / 搜索 `q`）改变 `state` 后调 `refreshList()` 重新拉数据；分页改 `state.offset`。`translated` 筛选是**前端二次过滤**（后端不支持该参数），所以它只过滤当前页。
+
+落地首页 `#view-home` 不走 side-nav，而是用 `<body>` 上的 `landing-active` 类控制：首次加载带该类（隐藏应用主体、只显首页），点「进入」按钮（`main.js`）移除该类并 `switchView('feed')`，点顶栏标题 brand 则重新加回该类回到首页。
 
 ## 4. 关键交互
 
