@@ -89,6 +89,10 @@ app.include_router(admin.router)
 from .routers import reflection
 app.include_router(reflection.router)
 
+# Personalized learning paths (staged roadmap; orchestration above guides).
+from .routers import learning
+app.include_router(learning.router)
+
 # Auth (register / login / logout / me + session dependencies).
 from .auth import router as auth_router
 app.include_router(auth_router)

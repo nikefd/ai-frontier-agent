@@ -77,6 +77,9 @@ def review_cards_file(uid: str) -> Path:
 def reflection_file(uid: str) -> Path:
     return user_dir(uid) / "reflection.json"
 
+def learning_paths_dir(uid: str) -> Path:
+    return user_dir(uid) / "learning-paths"
+
 _ARTICLE_LIMIT = 400    # rolling history cap (raised: ~83 feeds now)
 _DAILY_FETCH_CAP = 150  # per-fetch global ceiling (per-feed quota fills first)
 _PER_FEED_CAP = 4       # max items kept per feed per fetch (ensures source diversity)
