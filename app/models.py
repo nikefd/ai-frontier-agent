@@ -66,6 +66,7 @@ class UserRecord(BaseModel):
     email: str
     password_hash: str
     role: Literal["admin", "user"] = "user"
+    email_verified: bool = False
     created_at: str | None = None
     last_login_at: str | None = None
 
@@ -75,6 +76,7 @@ class UserPublic(BaseModel):
     id: str
     email: str
     role: Literal["admin", "user"] = "user"
+    email_verified: bool = False
 
 
 class RegisterRequest(BaseModel):

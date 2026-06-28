@@ -63,6 +63,18 @@ class Settings(BaseSettings):
     # only (no CORS headers needed for the bundled UI).
     cors_origins: str = ""
 
+    # ── Email (SMTP) for verification links ────────────────────────────
+    # All optional: when smtp_host/user/password are unset, email sending is a
+    # no-op (registration still works, just no verification mail is sent).
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""            # From address; defaults to smtp_user when empty
+    # Public base URL used to build verification links (e.g. https://ai.example.com).
+    # Empty falls back to same-origin handling on the frontend.
+    public_base_url: str = ""
+
     def model_post_init(self, __ctx) -> None:  # pydantic v2 hook
         # Allow the conventional DeepSeek env var as a fallback so the same key
         # configured for finance-agent / workers also lights up the chat agent.
@@ -71,6 +83,8 @@ class Settings(BaseSettings):
         self.data_dir.mkdir(parents=True, exist_ok=True)
         if self.admin_email:
             self.admin_email = self.admin_email.strip().lower()
+        if not self.smtp_from:
+            self.smtp_from = self.smtp_user
 
     @property
     def cors_origin_list(self) -> list[str]:

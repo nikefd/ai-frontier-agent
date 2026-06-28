@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from .models import LoginRequest, RegisterRequest, UserPublic, UserRecord
@@ -89,6 +90,35 @@ def _get_secret() -> str:
 
 
 _serializer = URLSafeTimedSerializer(_get_secret(), salt=_SESSION_SALT)
+# Separate salt so a session cookie can't be replayed as a verify token (or vice versa).
+_verify_serializer = URLSafeTimedSerializer(_get_secret(), salt="aif-email-verify")
+_VERIFY_MAX_AGE = 24 * 3600  # verification links valid 24h
+
+
+def make_verification_token(uid: str) -> str:
+    return _verify_serializer.dumps({"uid": uid})
+
+
+def read_verification_token(token: str) -> str | None:
+    try:
+        data = _verify_serializer.loads(token, max_age=_VERIFY_MAX_AGE)
+    except (BadSignature, SignatureExpired):
+        return None
+    return data.get("uid") if isinstance(data, dict) else None
+
+
+def mark_email_verified(uid: str) -> bool:
+    users = load_users()
+    changed = False
+    for u in users:
+        if u.get("id") == uid:
+            if not u.get("email_verified"):
+                u["email_verified"] = True
+                changed = True
+            break
+    if changed:
+        _save_users(users)
+    return changed
 
 
 # ── password hashing ─────────────────────────────────────────────────
@@ -137,6 +167,9 @@ def create_user(email: str, password: str) -> UserRecord:
         email=email,
         password_hash=hash_password(password),
         role=role,
+        # First account (the bootstrap admin) is trusted as verified, so the
+        # operator isn't locked behind a verification mail before SMTP is set up.
+        email_verified=(role == "admin"),
         created_at=_now_iso(),
         last_login_at=_now_iso(),
     )
@@ -182,7 +215,12 @@ def _set_session_cookie(response: Response, uid: str) -> None:
 
 
 def _to_public(rec: dict) -> UserPublic:
-    return UserPublic(id=rec["id"], email=rec["email"], role=rec.get("role", "user"))
+    return UserPublic(
+        id=rec["id"],
+        email=rec["email"],
+        role=rec.get("role", "user"),
+        email_verified=bool(rec.get("email_verified", False)),
+    )
 
 
 # ── FastAPI dependencies ─────────────────────────────────────────────
@@ -228,6 +266,21 @@ def _validate_credentials(email: str, password: str) -> tuple[str, str]:
     return email, password
 
 
+def _send_verification(rec: dict) -> None:
+    """Build a verification link and email it. No-op if SMTP/base URL unset."""
+    base = settings.public_base_url.rstrip("/")
+    if not base:
+        log.warning("AIF_PUBLIC_BASE_URL not set — cannot build verification link")
+        return
+    token = make_verification_token(rec["id"])
+    link = f"{base}/api/auth/verify?token={token}"
+    try:
+        from .email import send_verification_email
+        send_verification_email(rec["email"], link)
+    except Exception as e:  # noqa: broad-except
+        log.warning("verification email failed for %s: %s", rec["email"], e)
+
+
 @router.post("/register")
 def register(req: RegisterRequest, request: Request, response: Response) -> dict:
     _rate_limit(f"register:{_client_ip(request)}")
@@ -241,6 +294,9 @@ def register(req: RegisterRequest, request: Request, response: Response) -> dict
         inherit_legacy_if_eligible(rec)
     except Exception as e:  # noqa: broad-except
         log.warning("legacy inheritance skipped: %s", e)
+    # Send a verification email to non-admin signups (admin is auto-verified).
+    if not rec.email_verified:
+        _send_verification(rec.model_dump())
     _set_session_cookie(response, rec.id)
     return {"ok": True, "user": _to_public(rec.model_dump()).model_dump()}
 
@@ -270,3 +326,25 @@ def logout(response: Response) -> dict:
 @router.get("/me")
 def me(user: UserPublic | None = Depends(current_user_optional)) -> dict:
     return {"user": user.model_dump() if user else None}
+
+
+@router.get("/verify")
+def verify_email(token: str) -> RedirectResponse:
+    """Land here from the email link. Validate token, mark verified, bounce to UI."""
+    uid = read_verification_token(token)
+    if not uid or not find_by_id(uid):
+        return RedirectResponse("/ui/?verify=invalid")
+    mark_email_verified(uid)
+    return RedirectResponse("/ui/?verify=ok")
+
+
+@router.post("/resend-verification")
+def resend_verification(request: Request, user: UserPublic = Depends(require_user)) -> dict:
+    """Re-send the verification email to the logged-in user."""
+    _rate_limit(f"resend:{user.id}")
+    if user.email_verified:
+        return {"ok": True, "already_verified": True}
+    rec = find_by_id(user.id)
+    if rec:
+        _send_verification(rec)
+    return {"ok": True}
