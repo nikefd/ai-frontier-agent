@@ -16,6 +16,9 @@
 | POST | `/logout` | — | 清除会话 cookie |
 | GET | `/verify` | — | 邮箱验证落地页（邮件链接指向这里）：`?token=<签名token>`，校验后标记 `email_verified` 并 302 跳 `/ui/?verify=ok|invalid` |
 | POST | `/resend-verification` | 写 | 给当前登录用户重发验证邮件（限流）。已验证返回 `{already_verified:true}` |
+| POST | `/change-password` | 写 | 已登录改密码 `{old_password, new_password}`。旧密码错/新密码不合规 400；成功后重发会话 cookie |
+| POST | `/forgot-password` | — | 发密码重置链接 `{email}`。**防枚举：无论邮箱是否存在都返回 ok**。限流（按 IP+邮箱） |
+| POST | `/reset-password` | — | 用重置 token 设新密码 `{token, new_password}`，成功后**自动登录**（下发 cookie + 返回 user）。token 无效/过期 400 |
 | GET | `/me` | — | 返回当前用户 `{user: {id,email,role,email_verified} | null}` |
 
 ## 0b. 管理后台（prefix `/api/admin`）

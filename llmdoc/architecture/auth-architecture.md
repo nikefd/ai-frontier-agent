@@ -71,6 +71,16 @@ sequenceDiagram
 - 未验证用户**仍可登录使用**，只在顶栏显示「📧 未验证」按钮，点击 `POST /resend-verification` 重发。
 - 发信走 `app/email.py`（纯 `smtplib`，零依赖）；SMTP 未配置时**优雅降级**（log warning，注册照常，不发信）。配置见 [config-reference](../reference/config-reference.md) 的 `AIF_SMTP_*` / `AIF_PUBLIC_BASE_URL`。
 
+### 3.1c 修改密码 / 忘记密码找回
+
+复用同一套发信 + 签名 token（三类 token 各用独立 salt：`aif-session` / `aif-email-verify` / `aif-pw-reset`，互不能冒用，有测试 `tests/test_email_verify.py`）。
+
+- **改密码**（已登录）`POST /change-password`：校验旧密码 → 校验新密码 → `set_password` 换哈希 → 重发会话 cookie。
+- **忘记密码**（未登录）`POST /forgot-password`：签 reset token（独立 salt，**1h** 过期，比验证的 24h 短）→ 邮件发 `<base>/ui/?reset=<token>`。**防枚举**：邮箱是否存在都返回相同 ok，且限流。
+- **重置**（未登录）`POST /reset-password`：校验 token → 换哈希 → 自动登录（下发 cookie）。
+- 前端：登录弹窗加「忘记密码？」；顶栏 🔑 改密码；落地 `?reset=<token>` 时弹「设置新密码」表单（`auth.js` 的 `openPwModal`）。
+- 已知限制：签名 cookie 无法主动吊销，改密码只重发本会话 cookie，**其他设备的旧 session 仍有效至过期**（同第 13 条取舍）。
+
 ### 3.2 会话：无状态签名 cookie
 
 用 `itsdangerous.URLSafeTimedSerializer` 签 `{"uid": uid}` 写入 `aif_session` cookie（**httponly + samesite=lax**，HTTPS 下 + secure）。每请求依赖从 cookie 读 token → 校验签名/过期 → 得 uid → 查 `users.json`。
