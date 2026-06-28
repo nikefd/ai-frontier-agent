@@ -1767,4 +1767,31 @@ body:not(.is-authed) .sp-dock { display: none !important; }
 .srs-row-front { font-size: 14px; font-weight: 500; }
 .srs-row-meta { font-size: 12px; margin-top: 2px; }
 
+/* ── Admin user management ─────────────────────────────────────────── */
+/* Nav entry only visible to admins (body.is-admin set by auth.js). */
+.admin-only { display: none; }
+body.is-admin .admin-only { display: flex; }
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.admin-table th, .admin-table td {
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+.admin-table th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft, #475569);
+}
+.admin-table tbody tr:hover { background: var(--bg-elev-2, #f8fafc); }
+.admin-table select {
+  padding: 3px 6px;
+  border-radius: var(--r-sm, 6px);
+  border: 1px solid var(--border, #e5e7eb);
+  font-size: 13px;
+}
+
 

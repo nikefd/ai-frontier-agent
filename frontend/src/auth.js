@@ -41,6 +41,7 @@ function renderAuthBar() {
 function applyGating() {
   document.body.classList.toggle('is-anon', !currentUser);
   document.body.classList.toggle('is-authed', !!currentUser);
+  document.body.classList.toggle('is-admin', currentUser?.role === 'admin');
 }
 
 // ── login / register modal ─────────────────────────────────────────────

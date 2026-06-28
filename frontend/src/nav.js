@@ -6,6 +6,7 @@ import { refreshList } from './feed.js';
 import { loadSummary, loadSources, loadProfile, loadForYou } from './views.js';
 import { loadDives } from './dives.js';
 import { loadReview } from './review.js';
+import { loadAdminUsers } from './admin.js';
 
 export function switchView(v) {
   state.view = v;
@@ -18,4 +19,5 @@ export function switchView(v) {
   if (v === 'review') loadReview();
   if (v === 'profile') loadProfile();
   if (v === 'sources') loadSources();
+  if (v === 'admin') loadAdminUsers();
 }

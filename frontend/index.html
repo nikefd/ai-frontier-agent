@@ -40,6 +40,7 @@
         <button data-view="review"><span>🗂️</span> 知识卡 <span class="count" id="cnt-review">·</span></button>
         <button data-view="profile"><span>🪪</span> 我的画像</button>
         <button data-view="sources"><span>🔌</span> 数据源 <span class="count" id="cnt-sources">·</span></button>
+        <button data-view="admin" class="admin-only"><span>👥</span> 用户管理</button>
       </div>
 
       <div class="side-nav mt-12">
@@ -186,6 +187,18 @@
             <span class="text-xs text-faint">每天一次定时抓取 · 每源最多 4 篇 · 全局 150 篇封顶</span>
           </div>
           <div id="sources-list"></div>
+        </div>
+      </div>
+
+      <!-- VIEW: ADMIN (user management, admin-only) -->
+      <div class="view-pane hidden" id="view-admin">
+        <div class="card">
+          <div class="card-head">
+            <h3>👥 用户管理</h3>
+            <span id="admin-meta" class="text-xs text-faint"></span>
+          </div>
+          <div class="text-xs text-faint mb-12">改角色即时生效 · 删除用户会一并清除其全部产物，不可恢复 · 不能操作自己</div>
+          <div id="admin-users"></div>
         </div>
       </div>
 
