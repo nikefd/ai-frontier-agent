@@ -23,6 +23,7 @@
 | 「为你推荐」怎么排序 / 为什么不花 LLM | [API 参考](reference/api-reference.md)（第 4 节 `/for-you`）＋ `app/routers/feed_personal.py` |
 | 知识卡 / 间隔重复 / SM-2 怎么调度 | [API 参考](reference/api-reference.md)（第 4b 节）＋ [数据存储参考](reference/data-storage.md)（3.8）＋ `app/srs.py` |
 | AI 复盘教练 / 苏格拉底问题 / 怎么接对话 | [API 参考](reference/api-reference.md)（第 4c 节）＋ [数据存储参考](reference/data-storage.md)（3.9）＋ `app/routers/reflection.py` |
+| 学习路径 / 和 guides 的区别 / 分阶段编排 | [API 参考](reference/api-reference.md)（第 6b 节）＋ [数据存储参考](reference/data-storage.md)（3.10）＋ `app/routers/learning.py` |
 | 为什么不能手动改 sparrow-chat.js | [前端架构](architecture/frontend-architecture.md)（第 5 节） |
 | 查全部 HTTP 端点 / 新增一个端点 | [API 参考](reference/api-reference.md) |
 | 用户注册登录 / 鉴权守卫 / 会话怎么做 | [认证架构](architecture/auth-architecture.md) |

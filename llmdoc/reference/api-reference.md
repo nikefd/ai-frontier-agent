@@ -132,6 +132,19 @@
 | DELETE | `/guides/long/{slug}` | 写 | 删当前用户的单篇长文指南 |
 | POST | `/guides/generate` | 写 | **LLM** 按主题生成长文学习指南（`{topic, article_ids?, depth, tags}`，depth=brief/deep），存当前用户的 `guides/guide_*.json` |
 
+## 6b. 学习路径 learning-paths（prefix `/api/ai-news`）
+
+**分阶段学习路线图**，是 guides 之上的**编排层**（区别：guides 是单主题一篇长文；learning-path 是一个方向的多阶段路线，每阶段引用库内解读/文章）。结合画像定起点，存 `users/<uid>/learning-paths/<slug>.json`。
+
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| GET | `/learning-paths` | 读* | 列当前用户的路径（slug/topic/阶段数/时间）；匿名空 |
+| GET | `/learning-paths/{slug}` | 读* | 取某条路径详情（stages）；匿名 none |
+| POST | `/learning-paths/generate` | 写 | **LLM** 按 `{topic}` + 画像 + 素材库生成分阶段路径。空 topic 400 / 无 LLM 503 / 模型无有效输出 502 |
+| DELETE | `/learning-paths/{slug}` | 写 | 删除 |
+
+> 实现：`app/routers/learning.py`。**混合素材策略**：把用户的深度解读+近期文章（带 id）喂给 LLM，stage 的 `read` 只能引用真实 id（`_resolve_reads` 丢弃编造的 id），库存不足时改用 `suggest` 文字建议。纯函数 `_parse_stages`/`_resolve_reads` 有单测 `tests/test_learning.py`。
+
 ## 7. 数据源 / 抓取 / 翻译（prefix `/api/ai-news`）
 
 | 方法 | 路径 | 🔒 | 说明 |

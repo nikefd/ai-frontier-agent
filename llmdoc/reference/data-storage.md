@@ -41,6 +41,7 @@
 | `profile.json` | dict | 该用户的兴趣画像缓存（按需 LLM 生成，见 §3.7） |
 | `review-cards.json` | list | 该用户的知识卡 + SM-2 间隔重复状态（见 §3.8） |
 | `reflection.json` | dict | 该用户最近一次 AI 复盘（recap + 苏格拉底问题，见 §3.9） |
+| `learning-paths/<slug>.json` | 每文件一条 | 该用户的分阶段学习路径（见 §3.10） |
 | `ui.db` | SQLite | 该用户的 sparrow 对话记忆（会话/消息/journal） |
 
 > `users/_legacy/` 是迁移哨兵目录：启动时老单用户产物先搬到这里，首个注册账号（或 `AIF_ADMIN_EMAIL` 指定者）注册时改名成其 uid 目录继承。详见 [认证架构](../architecture/auth-architecture.md) 与 [已知问题](known-issues.md) 第 14 条。
@@ -129,6 +130,10 @@ list，每项一张卡：
 ### 3.9 reflection.json（AI 复盘，每用户一个）
 
 `{generated_at, model, signals, recap, questions[]}`。`signals` 是近 7 天活动计数 `{pins, deep_dives, cards, conversations}`，`recap` 是一段中文回顾，`questions` 是 3-5 个苏格拉底式问题。由 `POST /reflection/generate` 按需生成（`collect_recent_signals` 按时间窗聚合，全空返回 400）。只存最近一次，不做历史归档。
+
+### 3.10 learning-paths/<slug>.json（学习路径，每条一个文件）
+
+`{slug, topic, generated_at, model, based_on_profile, stages[]}`。每个 stage：`{title, goal, learn[], read[], suggest, practice}`，`read` 项是 `{type:"deep-dive"|"article", id, title, url, note}`（**只含库内真实存在的 id**，编造的被 `_resolve_reads` 丢弃）。是 guides 之上的编排层（多阶段路线 vs 单篇长文）。由 `POST /learning-paths/generate` 生成，独立库（像 deep-dives 那样直接扫目录）。
 
 ## 4. 并发与原子性
 
