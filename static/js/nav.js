@@ -3,7 +3,7 @@
 import { $$ } from './util.js';
 import { state } from './state.js';
 import { refreshList } from './feed.js';
-import { loadSummary, loadSources } from './views.js';
+import { loadSummary, loadSources, loadProfile } from './views.js';
 import { loadDives } from './dives.js';
 
 export function switchView(v) {
@@ -13,5 +13,6 @@ export function switchView(v) {
   if (v === 'feed') refreshList();
   if (v === 'summary') loadSummary();
   if (v === 'dives') loadDives();
+  if (v === 'profile') loadProfile();
   if (v === 'sources') loadSources();
 }

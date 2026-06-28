@@ -42,6 +42,39 @@ export async function regenSummary() {
   }
 }
 
+// ── Personal profile ─────────────────────────────────────────────────
+export async function loadProfile() {
+  const meta = $('#profile-meta'), body = $('#profile-body');
+  body.innerHTML = '<div class="muted-card">加载中…</div>';
+  try {
+    const r = await api('GET', '/api/ai-news/profile');
+    if (r.status === 'ok' && r.body) {
+      meta.textContent = r.generated_at ? '生成于 ' + fmtDate(r.generated_at) : '';
+      body.innerHTML = marked.parse(r.body);
+    } else {
+      meta.textContent = '';
+      body.innerHTML = `<div class="muted-card" style="padding:32px 20px">
+        🪪 还没有生成画像<br>
+        <span class="text-faint" style="font-size:12px">点右上「生成 / 更新画像」，会聚合你的收藏 / 深度解读 / 追踪主题 / 对话，调 LLM 生成。先 pin 几篇或聊几句效果更好。</span>
+      </div>`;
+    }
+  } catch (e) {
+    body.innerHTML = '<div class="muted-card">❌ ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+export async function regenProfile() {
+  const body = $('#profile-body');
+  body.innerHTML = '<div class="muted-card">⏳ 生成中（约 15-25s）…</div>';
+  try {
+    const r = await api('POST', '/api/ai-news/profile');
+    body.innerHTML = marked.parse(r.body || '');
+    $('#profile-meta').textContent = '生成于刚才';
+  } catch (e) {
+    body.innerHTML = '<div class="muted-card">❌ ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
 // ── Source health ────────────────────────────────────────────────────
 const SRC_CAT_LABELS = {
   vendor: '🏢 厂商官方', blog: '✍️ 专家博客', expert: '🧠 专家观点', media: '📰 科技媒体',

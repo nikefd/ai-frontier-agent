@@ -3,7 +3,7 @@ import { $, $$ } from './util.js';
 import { api } from './api.js';
 import { state } from './state.js';
 import { refreshList } from './feed.js';
-import { regenSummary } from './views.js';
+import { regenSummary, regenProfile } from './views.js';
 import { manualNewDive } from './dives.js';
 import { switchView } from './nav.js';
 import { initAuth } from './auth.js';
@@ -79,6 +79,7 @@ $('#btn-translate').addEventListener('click', async () => {
 });
 
 $('#btn-regen-summary').addEventListener('click', regenSummary);
+$('#btn-regen-profile').addEventListener('click', regenProfile);
 $('#btn-new-dive').addEventListener('click', manualNewDive);
 
 // ── Boot ─────────────────────────────────────────────────────────────

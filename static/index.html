@@ -36,6 +36,7 @@
         <button class="on" data-view="feed"><span>📰</span> 文章流 <span class="count" id="cnt-feed">·</span></button>
         <button data-view="summary"><span>✨</span> 今日速报</button>
         <button data-view="dives"><span>🧠</span> 深度解读 <span class="count" id="cnt-dives">·</span></button>
+        <button data-view="profile"><span>🪪</span> 我的画像</button>
         <button data-view="sources"><span>🔌</span> 数据源 <span class="count" id="cnt-sources">·</span></button>
       </div>
 
@@ -114,6 +115,21 @@
           <div id="dive-status" class="text-xs text-faint mt-8"></div>
           <hr class="hr">
           <div id="dives-list"></div>
+        </div>
+      </div>
+
+      <!-- VIEW: PROFILE (personal interest portrait) -->
+      <div class="view-pane hidden" id="view-profile">
+        <div class="card">
+          <div class="card-head">
+            <h3>🪪 我的关注画像</h3>
+            <div class="actions">
+              <span id="profile-meta" class="text-xs text-faint"></span>
+              <button class="primary sm" id="btn-regen-profile">生成 / 更新画像</button>
+            </div>
+          </div>
+          <div class="text-xs text-faint mb-12">基于你的收藏、深度解读、追踪主题与对话，调 LLM 推断你的关注画像 · 仅你可见</div>
+          <div id="profile-body" class="reader" style="max-height:none"></div>
         </div>
       </div>
 
