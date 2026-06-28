@@ -1813,4 +1813,22 @@ body.is-admin .admin-only { display: flex; }
   box-shadow: 0 4px 16px rgba(0, 0, 0, .2);
 }
 
+/* ── Reflection coach ─────────────────────────────────────────────── */
+.reflection-recap {
+  background: var(--accent-soft, #f3f0ff);
+  border-radius: var(--r-md, 10px);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  line-height: 1.7;
+  font-size: 14px;
+}
+.reflection-q {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--r-md, 10px);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.reflection-q-text { font-size: 14.5px; line-height: 1.6; margin-bottom: 10px; }
+.reflection-q-actions { display: flex; gap: 8px; }
+
 

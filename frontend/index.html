@@ -38,6 +38,7 @@
         <button data-view="summary"><span>✨</span> 今日速报</button>
         <button data-view="dives"><span>🧠</span> 深度解读 <span class="count" id="cnt-dives">·</span></button>
         <button data-view="review"><span>🗂️</span> 知识卡 <span class="count" id="cnt-review">·</span></button>
+        <button data-view="reflection"><span>🪞</span> 复盘</button>
         <button data-view="profile"><span>🪪</span> 我的画像</button>
         <button data-view="sources"><span>🔌</span> 数据源 <span class="count" id="cnt-sources">·</span></button>
         <button data-view="admin" class="admin-only"><span>👥</span> 用户管理</button>
@@ -164,6 +165,21 @@
         </div>
       </div>
 
+      <!-- VIEW: REFLECTION (AI Socratic weekly review) -->
+      <div class="view-pane hidden" id="view-reflection">
+        <div class="card">
+          <div class="card-head">
+            <h3>🪞 本周复盘</h3>
+            <div class="actions">
+              <span id="reflection-meta" class="text-xs text-faint"></span>
+              <button class="primary sm" id="btn-regen-reflection">开始本周复盘</button>
+            </div>
+          </div>
+          <div class="text-xs text-faint mb-12">基于你最近 7 天的活动，AI 教练给出回顾和几个引导思考的问题 · 可展开聊或存为知识卡</div>
+          <div id="reflection-body"></div>
+        </div>
+      </div>
+
       <!-- VIEW: PROFILE (personal interest portrait) -->
       <div class="view-pane hidden" id="view-profile">
         <div class="card">
@@ -211,7 +227,7 @@
      Vite from bundling it (it doesn't exist at build time). -->
 <script src="/ui/sparrow-chat.js"></script>
 <script>
-  SparrowChat.mount({
+  window.__sparrowChat = SparrowChat.mount({
     endpoint: '/api/agent/chat',
     conversationsApi: '/api/agent/conversations',
     title: '💬 AI 助理',
