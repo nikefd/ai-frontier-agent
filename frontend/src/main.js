@@ -15,8 +15,17 @@ if (window.mermaid) {
   window.mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
 }
 
+// ── Landing / home ───────────────────────────────────────────────────
+// The bilingual hero shows on first load; entering reveals the app shell.
+function enterStation() {
+  document.body.classList.remove('landing-active');
+  switchView('feed');
+}
+$('#btn-enter').addEventListener('click', enterStation);
+
 // ── Nav + filters ────────────────────────────────────────────────────
 $('#brand').addEventListener('click', () => {
+  document.body.classList.add('landing-active');
   state.cat = ''; state.filter = 'all'; state.q = ''; state.offset = 0;
   const search = $('#search'); if (search) search.value = '';
   $$('#cat-seg button').forEach(x => x.classList.toggle('on', x.dataset.cat === ''));
