@@ -85,6 +85,10 @@ app.include_router(review.router)
 from .routers import admin
 app.include_router(admin.router)
 
+# AI reflection coach (Socratic weekly review). Reuses recent-activity signals.
+from .routers import reflection
+app.include_router(reflection.router)
+
 # Auth (register / login / logout / me + session dependencies).
 from .auth import router as auth_router
 app.include_router(auth_router)
