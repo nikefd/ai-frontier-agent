@@ -2,7 +2,7 @@
 
 > 讲清楚 `/api/agent/chat` 这个 sparrow 驱动的 ReAct agent 怎么工作：它和旧 `/chat`
 > 的区别、工具怎么注入、对话记忆存哪、SSE 事件怎么流。涉及文件：`app/agent_chat.py`、
-> `app/agent_tools.py`，以及 PyPI 上的 `sparrow-agent` 包。
+> `app/agent_tools.py`，以及内联的 agent 运行时 `app/agent_runtime/`（原 `sparrow` 框架，已内联进仓库，见其 README）。
 
 ## 1. 从直通 chat 升级到 ReAct agent
 
@@ -43,7 +43,7 @@ sequenceDiagram
 ### 2.1 sparrow 接线（`agent_chat.py`）
 
 ```python
-from sparrow import AgentConfig, Harness, Memory, configure as llm_configure
+from .agent_runtime import AgentConfig, Harness, Memory, configure as llm_configure
 
 llm_configure(base_url=settings.llm_base_url, api_key=settings.llm_api_key, model=settings.llm_model)
 _memory = Memory(str(UI_DB))   # <data_dir>/ai-news/ui.db
@@ -115,4 +115,4 @@ system prompt（英文写，见 `agent_chat.py`）给 agent 定了几条铁律�
 
 ## 4. 前端组件
 
-对话 UI 用 sparrow 官方的 `sparrow-chat.js`（在 `static/index.html` 里 `SparrowChat.mount({...})`）。该文件**不在仓库里手动维护**——`app/main.py` 启动时从 sparrow 包拷进 `static/js/`，sparrow 升级即自动更新。挂载配置包括 endpoint、会话 API、中文 i18n 文案、主题色。详见 [前端架构](frontend-architecture.md)。
+对话 UI 用 `sparrow-chat.js`（在 `frontend/index.html` 里 `SparrowChat.mount({...})`）。该文件现在是**仓库内源码** `frontend/public/sparrow-chat.js`，Vite 原样输出到 `/ui/sparrow-chat.js`，可直接改（改完 `npm run build`）。挂载配置包括 endpoint、会话 API、中文 i18n 文案、主题色。详见 [前端架构](frontend-architecture.md)。

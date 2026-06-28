@@ -33,15 +33,14 @@ flowchart TD
   subgraph 模块加载期（import 时）
     mount_news[挂载 ai_news 路由]
     mount_agent[尝试挂载 agent_chat 路由<br/>失败仅告警，新闻 API 不受影响]
-    sync[_sync_sparrow_assets：<br/>拷贝 sparrow-chat.js 到 static/js/]
     mount_ui[挂载 /ui 静态目录]
   end
 ```
 
 几个关键设计点：
 
-- **agent 路由是「软挂载」**：`app/main.py` 用 try/except 包住 `from .agent_chat import router`。如果 sparrow 包缺失或初始化失败，只打一条 warning，**新闻 API 照常工作**。这让「没装 sparrow 也能浏览新闻」成立。
-- **sparrow-chat.js 启动时自动同步**：`_sync_sparrow_assets()` 在 import 期从 sparrow 包里 `asset_path("sparrow-chat.js")` 拷到 `static/js/`。好处是 sparrow 升级后前端组件自动跟着更新，不用手动维护一份拷贝。
+- **agent 路由是「软挂载」**：`app/main.py` 用 try/except 包住 `from .agent_chat import router`。如果 agent 运行时初始化失败，只打一条 warning，**新闻 API 照常工作**。
+- **对话组件 sparrow-chat.js 随前端构建**：现在是仓库内源码 `frontend/public/sparrow-chat.js`，Vite 原样输出到 `/ui/sparrow-chat.js`。（历史：曾由 `_sync_sparrow_assets()` 启动时从 sparrow 包同步，agent 运行时内联后该机制已删。）
 - **`/` 与 `/ui` 的挂载顺序**：先显式注册 `GET /` → redirect 到 `/ui/`、`GET /ui/` → 返回 index.html，**再** `app.mount("/ui", StaticFiles(...))`。顺序很重要，否则 StaticFiles 会吃掉 `/ui/` 导致重定向逻辑失效。
 - **CORS 现按配置收口**：`allow_origins=settings.cors_origin_list` + `allow_credentials=True`（cookie 鉴权必需）。默认 `AIF_CORS_ORIGINS` 为空 = 仅同源。鉴权改动见 [认证架构](auth-architecture.md)。
 
@@ -61,7 +60,7 @@ main.py ──┬─> routers/ai_news.py ──┬─> models.py
           ├─> agent_chat.py ───────┬─> agent_tools.py ──> routers/ai_news.py（复用其 _load_* 与路径函数）
           │                        ├─> auth.py（require_user）
           │                        ├─> llm_client.py / settings.py
-          │                        └─> sparrow（Harness/AgentConfig/Memory/tool）
+          │                        └─> agent_runtime（内联 Harness/AgentConfig/Memory/tool，原 sparrow）
           └─> scheduler.py ────────> workers/ai_news_fetcher.py ──> routers/ai_news.py（复用 add_article 等）
                                      workers/ai_news_translator.py ──> routers/ai_news.py
 ```

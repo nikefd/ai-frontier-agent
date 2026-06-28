@@ -101,7 +101,7 @@
 
 ### 3.6 ui.db（SQLite，每用户一个）
 
-由 sparrow 的 `Memory` 类管理（建表、读写都在 sparrow 内部）。存对话会话、消息、agent journal。**多用户后每用户一个 `users/<uid>/ui.db`**（sparrow 的 `Memory` 无 user 维度，故用一库一人做隔离；`agent_chat.py` 的 `_memory_for(uid)` 按 uid 选库并缓存）。应用侧若要只读查它，用 `storage.sqlite_ro`（`mode=ro` URI，多读者共享）。具体表结构由 sparrow 包定义，不在本仓库维护。
+由内联 agent 运行时（`app/agent_runtime/`，原 sparrow）的 `Memory` 类管理（建表、读写都在 `memory.py` 内部）。存对话会话、消息、agent journal。**多用户后每用户一个 `users/<uid>/ui.db`**（`Memory` 无 user 维度，故用一库一人做隔离；`agent_chat.py` 的 `_memory_for(uid)` 按 uid 选库并缓存）。应用侧若要只读查它，用 `storage.sqlite_ro`（`mode=ro` URI，多读者共享）。表结构定义在 `app/agent_runtime/memory.py`。
 
 ### 3.7 profile.json（个人画像，每用户一个）
 

@@ -13,7 +13,7 @@
 ```bash
 cd ~/workspace/ai-frontier-agent
 
-# 1) 建虚拟环境并装依赖（含 sparrow-agent）
+# 1) 建虚拟环境并装依赖（agent 运行时已内联，无需额外装 sparrow）
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .            # 读 pyproject.toml；要跑测试加 -e ".[dev]"
@@ -91,5 +91,5 @@ pytest
 |---|---|
 | 所有 LLM 功能报 503 | 没配 key。检查 `AIF_LLM_API_KEY` 或 `DEEPSEEK_API_KEY`；`GET /api/health` 看 `llm_configured` |
 | 大量数据源「抓取失败」 | 多半是 rsshub 路由问题。裸机把 `AIF_RSSHUB_BASE` 指向可用实例；Twitter 源需自建 rsshub + `TWITTER_AUTH_TOKEN`，见 [部署指南](how-to-deploy.md) |
-| 启动日志有「agent chat router not loaded」 | sparrow 包没装好。新闻 API 仍可用，但 `/api/agent/chat` 404。`pip install sparrow-agent` |
-| 启动日志有「could not sync sparrow-chat.js」 | 同上，sparrow 包问题，对话前端组件拿不到 |
+| 启动日志有「agent chat router not loaded」 | agent 运行时（`app/agent_runtime/`）初始化失败。新闻 API 仍可用，但 `/api/agent/chat` 404。看 warning 详情排查 |
+| 对话组件加载不出来 | `sparrow-chat.js` 现随前端构建（`frontend/public/`）。确认 `npm run build` 跑过、`/ui/sparrow-chat.js` 可访问 |

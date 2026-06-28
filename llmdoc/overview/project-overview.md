@@ -18,7 +18,7 @@
 2. **翻译 / LLM 加工** — 每 2 分钟一个翻译 tick 把 `pending` 文章批量译成中文；用户可对单篇生成「深度解读」（带 mermaid 图）、对一组生成「今日速报」、对任意主题生成「深度指南」。
 3. **对话 agent** — `/api/agent/chat` 是 sparrow `Harness` 跑的 ReAct agent，带读写工具（查文章/源/track、建 track、收藏），对话历史持久化在 `ui.db`。详见 [Agent 架构](../architecture/agent-architecture.md)。
 
-前端是**零构建的原生 ES module**单页应用，由后端 `/ui/` 直接托管；对话组件用 sparrow 官方的 `sparrow-chat.js`（启动时从 sparrow 包拷进 `static/js/`）。
+前端是 **Vite 构建的零框架 ES module** 单页应用，构建产物由后端 `/ui/` 托管；对话组件 `sparrow-chat.js` 是仓库内源码（`frontend/public/`），随前端构建输出。
 
 ## 3. 技术栈
 
@@ -29,8 +29,8 @@
 | RSS 抓取 | httpx（异步并发拉取）+ feedparser（解析）+ BeautifulSoup/lxml（摘要去标签） |
 | 数据存储 | 文件系统 JSON（原子写）+ SQLite（`ui.db`，对话记忆，只读 URI 模式） |
 | LLM | DeepSeek（OpenAI 兼容 `/chat/completions`），自写 httpx 薄封装，不引 openai/anthropic SDK |
-| 对话 agent | `sparrow-agent`（PyPI；`Harness` / `AgentConfig` / `Memory` / `@tool`） |
-| 前端 | 原生 HTML + ES module（无打包），marked + mermaid（CDN），sparrow-chat.js 组件 |
+| 对话 agent | `app/agent_runtime/`（内联，原 sparrow；`Harness` / `AgentConfig` / `Memory` / `@tool`） |
+| 前端 | Vite 构建的 ES module，marked + mermaid（CDN），sparrow-chat.js 组件（`frontend/public/`） |
 | 容器化 | 单镜像（python:3.12-slim）+ docker-compose（app + 自建 rsshub + redis） |
 | 部署 | Coolify（Traefik 反代，命名卷持久化） |
 
@@ -46,7 +46,7 @@
 
 | 路径 | 职责 |
 |---|---|
-| `app/main.py` | FastAPI 入口：挂路由、CORS、静态托管、lifespan 启停 scheduler、同步 sparrow-chat.js |
+| `app/main.py` | FastAPI 入口：挂路由、CORS、静态托管（`static/dist/`）、lifespan 启停 scheduler |
 | `app/settings.py` | pydantic-settings 配置（`AIF_` 前缀），模块级单例 `settings` |
 | `app/models.py` | pydantic schema：`Article` / `Track` / `Guide` / `ChatMessage` / `ChatRequest` |
 | `app/storage.py` | 原子 JSON 读写 + 只读 SQLite 连接，跨模块共享 |
@@ -58,7 +58,7 @@
 | `app/workers/ai_news_fetcher.py` | 抓取 worker：拉 feed → 关键词打标 → 每源配额 + 全局上限 → 入库 |
 | `app/workers/ai_news_translator.py` | 翻译 worker：批量把 pending 文章译成中文 |
 | `agent/` | 占位包（`__init__.py` 一行注释，预留「LLM Harness 下个里程碑填充」，当前未用） |
-| `static/` | 前端：`index.html` + `js/`（ES module）+ `style.css`；`js/sparrow-chat.js` 启动时自动同步 |
+| `frontend/` | 前端源码：`index.html` + `src/`（ES module）+ `style.css` + `public/sparrow-chat.js`；Vite 构建到 `static/dist/` |
 | `seed-data/ai-news/` | 镜像内种子数据，首次启动卷为空时灌入（`articles.json` / `tracks.json` / 示例 guides + deep-dives） |
 | `Dockerfile` / `docker-compose.yml` / `docker-entrypoint.sh` | 容器化：单镜像 + app/rsshub/redis 三服务 + 种子灌入逻辑 |
 | `deploy/` | 当前为空目录（部署托管给 Coolify，无 systemd/nginx 配置入库） |

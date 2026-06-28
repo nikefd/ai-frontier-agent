@@ -35,7 +35,7 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 | `views.js` | 次要视图：今日速报 `loadSummary/regenSummary`、数据源健康 `loadSources` |
 | `auth.js` | **登录态 + 鉴权 UI**：启动 `GET /api/auth/me`、顶栏登录态、登录/注册弹窗、登出。`api.js` 的 401 经 `setUnauthorizedHandler` 弹登录。登录/登出派发 `aif:auth-changed` 让 `main.js` 重载 |
 | `util.js` | DOM helper（`$`/`$$`）、`escapeHtml`、相对时间 `fmtDate`、分类徽章 `catBadge` |
-| `sparrow-chat.js` | **不手动维护**：sparrow 官方对话组件，后端启动时从 sparrow 包拷入（见第 5 节） |
+| `sparrow-chat.js` | 对话组件（IIFE，挂 `window.SparrowChat`）。源码在 `frontend/public/`，Vite 原样输出到 `/ui/sparrow-chat.js`（见第 5 节） |
 
 依赖方向：`main.js` → `nav.js` / `feed.js` / `dives.js` / `views.js` → `api.js` / `state.js` / `util.js`。存在受控循环：`nav.js` ⇄ `feed.js`/`dives.js`、`feed.js` → `dives.js`（`jumpToDive`）→ `nav.js`（`switchView`）。这些都是**运行时调用**（事件回调里才执行，加载期只定义函数），ES module 能安全处理。
 
@@ -63,10 +63,10 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 
 ## 5. 对话组件 sparrow-chat.js
 
-对话 UI 不是自己写的，用 sparrow 官方组件：
+对话 UI 来自内联的 agent 运行时（原 sparrow 框架，见 `app/agent_runtime/README.md`）：
 
-- `index.html` 末尾 `SparrowChat.mount({...})` 配置 endpoint（`/api/agent/chat`）、会话 API（`/api/agent/conversations`）、中文 i18n 文案、主题色 `#7c3aed`、`localStorage` key `aif_conv_id`。
-- `sparrow-chat.js` 文件本身**由后端启动时从 sparrow 包同步**到 `static/js/`（`app/main.py` 的 `_sync_sparrow_assets`），所以**不要手动编辑** `static/js/sparrow-chat.js`——它会在下次启动被覆盖，也已加入 `.gitignore` 不入库。要改对话组件行为，改 `mount` 配置或升级 sparrow 包。
+- `index.html` 末尾 `SparrowChat.mount({...})` 配置 endpoint（`/api/agent/chat`）、会话 API（`/api/agent/conversations`）、中文 i18n 文案、主题色 `#7c3aed`、`localStorage` key `aif_conv_id`。mount 返回的实例存到 `window.__sparrowChat`，供复盘视图「展开聊」调用（`chat.toggle(true)` + 填 input + `send()`）。
+- `sparrow-chat.js` 现在是**仓库内源码** `frontend/public/sparrow-chat.js`，Vite 原样输出到 `/ui/sparrow-chat.js`。**可以直接改**，但改完要 `npm run build`。（历史：曾由后端启动时从 sparrow 包同步，内联后该机制已删。）
 
 ## 6. 已知小问题
 

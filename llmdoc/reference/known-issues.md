@@ -49,7 +49,7 @@
 ## 9. 前端小问题
 
 - `static/js/views.js` 的数据源页 `SRC_CAT_LABELS` / `SRC_ORDER` 已覆盖全部 8 类（含 `expert` / `x-ai`）。
-- `static/js/sparrow-chat.js` 由后端启动时从 sparrow 包覆盖同步，**手动编辑会被下次启动冲掉**。要改对话组件改 `mount` 配置或升级 sparrow。已加入 `.gitignore` 不入库。
+- `frontend/public/sparrow-chat.js` 是仓库内源码（原 sparrow 组件，agent 运行时内联后纳入）。可直接改，但改完要 `npm run build` 才生效。
 
 ## 10. tests/ 目录刚起步
 
