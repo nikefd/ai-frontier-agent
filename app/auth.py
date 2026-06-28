@@ -204,6 +204,18 @@ def require_user(request: Request) -> UserPublic:
     return user
 
 
+def require_admin(user: UserPublic = Depends(require_user)) -> UserPublic:
+    """Guard for admin-only endpoints (403 for non-admins, 401 for anon)."""
+    if user.role != "admin":
+        raise HTTPException(403, "admin only")
+    return user
+
+
+def count_admins() -> int:
+    """Number of admin accounts — used to refuse removing the last admin."""
+    return sum(1 for u in load_users() if u.get("role") == "admin")
+
+
 # ── endpoints ────────────────────────────────────────────────────────
 def _validate_credentials(email: str, password: str) -> tuple[str, str]:
     email = (email or "").strip().lower()

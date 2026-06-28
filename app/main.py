@@ -81,6 +81,10 @@ app.include_router(feed_personal.router)
 from .routers import review
 app.include_router(review.router)
 
+# Admin user management (list / change role / delete). admin-only guard.
+from .routers import admin
+app.include_router(admin.router)
+
 # Auth (register / login / logout / me + session dependencies).
 from .auth import router as auth_router
 app.include_router(auth_router)
