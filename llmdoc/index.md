@@ -17,12 +17,12 @@
 | 为什么用「每源配额 + 全局回填」而不是全局 top-N | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.5 节） |
 | 理解对话 agent（sparrow ReAct）怎么工作 / 加工具 | [Agent 架构](architecture/agent-architecture.md) |
 | agent 能调哪些工具 | [Agent 架构](architecture/agent-architecture.md)（第 3 节） |
-| 改前端 / 理解 ES module 结构 / 视图切换 | [前端架构](architecture/frontend-architecture.md) |
+| 改前端 / 理解 ES module 结构 / 视图切换 / Vite 构建 | [前端架构](architecture/frontend-architecture.md) |
 | 深度解读为什么是独立内容库 / 跟文章流怎么解耦 | [前端架构](architecture/frontend-architecture.md)（第 2/4 节）＋ [数据存储参考](reference/data-storage.md)（3.3）＋ [API 参考](reference/api-reference.md)（第 3 节） |
 | 个人画像怎么来 / 聚合了哪些信号 / 存哪 | [API 参考](reference/api-reference.md)（第 3b 节）＋ [数据存储参考](reference/data-storage.md)（3.7） |
 | 「为你推荐」怎么排序 / 为什么不花 LLM | [API 参考](reference/api-reference.md)（第 4 节 `/for-you`）＋ `app/routers/feed_personal.py` |
 | 知识卡 / 间隔重复 / SM-2 怎么调度 | [API 参考](reference/api-reference.md)（第 4b 节）＋ [数据存储参考](reference/data-storage.md)（3.8）＋ `app/srs.py` |
-| 为什么不能手动改 `static/js/sparrow-chat.js` | [前端架构](architecture/frontend-architecture.md)（第 5 节） |
+| 为什么不能手动改 sparrow-chat.js | [前端架构](architecture/frontend-architecture.md)（第 5 节） |
 | 查全部 HTTP 端点 / 新增一个端点 | [API 参考](reference/api-reference.md) |
 | 用户注册登录 / 鉴权守卫 / 会话怎么做 | [认证架构](architecture/auth-architecture.md) |
 | 数据怎么按用户隔离 / pin 为什么迁出文章 / 老数据迁移 | [认证架构](architecture/auth-architecture.md)（第 2/5 节）＋ [数据存储参考](reference/data-storage.md) |
@@ -52,7 +52,7 @@
 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md) | 抓取→打标→每源配额→全局回填→入库→翻译，端到端数据流与设计理由 |
 | [Agent 架构](architecture/agent-architecture.md) | sparrow ReAct agent：工具注入、对话记忆（ui.db）、SSE 事件、system prompt 铁律 |
 | [认证架构](architecture/auth-architecture.md) | 多用户鉴权：权限模型、用户存储、bcrypt 哈希、签名 cookie 会话、守卫、数据按用户隔离、老数据迁移 |
-| [前端架构](architecture/frontend-architecture.md) | 零构建 ES module、视图/状态、关键交互、sparrow-chat 组件来源 |
+| [前端架构](architecture/frontend-architecture.md) | Vite 构建 + 内容指纹、零框架 ES module、视图/状态、关键交互、sparrow-chat 组件来源 |
 
 ## 指南
 

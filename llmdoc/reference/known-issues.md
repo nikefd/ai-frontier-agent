@@ -82,13 +82,13 @@
 - 迁移**只在 `_legacy/` 不存在时跑**。手动删了 `_legacy/` 又有老数据残留，会再迁一次。
 - 若**没人**匹配 `AIF_ADMIN_EMAIL`，`_legacy/` 会一直留着不被继承（数据不丢，但「无主」）。不配 `AIF_ADMIN_EMAIL` 时由首个注册者继承，最稳。
 
-## 15. 前端零构建 → 静态资源缓存陷阱
+## 15. 静态资源缓存陷阱（已由 Vite 迁移解决）
 
-零构建 ES module：`main.js` 用裸相对 `import './nav.js'` 拉 ~9 个兄弟模块（**不带版本查询串**），所以无法靠「给 URL 加 `?v=` 版本号」打破缓存——那只能版本化 HTML 里的 `<script src>`，对 import 进来的子模块无效，要全量版本化就得引入构建步骤（与零构建原则冲突）。
+**历史问题**：前端曾是零构建 ES module，`main.js` 用裸相对 `import` 拉子模块（不带版本串），无法靠 URL 版本号打破缓存；改用 `no-cache` 后又被 Cloudflare 边缘强行覆盖成 `max-age=14400`，导致用户部署后数小时仍看到旧 JS。
 
-**现状解法**（`app/main.py`）：
+**现状（已解决）**：前端迁到 Vite 构建，产物文件名带内容指纹（`assets/index-<hash>.js`）。缓存策略改为：
 
-- `/ui/` 入口 HTML 下发 `Cache-Control: no-store`，部署后立刻拿新版。
-- `/ui/*` 静态资源由 `NoCacheStaticFiles`（StaticFiles 子类）下发 `Cache-Control: no-cache` + ETag：浏览器仍缓存但**每次 ETag 协商**，未变返回 304（省带宽），一变即拉新文件。覆盖全部模块，无需改 import。
+- `/ui/` 入口 HTML → `Cache-Control: no-cache`（小文件，每次校验）。
+- `/ui/assets/*` 指纹文件 → `max-age=31536000, immutable`（永久强缓存）。
 
-**仍需注意 CDN 层**：线上经 Cloudflare，边缘可能叠加自己的 `max-age`（曾观察到 JS 被加 `max-age=14400`）。源站发 `no-cache` 后 Cloudflare 默认应回源校验，但若边缘仍命中旧缓存，需在 Cloudflare/Coolify 对 `/ui/js/*` 配 Cache Rule（设 Bypass 或 Respect Origin TTL）并在大改后 Purge Cache。源站行为已正确，边缘策略不在代码控制内。
+因为内容一变文件名就变、入口 HTML 改引用新文件名，**强缓存与“立即生效”不再冲突**，也不再依赖 Cloudflare 配置——边缘的 `max-age` 反而是正确行为。详见 [前端架构](../architecture/frontend-architecture.md) 第 1 节。

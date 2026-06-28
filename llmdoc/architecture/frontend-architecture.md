@@ -1,22 +1,28 @@
 # 前端架构
 
-> 讲清楚这个**零构建**的原生 ES module 单页前端怎么组织：模块划分、视图切换、
-> 状态管理、和后端怎么对接，以及对话组件为什么不在仓库里。涉及文件：`static/index.html`、
-> `static/js/*.js`、`static/style.css`。
+> 讲清楚这个 **Vite 构建**的零框架 ES module 单页前端怎么组织：模块划分、视图切换、
+> 状态管理、和后端怎么对接，以及对话组件为什么不在仓库里。涉及文件：`frontend/index.html`、
+> `frontend/src/*.js`、`frontend/style.css`、`frontend/vite.config.js`。
 
-## 1. 总体形态：无构建步骤
+## 1. 总体形态：Vite 构建，零框架
 
-前端是**原生 HTML + ES module**，没有打包器、没有框架、没有 npm 构建。后端 `app/main.py` 把 `static/` 直接挂在 `/ui/`：
+前端是**原生 HTML + ES module，无框架**，但用 **Vite** 做构建（打包 + 内容指纹 + 强缓存）。源码在 `frontend/`，构建产物在 `static/dist/`：
 
-- `GET /` → 302 跳 `/ui/`
-- `GET /ui/` → `static/index.html`
-- `/ui/js/*.js`、`/ui/style.css` 由 `StaticFiles` 托管
+- 源码：`frontend/index.html`（入口）、`frontend/src/*.js`（ES module）、`frontend/style.css`
+- 构建：`cd frontend && npm run build` → `static/dist/`（`index.html` + `assets/index-<hash>.{js,css}`，文件名带内容指纹）
+- 开发：`npm run dev` 起 Vite dev server（热更新），或 `npm run build` 后由后端 serve
 
-第三方库走 CDN：`marked`（markdown 渲染）、`mermaid@10`（图）。改前端**刷新即生效**，不需要任何构建命令。
+后端 `app/main.py` 把 `static/dist/` 挂在 `/ui/`：
 
-## 2. 模块划分（`static/js/`）
+- `GET /` → 307 跳 `/ui/`
+- `GET /ui/` → `static/dist/index.html`（`Cache-Control: no-cache`，每次校验）
+- `/ui/assets/*`（指纹文件）→ `max-age=31536000, immutable`（永久强缓存，改动即换名，**根治“看到旧版”**）
 
-ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<script type="module" src="/ui/js/main.js">`。
+第三方库 `marked` / `mermaid@10` 仍走 CDN（未纳入打包）。**改前端必须重新构建才生效**（不再是“刷新即生效”）。`static/dist/` 与 `frontend/node_modules/` 不入 git，由 Docker 多阶段（Node 构建 → 拷进 Python 镜像）生成。
+
+## 2. 模块划分（`frontend/src/`）
+
+ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<script type="module" src="/src/main.js">`（Vite 构建后替换为指纹化的 `/ui/assets/index-<hash>.js`）。
 
 | 模块 | 职责 |
 |---|---|

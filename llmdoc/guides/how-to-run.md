@@ -5,6 +5,7 @@
 ## 前置
 
 - Python ≥ 3.11
+- Node ≥ 18 + npm（构建前端用；只跑后端 API 可不装，但 `/ui/` 页面要先构建一次）
 - 一个 DeepSeek API key（没有也能跑，但所有 LLM 功能——翻译/速报/解读/指南/对话——返回 503）
 
 ## 方式 A：裸机（推荐本地开发）
@@ -17,17 +18,21 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .            # 读 pyproject.toml；要跑测试加 -e ".[dev]"
 
-# 2) 配置（复制模板，填 key）
+# 2) 构建前端（Vite → static/dist/，后端 serve 这个目录）
+cd frontend && npm install && npm run build && cd ..
+#   开发时也可改用 `cd frontend && npm run dev` 起 Vite 热更新 server
+
+# 3) 配置（复制模板，填 key）
 cp .env.example .env
 #   编辑 .env：填 AIF_LLM_API_KEY=<你的 DeepSeek key>
 #   本地裸机建议把 AIF_RSSHUB_BASE 改成 https://rsshub.app 或留空
 #   （compose 默认的 http://rsshub:1200 只在 docker 网络里有效）
 
-# 3) 起服务
+# 4) 起服务
 uvicorn app.main:app --host 0.0.0.0 --port 9702 --reload
 ```
 
-打开 http://127.0.0.1:9702/ （会自动跳 `/ui/`）。
+打开 http://127.0.0.1:9702/ （会自动跳 `/ui/`）。改前端代码后需 `npm run build` 重新构建（或用 `npm run dev`）。
 
 ### 数据目录
 
