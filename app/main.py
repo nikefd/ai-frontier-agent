@@ -66,6 +66,11 @@ app.add_middleware(
 
 app.include_router(ai_news.router)
 
+# Personal profile (intent-signal aggregation → LLM portrait). Split from
+# ai_news to keep that module focused; shares its loaders / path helpers.
+from .routers import profile as profile_router
+app.include_router(profile_router.router)
+
 # Auth (register / login / logout / me + session dependencies).
 from .auth import router as auth_router
 app.include_router(auth_router)
@@ -117,8 +122,30 @@ def root() -> RedirectResponse:
 
 @app.get("/ui/")
 def ui_index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+    # no-store on the HTML entry so a deploy is picked up immediately; the JS
+    # modules it pulls are revalidated via ETag by NoCacheStaticFiles below.
+    return FileResponse(
+        STATIC_DIR / "index.html",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+class NoCacheStaticFiles(StaticFiles):
+    """Serve static assets with ``Cache-Control: no-cache``.
+
+    This is a zero-build ES-module frontend: ``main.js`` pulls ~9 sibling
+    modules via bare relative ``import`` (no query string), so we can't bust
+    them with a versioned URL without a build step. ``no-cache`` keeps the
+    browser cache but forces an ETag revalidation on every load — a cheap 304
+    when unchanged, and the fresh file the instant a deploy changes it. Fixes
+    users seeing stale JS for hours after a deploy.
+    """
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
 
 
 # Mount /ui after explicit / handler so / still redirects cleanly.
-app.mount("/ui", StaticFiles(directory=str(STATIC_DIR), html=True), name="ui")
+app.mount("/ui", NoCacheStaticFiles(directory=str(STATIC_DIR), html=True), name="ui")
