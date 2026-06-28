@@ -49,9 +49,14 @@ function articleCardHtml(a) {
   const ddBusy = ddStatus === 'generating' ? 'is-busy' : '';
   const ddActive = ddStatus === 'ok' ? 'is-done' : '';
   const transBadge = a.translation_status === 'ok'
-    ? '<span class="chip chip-trans" title="已翻译">🌐 已翻译</span>' : '';
+    ? '<span class="chip chip-trans" title="已翻译">🌐 已翻译</span>'
+    : a.translation_status === 'failed'
+    ? '<span class="chip chip-trans-fail" title="翻译失败，可点下方按钮重试">⚠️ 翻译失败</span>'
+    : '<span class="chip chip-trans-pending" title="排队等待翻译">⏳ 待翻译</span>';
   const transAction = a.translation_status === 'ok' ? ''
-    : `<button class="btn-card ghost" data-action="translate">🌐 翻译这篇</button>`;
+    : a.translation_status === 'failed'
+    ? `<button class="btn-card ghost" data-action="translate">🔄 重新翻译</button>`
+    : `<button class="btn-card ghost" data-action="translate">🌐 立即翻译</button>`;
   const tagsHtml = (a.tags && a.tags.length)
     ? `<div class="article-tags">${a.tags.slice(0, 5).map(t => `<span class="chip chip-tag">${escapeHtml(t)}</span>`).join('')}</div>`
     : '';
@@ -115,13 +120,13 @@ export function renderList() {
       }
     });
     el.querySelector('[data-action="translate"]')?.addEventListener('click', async (e) => {
-      const btn = e.currentTarget; btn.disabled = true; btn.textContent = '🌐 翻译中…';
+      const btn = e.currentTarget; const orig = btn.textContent; btn.disabled = true; btn.textContent = '🌐 翻译中…';
       try {
         await api('POST', `/api/ai-news/articles/${aid}/retranslate`);
         await refreshList();
       } catch (err) {
         alert('翻译失败：' + err.message);
-        btn.disabled = false; btn.textContent = '🌐 翻译这篇';
+        btn.disabled = false; btn.textContent = orig;
       }
     });
   });

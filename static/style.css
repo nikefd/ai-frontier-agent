@@ -126,7 +126,9 @@ header.top h1 {
   display: flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
 }
+header.top h1:hover { color: var(--accent-strong); }
 header.top h1 .dot {
   width: 8px;
   height: 8px;
@@ -135,25 +137,7 @@ header.top h1 .dot {
   box-shadow: 0 0 0 4px var(--accent-soft);
 }
 
-nav.tabs { display: flex; gap: 4px; }
-nav.tabs a {
-  padding: 6px 12px;
-  border-radius: var(--r-sm);
-  color: var(--text-soft);
-  font-size: 13.5px;
-  font-weight: 500;
-  transition: all .15s;
-  text-decoration: none;
-}
-nav.tabs a:hover {
-  background: var(--bg-elev-2);
-  color: var(--text);
-  text-decoration: none;
-}
-nav.tabs a.active {
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-}
+nav.tabs { display: none; }
 
 /* ── Layout ───────────────────────────────────────────────────────── */
 main {
@@ -207,8 +191,6 @@ main.narrow { max-width: 980px; }
   main { padding: 18px; }
   .split-sidebar { grid-template-columns: 1fr; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-  nav.tabs { gap: 0; }
-  nav.tabs a { padding: 6px 8px; font-size: 12.5px; }
   header.top { padding: 12px 16px; }
 }
 
@@ -1257,6 +1239,8 @@ body[data-agent="ai-news"] .article-item.is-active {
   padding: 0;
   color: var(--text-dim, #98a2b3);
 }
+.chip.chip-trans-pending { background: transparent; font-size: 11px; padding: 0; color: var(--text-dim, #98a2b3); }
+.chip.chip-trans-fail { background: transparent; font-size: 11px; padding: 0; color: var(--danger, #e5534b); }
 
 /* Tier badge polish */
 .tier-badge {
@@ -1733,5 +1717,10 @@ body[data-agent="ai-news"] .article-item.is-active {
 
 /* Grey out write controls for anonymous users (still clickable → 401 → modal) */
 body.is-anon .pin-btn { opacity: 0.5; }
+
+/* Chat assistant (sparrow-chat) is login-only: hide launcher + panel until authed.
+   Default-hidden (`:not(.is-authed)`) also covers the brief pre-auth boot window. */
+body:not(.is-authed) .sp-fab,
+body:not(.is-authed) .sp-dock { display: none !important; }
 
 

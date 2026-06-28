@@ -44,10 +44,10 @@ export async function regenSummary() {
 
 // ── Source health ────────────────────────────────────────────────────
 const SRC_CAT_LABELS = {
-  vendor: '🏢 厂商官方', blog: '✍️ 专家博客', media: '📰 科技媒体',
-  paper: '📄 学术论文', trending: '📈 GitHub Trending', community: '💬 社区', other: '其他',
+  vendor: '🏢 厂商官方', blog: '✍️ 专家博客', expert: '🧠 专家观点', media: '📰 科技媒体',
+  paper: '📄 学术论文', 'x-ai': '𝕏 大 V', trending: '📈 GitHub Trending', community: '💬 社区', other: '其他',
 };
-const SRC_ORDER = ['vendor', 'blog', 'media', 'paper', 'trending', 'community'];
+const SRC_ORDER = ['vendor', 'blog', 'expert', 'media', 'paper', 'x-ai', 'trending', 'community'];
 
 export async function loadSources() {
   try {

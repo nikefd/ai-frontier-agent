@@ -14,6 +14,14 @@ if (window.mermaid) {
 }
 
 // ── Nav + filters ────────────────────────────────────────────────────
+$('#brand').addEventListener('click', () => {
+  state.cat = ''; state.filter = 'all'; state.q = ''; state.offset = 0;
+  const search = $('#search'); if (search) search.value = '';
+  $$('#cat-seg button').forEach(x => x.classList.toggle('on', x.dataset.cat === ''));
+  $$('.seg button[data-filter]').forEach(x => x.classList.toggle('on', x.dataset.filter === 'all'));
+  switchView('feed');
+});
+
 $$('.side-nav button[data-view]').forEach(b =>
   b.addEventListener('click', () => switchView(b.dataset.view)));
 
