@@ -1,6 +1,6 @@
 """Pydantic schemas for the AI-frontier agent.
 
-Trimmed from the original zhangyangbin-agents/models.py: only the AI-news
+Trimmed from the original multi-agent project's models.py: only the AI-news
 shapes are kept (climbing / finance models dropped with their routers).
 """
 from __future__ import annotations

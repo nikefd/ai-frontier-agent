@@ -28,7 +28,7 @@ from ..models import Article, ChatRequest, Guide, Track, UserPublic
 from ..settings import settings
 from ..storage import read_json, write_json_atomic
 
-log = logging.getLogger("zyb.ai_news")
+log = logging.getLogger("aif.ai_news")
 
 router = APIRouter(prefix="/api/ai-news", tags=["ai-news"])
 
@@ -434,7 +434,7 @@ async def reader(aid: str) -> HTMLResponse:
     try:
         import httpx
         async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as c:
-            r = await c.get(article["url"], headers={"User-Agent": "Mozilla/5.0 zyb-reader/1"})
+            r = await c.get(article["url"], headers={"User-Agent": "Mozilla/5.0 ai-frontier-agent-reader/1"})
             html = r.text
     except Exception as e:  # noqa
         return HTMLResponse(f"<h1>无法抓取</h1><pre>{e}</pre><p>原链接: <a href='{article['url']}'>{article['url']}</a></p>", status_code=502)

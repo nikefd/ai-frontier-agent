@@ -42,9 +42,9 @@ from ..routers.ai_news import (
 )
 from ..models import Article
 
-log = logging.getLogger("zyb.fetcher")
+log = logging.getLogger("aif.fetcher")
 
-USER_AGENT = "zyb-agents/0.2 (+https://github.com/yourname/zhangyangbin-agents)"
+USER_AGENT = "ai-frontier-agent/0.2 (RSS fetcher)"
 
 
 def _now_iso() -> str:

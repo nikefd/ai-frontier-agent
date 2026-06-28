@@ -1,6 +1,6 @@
 """FastAPI entrypoint. Run: uvicorn app.main:app --host 0.0.0.0 --port 9702
 
-Trimmed from zhangyangbin-agents: only the ai_news router is mounted (climbing
+Trimmed from the original multi-agent project: only the ai_news router is mounted (climbing
 and finance dropped). The conversational agent chat router is added in a later
 milestone.
 """

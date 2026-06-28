@@ -22,7 +22,7 @@ from ..llm_client import LLMUnavailable, chat_complete, llm_configured
 from ..routers.ai_news import ARTICLES_FILE, _load_articles
 from ..storage import write_json_atomic
 
-log = logging.getLogger("zyb.translator")
+log = logging.getLogger("aif.translator")
 
 BATCH_SIZE = 5
 

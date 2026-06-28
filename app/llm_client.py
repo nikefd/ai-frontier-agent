@@ -45,7 +45,7 @@ async def chat_complete(
 ) -> str:
     """Non-streaming convenience wrapper."""
     if not settings.llm_api_key:
-        raise LLMUnavailable("LLM api key is not configured (ZYB_LLM_API_KEY or COPILOT_GITHUB_TOKEN)")
+        raise LLMUnavailable("LLM api key is not configured (set AIF_LLM_API_KEY or DEEPSEEK_API_KEY)")
     payload = {
         "model": model or settings.llm_model,
         "messages": messages,

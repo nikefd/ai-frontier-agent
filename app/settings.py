@@ -1,6 +1,6 @@
 """Configuration via env / .env. All vars prefixed AIF_ (ai-frontier).
 
-Differences from the original zhangyangbin-agents/settings.py:
+Differences from the original multi-agent project's settings.py:
 - DeepSeek is the default LLM (self-contained; no hermes / Copilot token theft)
 - finance / climbing settings dropped
 - env prefix ZYB_ → AIF_
