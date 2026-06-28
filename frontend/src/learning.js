@@ -5,8 +5,22 @@ import { jumpToDive } from './dives.js';
 import { switchView } from './nav.js';
 
 export async function loadLearning() {
+  await renderSuggestions();
   await renderList();
   renderCurrent(null);
+}
+
+async function renderSuggestions() {
+  const box = $('#lp-suggestions');
+  if (!box) return;
+  try {
+    const r = await api('GET', '/api/ai-news/learning-paths/suggestions');
+    if (!r.items?.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<span class="text-faint text-xs">推荐方向：</span>' +
+      r.items.map(d => `<button class="chip chip-suggest" data-dir="${escapeHtml(d)}">${escapeHtml(d)}</button>`).join('');
+    box.querySelectorAll('[data-dir]').forEach(b =>
+      b.addEventListener('click', () => { $('#lp-topic').value = b.dataset.dir; $('#lp-topic').focus(); }));
+  } catch (e) { box.innerHTML = ''; }
 }
 
 async function renderList() {

@@ -1976,3 +1976,9 @@ button.primary.lg:hover { transform: translateY(-1px); box-shadow: var(--shadow-
 }
 .lp-read:hover { background: var(--accent, #7c3aed); color: #fff; }
 .lp-suggest, .lp-practice { font-size: 13px; margin: 6px 0; line-height: 1.6; }
+.lp-suggestions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+.chip-suggest {
+  font-size: 12.5px; padding: 3px 10px; border-radius: 999px;
+  border: 1px solid var(--border, #e5e7eb); background: var(--bg-elev-1, #fff); cursor: pointer;
+}
+.chip-suggest:hover { background: var(--accent-soft, #f3f0ff); border-color: var(--accent, #7c3aed); }
