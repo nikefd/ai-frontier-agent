@@ -42,6 +42,48 @@ export async function regenSummary() {
   }
 }
 
+// ── For-you (personalized today ranking) ─────────────────────────────
+export async function loadForYou() {
+  const body = $('#foryou-body'), meta = $('#foryou-meta');
+  body.innerHTML = '<div class="muted-card">加载中…</div>';
+  try {
+    const r = await api('GET', '/api/ai-news/for-you?limit=20');
+    const items = r.items || [];
+    if (r.personalized) {
+      meta.textContent = `今日候选 ${r.today_count} 篇 · 已按你的关注排序`;
+    } else {
+      meta.innerHTML = '<span class="text-faint">收藏文章 / 与助手对话后，这里会按你的兴趣排序</span>';
+    }
+    if (!items.length) {
+      body.innerHTML = '<div class="muted-card" style="padding:32px 20px">📭 今日还没有候选文章</div>';
+      return;
+    }
+    body.innerHTML = items.map(forYouCard).join('');
+  } catch (e) {
+    body.innerHTML = '<div class="muted-card">❌ ' + escapeHtml(e.message) + '</div>';
+  }
+}
+
+function forYouCard(a) {
+  const title = a.title_zh || a.title || '(无标题)';
+  const reasons = (a._reasons && a._reasons.length)
+    ? `<div class="fy-reasons">${a._reasons.map(r => `<span class="chip chip-tag">${escapeHtml(r)}</span>`).join('')}</div>`
+    : '';
+  const link = a.url
+    ? `<a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">${escapeHtml(title)} ↗</a>`
+    : escapeHtml(title);
+  return `
+    <div class="fy-item">
+      <div class="fy-head">
+        ${catBadge(a.category)}
+        <span class="fy-src text-faint">${escapeHtml(a.source || '')}</span>
+        <span class="fy-date text-faint">${a.date ? fmtDate(a.date) : ''}</span>
+      </div>
+      <div class="fy-title">${link}</div>
+      ${reasons}
+    </div>`;
+}
+
 // ── Personal profile ─────────────────────────────────────────────────
 export async function loadProfile() {
   const meta = $('#profile-meta'), body = $('#profile-body');

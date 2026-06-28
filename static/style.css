@@ -1723,4 +1723,24 @@ body.is-anon .pin-btn { opacity: 0.5; }
 body:not(.is-authed) .sp-fab,
 body:not(.is-authed) .sp-dock { display: none !important; }
 
+/* ── For-you (personalized ranking) cards ─────────────────────────── */
+.fy-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+.fy-item:last-child { border-bottom: none; }
+.fy-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.fy-head .fy-src { font-weight: 500; }
+.fy-head .fy-date { margin-left: auto; }
+.fy-title { font-size: 14.5px; font-weight: 600; line-height: 1.5; }
+.fy-title a { color: var(--text); text-decoration: none; }
+.fy-title a:hover { color: var(--accent-strong); text-decoration: underline; }
+.fy-reasons { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+
 
