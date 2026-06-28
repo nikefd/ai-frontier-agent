@@ -149,6 +149,27 @@ class PathGenRequest(BaseModel):
     topic: str
 
 
+@router.get("/learning-paths/suggestions")
+def suggest_directions(user: UserPublic | None = Depends(current_user_optional)) -> dict:
+    """Suggested learning directions from the user's profile — zero LLM cost.
+
+    Combines subscribed tracks (explicit intent) with top tags (behavioral
+    interest), deduped, so the user can pick instead of staring at a blank box.
+    """
+    if not user:
+        return {"items": []}
+    signals = _collect_profile_signals(user.id)
+    seen, items = set(), []
+    # Tracks first (explicit intent), then top tags (behavioral signal).
+    for src in (signals.get("tracks") or [], signals.get("top_tags") or []):
+        for d in src:
+            key = d.strip().lower()
+            if d.strip() and key not in seen:
+                seen.add(key)
+                items.append(d.strip())
+    return {"items": items[:8]}
+
+
 @router.get("/learning-paths")
 def list_paths(user: UserPublic | None = Depends(current_user_optional)) -> dict:
     if not user:
