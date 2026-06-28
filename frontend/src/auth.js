@@ -19,6 +19,7 @@ export async function initAuth() {
   renderAuthBar();
   applyGating();
   _handleVerifyResult();
+  _handleResetLink();
 }
 
 // Show a small toast when arriving from an email verification link, then clean
@@ -51,9 +52,11 @@ function renderAuthBar() {
       <span class="auth-user" title="${escapeAttr(currentUser.email)}">
         ${currentUser.role === 'admin' ? '👑 ' : '👤 '}${escapeAttr(currentUser.email)}
       </span>
+      <button class="ghost sm" id="btn-change-pw" title="修改密码">🔑</button>
       <button class="ghost sm" id="btn-logout">登出</button>`;
     $('#btn-logout').addEventListener('click', doLogout);
     $('#btn-resend')?.addEventListener('click', resendVerification);
+    $('#btn-change-pw').addEventListener('click', openChangePasswordModal);
   } else {
     slot.innerHTML = `<button class="primary sm" id="btn-login">登录 / 注册</button>`;
     $('#btn-login').addEventListener('click', () => openAuthModal());
@@ -99,12 +102,14 @@ function buildModal() {
       <p class="auth-switch">
         <span id="auth-switch-text">还没有账号？</span>
         <a href="#" id="auth-switch-link">去注册</a>
+        <a href="#" id="auth-forgot-link" style="margin-left:auto">忘记密码？</a>
       </p>
     </div>`;
   document.body.appendChild(wrap);
   wrap.addEventListener('click', (e) => { if (e.target === wrap) closeAuthModal(); });
   wrap.querySelector('[data-act="close"]').addEventListener('click', closeAuthModal);
   $('#auth-switch-link').addEventListener('click', (e) => { e.preventDefault(); setMode(mode === 'login' ? 'register' : 'login'); });
+  $('#auth-forgot-link').addEventListener('click', (e) => { e.preventDefault(); closeAuthModal(); openForgotModal(); });
   $('#auth-submit').addEventListener('click', submitAuth);
   $('#auth-pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAuth(); });
 }
@@ -115,6 +120,7 @@ function setMode(m) {
   $('#auth-submit').textContent = m === 'login' ? '登录' : '注册';
   $('#auth-switch-text').textContent = m === 'login' ? '还没有账号？' : '已有账号？';
   $('#auth-switch-link').textContent = m === 'login' ? '去注册' : '去登录';
+  $('#auth-forgot-link')?.classList.toggle('hidden', m !== 'login');
 }
 
 export function openAuthModal(msg) {
@@ -171,4 +177,98 @@ async function doLogout() {
 function escapeAttr(s) {
   return String(s || '').replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ── Lightweight single-purpose modal (forgot / change / reset password) ──
+// Renders into a shared #pw-modal node; `fields` is [{id,label,type,placeholder}],
+// onSubmit(values) returns a message string on success or throws on error.
+function openPwModal({ title, fields, submitText, onSubmit }) {
+  document.getElementById('pw-modal')?.remove();
+  const wrap = document.createElement('div');
+  wrap.id = 'pw-modal';
+  wrap.className = 'auth-modal';
+  wrap.innerHTML = `
+    <div class="auth-card">
+      <button class="auth-close" data-act="close" title="关闭">✕</button>
+      <h3>${escapeAttr(title)}</h3>
+      <p class="auth-msg hidden" id="pw-msg"></p>
+      ${fields.map(f => `
+        <label class="field"><span>${escapeAttr(f.label)}</span>
+          <input id="${f.id}" type="${f.type || 'password'}" placeholder="${escapeAttr(f.placeholder || '')}" /></label>`).join('')}
+      <button class="primary" id="pw-submit">${escapeAttr(submitText)}</button>
+    </div>`;
+  document.body.appendChild(wrap);
+  const close = () => wrap.remove();
+  wrap.addEventListener('click', (e) => { if (e.target === wrap) close(); });
+  wrap.querySelector('[data-act="close"]').addEventListener('click', close);
+  const submit = async () => {
+    const values = {};
+    fields.forEach(f => { values[f.id] = document.getElementById(f.id).value; });
+    const btn = $('#pw-submit'); btn.disabled = true; const orig = btn.textContent; btn.textContent = '处理中…';
+    try {
+      const okMsg = await onSubmit(values);
+      const msg = $('#pw-msg'); msg.textContent = okMsg || '完成'; msg.classList.remove('hidden');
+      setTimeout(close, 1200);
+    } catch (e) {
+      const msg = $('#pw-msg'); msg.textContent = e.message || '操作失败'; msg.classList.remove('hidden');
+      btn.disabled = false; btn.textContent = orig;
+    }
+  };
+  $('#pw-submit').addEventListener('click', submit);
+  wrap.querySelectorAll('input').forEach(i =>
+    i.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); }));
+  setTimeout(() => wrap.querySelector('input')?.focus(), 50);
+}
+
+export function openChangePasswordModal() {
+  openPwModal({
+    title: '修改密码',
+    submitText: '保存',
+    fields: [
+      { id: 'cp-old', label: '当前密码', placeholder: '当前密码' },
+      { id: 'cp-new', label: '新密码', placeholder: '至少 8 位' },
+    ],
+    onSubmit: async (v) => {
+      await api('POST', '/api/auth/change-password', { old_password: v['cp-old'], new_password: v['cp-new'] });
+      return '✅ 密码已修改';
+    },
+  });
+}
+
+function openForgotModal() {
+  openPwModal({
+    title: '找回密码',
+    submitText: '发送重置链接',
+    fields: [{ id: 'fp-email', label: '邮箱', type: 'email', placeholder: 'you@example.com' }],
+    onSubmit: async (v) => {
+      await api('POST', '/api/auth/forgot-password', { email: (v['fp-email'] || '').trim() });
+      return '📧 若邮箱已注册，重置链接已发出，请查收';
+    },
+  });
+}
+
+function openResetModal(token) {
+  openPwModal({
+    title: '设置新密码',
+    submitText: '重置并登录',
+    fields: [{ id: 'rp-new', label: '新密码', placeholder: '至少 8 位' }],
+    onSubmit: async (v) => {
+      const r = await api('POST', '/api/auth/reset-password', { token, new_password: v['rp-new'] });
+      currentUser = r.user;
+      renderAuthBar(); applyGating();
+      window.dispatchEvent(new CustomEvent('aif:auth-changed'));
+      return '✅ 密码已重置，已为你登录';
+    },
+  });
+}
+
+// Detect a reset link (?reset=<token>), open the reset form, and clean the URL.
+function _handleResetLink() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('reset');
+  if (!token) return;
+  params.delete('reset');
+  const qs = params.toString();
+  window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+  openResetModal(token);
 }
