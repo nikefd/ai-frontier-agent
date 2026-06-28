@@ -71,6 +71,11 @@ app.include_router(ai_news.router)
 from .routers import profile as profile_router
 app.include_router(profile_router.router)
 
+# Personalized "for you" feed — re-ranks today's cohort by profile signals.
+# Zero extra LLM cost (pure scoring); reuses ai_news cohort + profile signals.
+from .routers import feed_personal
+app.include_router(feed_personal.router)
+
 # Auth (register / login / logout / me + session dependencies).
 from .auth import router as auth_router
 app.include_router(auth_router)
