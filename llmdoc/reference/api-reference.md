@@ -65,6 +65,9 @@
 |---|---|---|---|
 | GET | `/summary/today` | — | 返回缓存速报 + 今日候选元数据（`cohort_size` / `cohort_preview` / `today`）。全局共享 |
 | POST | `/summary/today` | 写 | **LLM** 基于最近 30h 文章（最多 25 篇）生成中文速报，存全局 `summary_today.json` |
+| GET | `/for-you` | 读* | **个性化排序**：把今日候选（同速报 cohort）按当前用户画像信号（pin 分类分布 / 高频标签 / track 关键词）加权重排，返回 `{personalized, today_count, items}`，每项带 `_score`/`_reasons`。**纯代码打分，0 LLM 调用**。匿名或无信号时 `personalized:false`、退化为按时间排序 |
+
+> `/for-you` 实现在独立模块 `app/routers/feed_personal.py`，打分纯函数 `score_articles()` 有单测（`tests/test_feed_personal.py`）。复用 ai_news 的 `_articles_for_today()` cohort 与 profile 的信号聚合。
 
 ## 5. 追踪主题 tracks（prefix `/api/ai-news`）
 

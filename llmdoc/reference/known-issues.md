@@ -51,9 +51,9 @@
 - `static/js/views.js` 的数据源页 `SRC_CAT_LABELS` / `SRC_ORDER` 已覆盖全部 8 类（含 `expert` / `x-ai`）。
 - `static/js/sparrow-chat.js` 由后端启动时从 sparrow 包覆盖同步，**手动编辑会被下次启动冲掉**。要改对话组件改 `mount` 配置或升级 sparrow。已加入 `.gitignore` 不入库。
 
-## 10. 没有 tests/ 目录
+## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 `testpaths = ["tests"]` 和 pytest-asyncio，但仓库里**还没有 `tests/`**。`pytest` 会报找不到测试。要写测试先建目录。
+`pyproject.toml` 配了 `testpaths = ["tests"]` 和 pytest-asyncio。`tests/` 已建（首个为 `test_feed_personal.py`，覆盖个性化排序的纯函数），但**覆盖率仍很低**，大部分模块无测试。注意：开发环境不一定装了 `pytest`（`python -m pytest` 可能报 `No module named pytest`），纯函数测试可临时用 `python -c "import tests.xxx ..."` 跑断言验证。
 
 ## 11. `deploy/` 目录为空
 

@@ -54,6 +54,7 @@ main.py ──┬─> routers/ai_news.py ──┬─> models.py
           │                        ├─> auth.py（require_user / current_user_optional 守卫）
           │                        └─> settings.py
           ├─> routers/profile.py ──> routers/ai_news.py（复用 _load_*/路径）+ llm_client/storage/auth
+          ├─> routers/feed_personal.py ──> routers/ai_news.py（cohort/loaders）+ profile.py（信号聚合）+ auth
           ├─> auth.py ─────────────┬─> models.py / storage.py / settings.py
           │                        └─> migrate.py（注册时继承 _legacy）
           ├─> agent_chat.py ───────┬─> agent_tools.py ──> routers/ai_news.py（复用其 _load_* 与路径函数）
