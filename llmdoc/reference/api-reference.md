@@ -139,6 +139,7 @@
 | 方法 | 路径 | 🔒 | 说明 |
 |---|---|---|---|
 | GET | `/learning-paths` | 读* | 列当前用户的路径（slug/topic/阶段数/时间）；匿名空 |
+| GET | `/learning-paths/suggestions` | 读* | **推荐学习方向**（tracks + top_tags 去重）。**纯代码 0 LLM**，前端渲染成可点 chip 填入输入框。匿名空 |
 | GET | `/learning-paths/{slug}` | 读* | 取某条路径详情（stages）；匿名 none |
 | POST | `/learning-paths/generate` | 写 | **LLM** 按 `{topic}` + 画像 + 素材库生成分阶段路径。空 topic 400 / 无 LLM 503 / 模型无有效输出 502 |
 | DELETE | `/learning-paths/{slug}` | 写 | 删除 |
