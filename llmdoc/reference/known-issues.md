@@ -48,7 +48,7 @@
 
 ## 9. 前端小问题
 
-- `static/js/views.js` 的数据源页 `SRC_CAT_LABELS` / `SRC_ORDER` 缺 `expert` 和 `x-ai` 两类，这两类源以原始 key 名显示（无 emoji 标签）。
+- `static/js/views.js` 的数据源页 `SRC_CAT_LABELS` / `SRC_ORDER` 已覆盖全部 8 类（含 `expert` / `x-ai`）。
 - `static/js/sparrow-chat.js` 由后端启动时从 sparrow 包覆盖同步，**手动编辑会被下次启动冲掉**。要改对话组件改 `mount` 配置或升级 sparrow。已加入 `.gitignore` 不入库。
 
 ## 10. 没有 tests/ 目录
@@ -81,3 +81,14 @@
 
 - 迁移**只在 `_legacy/` 不存在时跑**。手动删了 `_legacy/` 又有老数据残留，会再迁一次。
 - 若**没人**匹配 `AIF_ADMIN_EMAIL`，`_legacy/` 会一直留着不被继承（数据不丢，但「无主」）。不配 `AIF_ADMIN_EMAIL` 时由首个注册者继承，最稳。
+
+## 15. 前端零构建 → 静态资源缓存陷阱
+
+零构建 ES module：`main.js` 用裸相对 `import './nav.js'` 拉 ~9 个兄弟模块（**不带版本查询串**），所以无法靠「给 URL 加 `?v=` 版本号」打破缓存——那只能版本化 HTML 里的 `<script src>`，对 import 进来的子模块无效，要全量版本化就得引入构建步骤（与零构建原则冲突）。
+
+**现状解法**（`app/main.py`）：
+
+- `/ui/` 入口 HTML 下发 `Cache-Control: no-store`，部署后立刻拿新版。
+- `/ui/*` 静态资源由 `NoCacheStaticFiles`（StaticFiles 子类）下发 `Cache-Control: no-cache` + ETag：浏览器仍缓存但**每次 ETag 协商**，未变返回 304（省带宽），一变即拉新文件。覆盖全部模块，无需改 import。
+
+**仍需注意 CDN 层**：线上经 Cloudflare，边缘可能叠加自己的 `max-age`（曾观察到 JS 被加 `max-age=14400`）。源站发 `no-cache` 后 Cloudflare 默认应回源校验，但若边缘仍命中旧缓存，需在 Cloudflare/Coolify 对 `/ui/js/*` 配 Cache Rule（设 Bypass 或 Respect Origin TTL）并在大改后 Purge Cache。源站行为已正确，边缘策略不在代码控制内。

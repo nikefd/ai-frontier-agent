@@ -57,7 +57,7 @@
 | GET | `/profile` | 读* | 取当前用户缓存画像；无则 `{status:"none"}`；匿名 `{status:"none"}`。命中含 `generated_at/model/signals/body`（`body` 为结构化中文 Markdown） |
 | POST | `/profile` | 写 | **LLM** 聚合 pins/深度解读主题/tracks/对话标题生成画像，存 `profile.json`。信号全空（pins+深度解读+对话=0）返回 **400**；LLM 未配置 **503** |
 
-> 信号聚合见 `_collect_profile_signals(uid)`；对话标题用 `storage.sqlite_ro` 只读该用户 `ui.db`，**不 import agent_chat** 以避免 `agent_chat → agent_tools → ai_news` 循环依赖。
+> 实现在独立模块 `app/routers/profile.py`（从 ai_news 拆出，复用其 loader / 路径函数）。信号聚合见 `_collect_profile_signals(uid)`；对话标题用 `storage.sqlite_ro` 只读该用户 `ui.db`，**不 import agent_chat** 以避免 `agent_chat → agent_tools → ai_news` 循环依赖。
 
 ## 4. 今日速报（prefix `/api/ai-news`）
 
