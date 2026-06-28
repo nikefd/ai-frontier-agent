@@ -100,6 +100,17 @@
 
 > 实现：路由 `app/routers/review.py`；SM-2 算法纯函数在 `app/srs.py`（`sm2_schedule`/`is_due`/`new_srs`），有单测 `tests/test_srs.py`。卡片数据结构见 [data-storage](data-storage.md) §3.8。
 
+## 4c. AI 复盘教练（prefix `/api/ai-news`）
+
+苏格拉底式周复盘：聚合近 7 天活动，LLM 生成回顾 + 几个引导思考的问题。按用户存于 `users/<uid>/reflection.json`。
+
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| GET | `/reflection` | 读* | 取当前用户最近一次复盘（`recap` + `questions`）；无则 `{status:"none"}`；匿名 none |
+| POST | `/reflection/generate` | 写 | **LLM** 基于近 7 天 pins/解读/知识卡/对话生成复盘。**先查数据**（全空 400「活动不足」），再查 LLM（未配 503）。存 `reflection.json` |
+
+> 实现：`app/routers/reflection.py`，`collect_recent_signals(uid, now_ts)` 按时间窗聚合（`now_ts` 注入便于测试），`_parse_llm_json` 容错解析模型 JSON（有单测 `tests/test_reflection.py`）。前端「展开聊」复用 sparrow 对话组件（`window.__sparrowChat`），「存为卡片」复用知识卡端点。
+
 ## 5. 追踪主题 tracks（prefix `/api/ai-news`）
 
 | 方法 | 路径 | 🔒 | 说明 |

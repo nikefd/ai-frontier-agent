@@ -40,6 +40,7 @@
 | `deep-dives/{aid}.json` | 每文件一篇 | 单篇文章的深度解读（带 mermaid） |
 | `profile.json` | dict | 该用户的兴趣画像缓存（按需 LLM 生成，见 §3.7） |
 | `review-cards.json` | list | 该用户的知识卡 + SM-2 间隔重复状态（见 §3.8） |
+| `reflection.json` | dict | 该用户最近一次 AI 复盘（recap + 苏格拉底问题，见 §3.9） |
 | `ui.db` | SQLite | 该用户的 sparrow 对话记忆（会话/消息/journal） |
 
 > `users/_legacy/` 是迁移哨兵目录：启动时老单用户产物先搬到这里，首个注册账号（或 `AIF_ADMIN_EMAIL` 指定者）注册时改名成其 uid 目录继承。详见 [认证架构](../architecture/auth-architecture.md) 与 [已知问题](known-issues.md) 第 14 条。
@@ -124,6 +125,10 @@ list，每项一张卡：
 ```
 
 `srs` 是 SM-2 调度状态（`app/srs.py`）：`interval` 间隔天数、`ease` 难度系数（≥1.3）、`reps` 连续答对次数、`due` 下次到期日。复习评分 forgot/hard/good → SM-2 质量分 2/3/5，更新这些字段。`POST /review/cards` 从 article/deep-dive 转卡时背面复用现成摘要（**0 LLM**），同源去重。
+
+### 3.9 reflection.json（AI 复盘，每用户一个）
+
+`{generated_at, model, signals, recap, questions[]}`。`signals` 是近 7 天活动计数 `{pins, deep_dives, cards, conversations}`，`recap` 是一段中文回顾，`questions` 是 3-5 个苏格拉底式问题。由 `POST /reflection/generate` 按需生成（`collect_recent_signals` 按时间窗聚合，全空返回 400）。只存最近一次，不做历史归档。
 
 ## 4. 并发与原子性
 
