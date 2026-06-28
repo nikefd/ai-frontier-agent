@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AI 前沿 Agent</title>
-<link rel="stylesheet" href="/ui/style.css">
+<link rel="stylesheet" href="/style.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head>
@@ -194,7 +194,9 @@
 </main>
 
 <!-- ───────── Agent chat (sparrow-chat official component) ───────── -->
-<script src="/ui/js/sparrow-chat.js"></script>
+<!-- Runtime-synced by the backend from the sparrow package; absolute path keeps
+     Vite from bundling it (it doesn't exist at build time). -->
+<script src="/ui/sparrow-chat.js"></script>
 <script>
   SparrowChat.mount({
     endpoint: '/api/agent/chat',
@@ -229,6 +231,6 @@
     },
   });
 </script>
-<script type="module" src="/ui/js/main.js"></script>
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>
