@@ -38,6 +38,7 @@
 | `guides.json` | list | 短笔记型 guides（`Guide`） |
 | `guides/guide_*.json` | 每文件一篇 | LLM 生成的长文学习指南 |
 | `deep-dives/{aid}.json` | 每文件一篇 | 单篇文章的深度解读（带 mermaid） |
+| `profile.json` | dict | 该用户的兴趣画像缓存（按需 LLM 生成，见 §3.7） |
 | `ui.db` | SQLite | 该用户的 sparrow 对话记忆（会话/消息/journal） |
 
 > `users/_legacy/` 是迁移哨兵目录：启动时老单用户产物先搬到这里，首个注册账号（或 `AIF_ADMIN_EMAIL` 指定者）注册时改名成其 uid 目录继承。详见 [认证架构](../architecture/auth-architecture.md) 与 [已知问题](known-issues.md) 第 14 条。
@@ -98,6 +99,12 @@
 ### 3.6 ui.db（SQLite，每用户一个）
 
 由 sparrow 的 `Memory` 类管理（建表、读写都在 sparrow 内部）。存对话会话、消息、agent journal。**多用户后每用户一个 `users/<uid>/ui.db`**（sparrow 的 `Memory` 无 user 维度，故用一库一人做隔离；`agent_chat.py` 的 `_memory_for(uid)` 按 uid 选库并缓存）。应用侧若要只读查它，用 `storage.sqlite_ro`（`mode=ro` URI，多读者共享）。具体表结构由 sparrow 包定义，不在本仓库维护。
+
+### 3.7 profile.json（个人画像，每用户一个）
+
+`{generated_at, model, signals, body}`。`signals` 是生成时的信号计数 `{pins, deep_dives, tracks, conversations}`，`body` 是结构化中文 Markdown（一句话画像 / 关注领域 / 技术栈倾向 / 活跃度 / 推荐关注）。
+
+由 `POST /api/ai-news/profile` 按需生成：聚合该用户 `pins.json`（标题/标签/来源分布）+ `deep-dives/`（解读主题）+ `tracks.json` + `ui.db` 对话标题，调 LLM 推断。信号全空时不生成（返回 400）。对话标题经 `storage.sqlite_ro` 只读 `ui.db`，避免 import agent_chat 形成循环依赖。
 
 ## 4. 并发与原子性
 
