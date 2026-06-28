@@ -39,6 +39,7 @@
 | `guides/guide_*.json` | 每文件一篇 | LLM 生成的长文学习指南 |
 | `deep-dives/{aid}.json` | 每文件一篇 | 单篇文章的深度解读（带 mermaid） |
 | `profile.json` | dict | 该用户的兴趣画像缓存（按需 LLM 生成，见 §3.7） |
+| `review-cards.json` | list | 该用户的知识卡 + SM-2 间隔重复状态（见 §3.8） |
 | `ui.db` | SQLite | 该用户的 sparrow 对话记忆（会话/消息/journal） |
 
 > `users/_legacy/` 是迁移哨兵目录：启动时老单用户产物先搬到这里，首个注册账号（或 `AIF_ADMIN_EMAIL` 指定者）注册时改名成其 uid 目录继承。详见 [认证架构](../architecture/auth-architecture.md) 与 [已知问题](known-issues.md) 第 14 条。
@@ -105,6 +106,23 @@
 `{generated_at, model, signals, body}`。`signals` 是生成时的信号计数 `{pins, deep_dives, tracks, conversations}`，`body` 是结构化中文 Markdown（一句话画像 / 关注领域 / 技术栈倾向 / 活跃度 / 推荐关注）。
 
 由 `POST /api/ai-news/profile` 按需生成：聚合该用户 `pins.json`（标题/标签/来源分布）+ `deep-dives/`（解读主题）+ `tracks.json` + `ui.db` 对话标题，调 LLM 推断。信号全空时不生成（返回 400）。对话标题经 `storage.sqlite_ro` 只读 `ui.db`，避免 import agent_chat 形成循环依赖。
+
+### 3.8 review-cards.json（知识卡 + 间隔重复，每用户一个）
+
+list，每项一张卡：
+
+```json
+{
+  "id": "rc_<sha1前12>",
+  "front": "正面/问题", "back": "背面/答案要点",
+  "source_type": "article | deep-dive | manual",
+  "source_id": "a_xxx（可空）", "source_url": "原文链接（可空）",
+  "tags": [], "created_at": "ISO",
+  "srs": {"interval": 0, "ease": 2.5, "reps": 0, "due": "YYYY-MM-DD", "last_review": null}
+}
+```
+
+`srs` 是 SM-2 调度状态（`app/srs.py`）：`interval` 间隔天数、`ease` 难度系数（≥1.3）、`reps` 连续答对次数、`due` 下次到期日。复习评分 forgot/hard/good → SM-2 质量分 2/3/5，更新这些字段。`POST /review/cards` 从 article/deep-dive 转卡时背面复用现成摘要（**0 LLM**），同源去重。
 
 ## 4. 并发与原子性
 

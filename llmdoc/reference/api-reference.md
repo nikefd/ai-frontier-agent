@@ -69,6 +69,20 @@
 
 > `/for-you` 实现在独立模块 `app/routers/feed_personal.py`，打分纯函数 `score_articles()` 有单测（`tests/test_feed_personal.py`）。复用 ai_news 的 `_articles_for_today()` cohort 与 profile 的信号聚合。
 
+## 4b. 知识卡 + 间隔重复（prefix `/api/ai-news`）
+
+把文章 / 深度解读 / 手动笔记转成知识卡，用 SM-2 间隔重复调度。按用户存于 `users/<uid>/review-cards.json`。**0 LLM 成本**：卡片背面复用现成摘要，调度是纯算术。所有端点需登录。
+
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| GET | `/review/cards` | 写 | 列当前用户全部卡片（新→旧），返回 `{total, items}` |
+| POST | `/review/cards` | 写 | 新建卡：`{front, back, source_type(article/deep-dive/manual), source_id?, source_url?, tags?}`。source_type=article/deep-dive 且未传 front/back 时**自动从原内容取**中文标题+摘要。同源去重（409），原文不存在 404，缺 front 400 |
+| DELETE | `/review/cards/{cid}` | 写 | 删卡 |
+| GET | `/review/due` | 写 | 今日到期卡（`due ≤ 今天`）+ 统计，返回 `{today, due_count, total, items}` |
+| POST | `/review/cards/{cid}/grade` | 写 | 提交复习评分 `{grade: forgot/hard/good}`，按 SM-2 更新调度，返回更新后的卡 |
+
+> 实现：路由 `app/routers/review.py`；SM-2 算法纯函数在 `app/srs.py`（`sm2_schedule`/`is_due`/`new_srs`），有单测 `tests/test_srs.py`。卡片数据结构见 [data-storage](data-storage.md) §3.8。
+
 ## 5. 追踪主题 tracks（prefix `/api/ai-news`）
 
 | 方法 | 路径 | 🔒 | 说明 |

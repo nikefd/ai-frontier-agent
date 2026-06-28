@@ -21,6 +21,7 @@
 | 深度解读为什么是独立内容库 / 跟文章流怎么解耦 | [前端架构](architecture/frontend-architecture.md)（第 2/4 节）＋ [数据存储参考](reference/data-storage.md)（3.3）＋ [API 参考](reference/api-reference.md)（第 3 节） |
 | 个人画像怎么来 / 聚合了哪些信号 / 存哪 | [API 参考](reference/api-reference.md)（第 3b 节）＋ [数据存储参考](reference/data-storage.md)（3.7） |
 | 「为你推荐」怎么排序 / 为什么不花 LLM | [API 参考](reference/api-reference.md)（第 4 节 `/for-you`）＋ `app/routers/feed_personal.py` |
+| 知识卡 / 间隔重复 / SM-2 怎么调度 | [API 参考](reference/api-reference.md)（第 4b 节）＋ [数据存储参考](reference/data-storage.md)（3.8）＋ `app/srs.py` |
 | 为什么不能手动改 `static/js/sparrow-chat.js` | [前端架构](architecture/frontend-architecture.md)（第 5 节） |
 | 查全部 HTTP 端点 / 新增一个端点 | [API 参考](reference/api-reference.md) |
 | 用户注册登录 / 鉴权守卫 / 会话怎么做 | [认证架构](architecture/auth-architecture.md) |
