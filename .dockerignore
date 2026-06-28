@@ -1,0 +1,12 @@
+# Don't ship local build artifacts / deps into the Docker build context —
+# the frontend is rebuilt inside the Node stage.
+frontend/node_modules/
+static/dist/
+.venv/
+.venv-run/
+__pycache__/
+*.pyc
+.pytest_cache/
+.git/
+/data/
+.env

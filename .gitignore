@@ -8,5 +8,6 @@ __pycache__/
 .pytest_cache/
 # data dir (runtime); seed-data/ is committed as the demo seed
 /data/
-# synced from the sparrow package at startup (app.main:_sync_sparrow_assets)
-static/js/sparrow-chat.js
+# frontend build artifacts (Vite output) + deps — built in CI/Docker, not committed
+frontend/node_modules/
+static/dist/

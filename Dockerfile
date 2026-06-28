@@ -1,4 +1,17 @@
-# 单镜像：FastAPI app + APScheduler 进程内抓取。零 npm 依赖（前端是原生 JS）。
+# 多阶段构建：先用 Node 构建前端（Vite → static/dist，带内容指纹），
+# 再拷进 Python 运行镜像。
+
+# ── Stage 1: build frontend ──────────────────────────────────────────
+FROM node:20-slim AS frontend
+# WORKDIR 设成 /build/frontend，使 vite 的 outDir '../static/dist' 落在 /build/static/dist
+WORKDIR /build/frontend
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+# 产出在 /build/static/dist（vite outDir 为 ../static/dist，相对 /build/frontend）
+
+# ── Stage 2: python runtime ──────────────────────────────────────────
 FROM python:3.12-slim-bookworm
 
 RUN apt-get update \
@@ -17,9 +30,10 @@ RUN pip install --no-cache-dir \
 
 COPY app/ app/
 COPY agent/ agent/
-COPY static/ static/
 COPY seed-data/ seed-data/
 COPY docker-entrypoint.sh .
+# 前端构建产物（指纹化的 JS/CSS + index.html）
+COPY --from=frontend /build/static/dist static/dist
 RUN chmod +x docker-entrypoint.sh
 
 ENV AIF_HOST=0.0.0.0 \
