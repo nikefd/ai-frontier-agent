@@ -77,6 +77,7 @@
 | `email` | str | 小写归一化，唯一 |
 | `password_hash` | str | bcrypt 哈希（含盐）；**永不返回给前端**（响应用 `UserPublic`，无此字段） |
 | `role` | str | admin / user；首个注册者为 admin |
+| `email_verified` | bool | 邮箱是否已验证；首个 admin 自动 True，其余注册默认 False（软提示，不阻断登录） |
 | `created_at` / `last_login_at` | str | ISO 时间 |
 
 ### 3.2 sources.json（按 feed url 为 key）

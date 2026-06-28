@@ -62,6 +62,15 @@ sequenceDiagram
 
 `bcrypt`（自带盐）。`hash_password` / `verify_password` 在 `auth.py`。密码超 72 字节按 bcrypt 规则截断。
 
+### 3.1b 邮箱验证（软提示，不阻断登录）
+
+`UserRecord.email_verified`（默认 False，**首个 admin 自动 True**，免得 SMTP 没配好就把自己锁外面）。流程：
+
+- 注册非 admin 用户 → `_send_verification` 用 `itsdangerous` 签一个独立 salt（`aif-email-verify`，与 session token 隔离）的 token（24h），拼成 `<AIF_PUBLIC_BASE_URL>/api/auth/verify?token=…` 发邮件。
+- 用户点链接 → `GET /verify` 校验 token → `mark_email_verified` → 302 跳 `/ui/?verify=ok|invalid`，前端弹 toast。
+- 未验证用户**仍可登录使用**，只在顶栏显示「📧 未验证」按钮，点击 `POST /resend-verification` 重发。
+- 发信走 `app/email.py`（纯 `smtplib`，零依赖）；SMTP 未配置时**优雅降级**（log warning，注册照常，不发信）。配置见 [config-reference](../reference/config-reference.md) 的 `AIF_SMTP_*` / `AIF_PUBLIC_BASE_URL`。
+
 ### 3.2 会话：无状态签名 cookie
 
 用 `itsdangerous.URLSafeTimedSerializer` 签 `{"uid": uid}` 写入 `aif_session` cookie（**httponly + samesite=lax**，HTTPS 下 + secure）。每请求依赖从 cookie 读 token → 校验签名/过期 → 得 uid → 查 `users.json`。

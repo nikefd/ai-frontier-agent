@@ -23,6 +23,12 @@
 | `AIF_COOKIE_SECURE` | `cookie_secure` | `False` | 是否给会话 cookie 加 `Secure` 标记。**HTTPS 部署设 1**，否则明文 HTTP 下可被嗅探 |
 | `AIF_ADMIN_EMAIL` | `admin_email` | `None` | 指定继承老（单用户）数据的邮箱；**为空则第一个注册的账号继承**（且首注册者自动为 admin） |
 | `AIF_CORS_ORIGINS` | `cors_origins` | `""` | 允许的跨域来源（逗号分隔）。cookie 鉴权下 `allow_credentials=True`，**不能用 `"*"`**；为空 = 仅同源（内置 UI 够用） |
+| `AIF_SMTP_HOST` | `smtp_host` | `""` | 邮箱验证用的 SMTP 服务器。**留空则不发验证邮件**（注册照常） |
+| `AIF_SMTP_PORT` | `smtp_port` | `587` | SMTP 端口（STARTTLS） |
+| `AIF_SMTP_USER` | `smtp_user` | `""` | SMTP 登录用户名。Gmail 填邮箱；SendGrid 固定填 `apikey` |
+| `AIF_SMTP_PASSWORD` | `smtp_password` | `""` | SMTP 密码。**Gmail 用「应用专用密码」非登录密码**；SendGrid 填 API Key。**绝不入 git** |
+| `AIF_SMTP_FROM` | `smtp_from` | `""` | 发件人地址；留空则用 `smtp_user` |
+| `AIF_PUBLIC_BASE_URL` | `public_base_url` | `""` | 站点公开地址（如 `https://ai.zhangyangbin.com`），用于拼验证链接。**留空则不发验证信**（拼不出链接） |
 
 ## 非 `AIF_` 前缀的相关变量
 

@@ -25,6 +25,7 @@
 | 为什么不能手动改 sparrow-chat.js | [前端架构](architecture/frontend-architecture.md)（第 5 节） |
 | 查全部 HTTP 端点 / 新增一个端点 | [API 参考](reference/api-reference.md) |
 | 用户注册登录 / 鉴权守卫 / 会话怎么做 | [认证架构](architecture/auth-architecture.md) |
+| 邮箱验证 / SMTP 怎么配 / 重发链接 | [认证架构](architecture/auth-architecture.md)（3.1b）＋ [配置参考](reference/config-reference.md)（`AIF_SMTP_*`）＋ `app/email.py` |
 | admin 用户管理 / admin 守卫 / 护栏 | [认证架构](architecture/auth-architecture.md)（第 1 节）＋ [API 参考](reference/api-reference.md)（0b 节）＋ `app/routers/admin.py` |
 | 数据怎么按用户隔离 / pin 为什么迁出文章 / 老数据迁移 | [认证架构](architecture/auth-architecture.md)（第 2/5 节）＋ [数据存储参考](reference/data-storage.md) |
 | 为什么有两个 `/chat` 端点 | [后端架构](architecture/backend-architecture.md)（第 6 节）＋ [已知问题](reference/known-issues.md)（第 2 条） |

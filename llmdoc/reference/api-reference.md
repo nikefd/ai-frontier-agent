@@ -14,7 +14,9 @@
 | POST | `/register` | — | 注册 `{email, password}`；首个账号自动为 admin 并继承老数据；成功下发会话 cookie。限流 8 次/60s |
 | POST | `/login` | — | 登录 `{email, password}`；成功下发会话 cookie。错误统一文案防枚举。限流 8 次/60s（按 IP+邮箱） |
 | POST | `/logout` | — | 清除会话 cookie |
-| GET | `/me` | — | 返回当前用户 `{user: {id,email,role} | null}` |
+| GET | `/verify` | — | 邮箱验证落地页（邮件链接指向这里）：`?token=<签名token>`，校验后标记 `email_verified` 并 302 跳 `/ui/?verify=ok|invalid` |
+| POST | `/resend-verification` | 写 | 给当前登录用户重发验证邮件（限流）。已验证返回 `{already_verified:true}` |
+| GET | `/me` | — | 返回当前用户 `{user: {id,email,role,email_verified} | null}` |
 
 ## 0b. 管理后台（prefix `/api/admin`）
 
