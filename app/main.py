@@ -104,20 +104,22 @@ def health() -> dict:
     }
 
 
-# ── Static frontend ─────────────────────────────────────────────────
-STATIC_DIR = Path(__file__).parent.parent / "static"
+# ── Static frontend (Vite build output) ─────────────────────────────
+# Vite builds frontend/ → static/dist/ with content-hashed asset filenames.
+STATIC_DIR = Path(__file__).parent.parent / "static" / "dist"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _sync_sparrow_assets() -> None:
-    """Copy the bundled sparrow-chat.js into our static dir so the page can
-    serve it from /ui/js/. Done at startup so a sparrow upgrade auto-propagates."""
+    """Copy the bundled sparrow-chat.js into the build dir so the page can
+    serve it from /ui/sparrow-chat.js. Done at startup so a sparrow upgrade
+    auto-propagates. It is referenced by a plain <script> (not a module import),
+    so Vite never bundles it — it lives alongside the build output at runtime."""
     try:
         import shutil
         from sparrow.web import asset_path
-        dst = STATIC_DIR / "js"
-        dst.mkdir(parents=True, exist_ok=True)
-        shutil.copy(asset_path("sparrow-chat.js"), dst / "sparrow-chat.js")
+        STATIC_DIR.mkdir(parents=True, exist_ok=True)
+        shutil.copy(asset_path("sparrow-chat.js"), STATIC_DIR / "sparrow-chat.js")
     except Exception as e:  # noqa: broad-except
         logging.getLogger("aif").warning("could not sync sparrow-chat.js: %s", e)
 
@@ -132,30 +134,32 @@ def root() -> RedirectResponse:
 
 @app.get("/ui/")
 def ui_index() -> FileResponse:
-    # no-store on the HTML entry so a deploy is picked up immediately; the JS
-    # modules it pulls are revalidated via ETag by NoCacheStaticFiles below.
+    # The HTML entry is tiny and references content-hashed assets, so it must
+    # always be revalidated (no-cache) — once it updates, the new hashed asset
+    # URLs pull fresh JS/CSS automatically. A deploy is picked up immediately.
     return FileResponse(
         STATIC_DIR / "index.html",
-        headers={"Cache-Control": "no-store"},
+        headers={"Cache-Control": "no-cache"},
     )
 
 
-class NoCacheStaticFiles(StaticFiles):
-    """Serve static assets with ``Cache-Control: no-cache``.
+class HashedAssetStaticFiles(StaticFiles):
+    """Serve Vite build output with correct caching.
 
-    This is a zero-build ES-module frontend: ``main.js`` pulls ~9 sibling
-    modules via bare relative ``import`` (no query string), so we can't bust
-    them with a versioned URL without a build step. ``no-cache`` keeps the
-    browser cache but forces an ETag revalidation on every load — a cheap 304
-    when unchanged, and the fresh file the instant a deploy changes it. Fixes
-    users seeing stale JS for hours after a deploy.
+    Content-hashed files under /ui/assets/* are immutable — their name changes
+    when content changes — so they get a 1-year immutable cache (zero revalidation,
+    fast). Everything else (e.g. the runtime-synced sparrow-chat.js) falls back to
+    no-cache so updates aren't missed.
     """
 
     async def get_response(self, path, scope):
         response = await super().get_response(path, scope)
-        response.headers["Cache-Control"] = "no-cache"
+        if path.startswith("assets/"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        else:
+            response.headers["Cache-Control"] = "no-cache"
         return response
 
 
 # Mount /ui after explicit / handler so / still redirects cleanly.
-app.mount("/ui", NoCacheStaticFiles(directory=str(STATIC_DIR), html=True), name="ui")
+app.mount("/ui", HashedAssetStaticFiles(directory=str(STATIC_DIR), html=True), name="ui")
