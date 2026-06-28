@@ -53,7 +53,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 `testpaths = ["tests"]` 和 pytest-asyncio。`tests/` 已建（`test_feed_personal.py` 个性化排序、`test_srs.py` SM-2 调度），但**覆盖率仍很低**，大部分模块无测试。注意：开发环境不一定装了 `pytest`（`python -m pytest` 可能报 `No module named pytest`），纯函数测试可临时用 `python -c "import tests.xxx ..."` 跑断言验证。
+`pyproject.toml` 配了 `testpaths = ["tests"]` 和 pytest-asyncio。`tests/` 有 `test_feed_personal.py`（个性化排序）、`test_srs.py`（SM-2 调度）、`test_admin.py`（admin 护栏，集成测试用 TestClient）。覆盖率仍低。注意：开发环境不一定装了 `pytest`（`python -m pytest` 可能报 `No module named pytest`）——纯函数测试可 `python -c "import tests.xxx ..."` 跑断言，`test_admin.py` 额外支持 `python tests/test_admin.py` 直接运行（带 `__main__` 入口）。
 
 ## 11. `deploy/` 目录为空
 

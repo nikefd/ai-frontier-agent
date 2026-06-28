@@ -15,6 +15,8 @@
 
 实现：写 & LLM 端点挂 `Depends(require_user)`（匿名 401）；用户产物的读挂 `Depends(current_user_optional)`（匿名得空）；全局只读端点不挂。
 
+**admin 角色**：`require_admin`（`auth.py`）在 `require_user` 之上加 `role == "admin"` 校验（非 admin 403）。`/api/admin/*`（用户管理：列表/改角色/删除）全挂它。护栏：admin 不能删/降自己、系统至少留一个 admin。前端用 `body.is-admin` class 控制「用户管理」入口显隐（auth.js 按当前用户 role 切）。端点见 [API 参考](../reference/api-reference.md) 0b 节。
+
 ## 2. 数据切分
 
 只有**用户产物**按用户独立，其余全局共享。

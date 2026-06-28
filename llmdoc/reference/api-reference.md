@@ -16,6 +16,18 @@
 | POST | `/logout` | — | 清除会话 cookie |
 | GET | `/me` | — | 返回当前用户 `{user: {id,email,role} | null}` |
 
+## 0b. 管理后台（prefix `/api/admin`）
+
+仅 admin 可访问（守卫 `require_admin`：非 admin **403**，匿名 **401**）。实现在 `app/routers/admin.py`。
+
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| GET | `/users` | admin | 列全部用户（id/email/role/created_at/last_login + 产物概览 pins/deep_dives/cards，**不含 password_hash**），含 `me`=当前 admin id |
+| PATCH | `/users/{uid}/role` | admin | 改角色 `{role: admin/user}`。**不能改自己**（400）；不能把最后一个 admin 降级（400） |
+| DELETE | `/users/{uid}` | admin | 删用户 + 其 `users/<uid>/` 产物目录（**不可逆**）。**不能删自己**（400）；不能删最后一个 admin（400） |
+
+> 安全护栏：自删/自降被挡 → 任一时刻系统至少留一个 admin（要操作 admin 自己也得是 admin，单 admin 时只能是自己）。测试见 `tests/test_admin.py`。
+
 ## 1. 系统 / 静态
 
 | 方法 | 路径 | 说明 |
