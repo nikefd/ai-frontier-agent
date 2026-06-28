@@ -5,6 +5,7 @@ import { state } from './state.js';
 import { refreshList } from './feed.js';
 import { regenSummary, regenProfile } from './views.js';
 import { regenReflection } from './reflection.js';
+import { generateLearning } from './learning.js';
 import { manualNewDive } from './dives.js';
 import { addManualCard } from './review.js';
 import { switchView } from './nav.js';
@@ -92,6 +93,7 @@ $('#btn-translate').addEventListener('click', async () => {
 $('#btn-regen-summary').addEventListener('click', regenSummary);
 $('#btn-regen-profile').addEventListener('click', regenProfile);
 $('#btn-regen-reflection').addEventListener('click', regenReflection);
+$('#btn-gen-path').addEventListener('click', generateLearning);
 $('#btn-new-dive').addEventListener('click', manualNewDive);
 $('#btn-new-card').addEventListener('click', addManualCard);
 $('#btn-toggle-newcard').addEventListener('click', () => {

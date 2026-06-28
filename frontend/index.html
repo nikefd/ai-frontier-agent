@@ -85,6 +85,7 @@
         <button data-view="dives"><span>🧠</span> 深度解读 <span class="count" id="cnt-dives">·</span></button>
         <button data-view="review"><span>🗂️</span> 知识卡 <span class="count" id="cnt-review">·</span></button>
         <button data-view="reflection"><span>🪞</span> 复盘</button>
+        <button data-view="learning"><span>🗺️</span> 学习路径</button>
         <button data-view="profile"><span>🪪</span> 我的画像</button>
         <button data-view="sources"><span>🔌</span> 数据源 <span class="count" id="cnt-sources">·</span></button>
         <button data-view="admin" class="admin-only"><span>👥</span> 用户管理</button>
@@ -223,6 +224,27 @@
           </div>
           <div class="text-xs text-faint mb-12">基于你最近 7 天的活动，AI 教练给出回顾和几个引导思考的问题 · 可展开聊或存为知识卡</div>
           <div id="reflection-body"></div>
+        </div>
+      </div>
+
+      <!-- VIEW: LEARNING (personalized staged roadmap) -->
+      <div class="view-pane hidden" id="view-learning">
+        <div class="card">
+          <div class="card-head">
+            <h3>🗺️ 学习路径</h3>
+            <span id="learning-meta" class="text-xs text-faint"></span>
+          </div>
+          <div class="text-xs text-faint mb-12">输入一个方向，结合你的画像编排「入门→进阶→精通」的分阶段路线，优先引用你库里的解读和文章 · 不同于单篇长文指南</div>
+          <div class="row">
+            <label class="field" style="flex:1">
+              <span>学习方向</span>
+              <input id="lp-topic" placeholder="例：Agent 工程 / RAG 系统 / 多模态" />
+            </label>
+            <button class="primary fixed" id="btn-gen-path" style="align-self:flex-end">⚡ 生成路径</button>
+          </div>
+          <div id="learning-list" class="mt-12"></div>
+          <hr class="hr">
+          <div id="learning-current"></div>
         </div>
       </div>
 
