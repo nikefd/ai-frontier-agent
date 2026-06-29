@@ -1,15 +1,19 @@
-"""Async translation worker for AI-news articles.
+"""Async enrichment worker for AI-news articles.
 
-Picks up articles with translation_status="pending" in small batches and asks
-the LLM for Chinese title + summary. Writes title_zh / summary_zh / status
-back to articles.json atomically.
+Picks up un-enriched articles in small batches and asks the LLM, in ONE batched
+call per batch, for: Chinese title + summary, an importance score (0-10), and
+controlled tags. Writes everything back to the GLOBAL articles.json atomically —
+so enrichment is computed once and shared across all users (content is global;
+only pins/profiles are per-user).
 
 Design notes:
-  - Batch of 5 per tick keeps prompt size + latency reasonable
-  - Single LLM call per batch (JSON output) — cheaper than 5 separate calls
-  - On any failure we mark status=failed; next sweep won't retry unless reset
-  - Already-translated rows are skipped
-  - Idempotent: if title_zh exists we mark status=ok regardless
+  - One LLM call per batch (JSON array out) — translation + score + tags together,
+    so we never pay separate calls for scoring/tagging.
+  - Importance lets the feed sort/filter by quality (the "全而能筛出好的" layer).
+  - Tags use a CONTROLLED vocabulary (see TAG_VOCAB) so users can filter reliably
+    instead of drowning in LLM-invented near-synonyms.
+  - On failure we mark status=failed; next sweep won't retry unless reset.
+  - Idempotent: already-enriched rows (have title_zh) are skipped.
 """
 from __future__ import annotations
 
@@ -24,17 +28,28 @@ from ..storage import write_json_atomic
 
 log = logging.getLogger("aif.translator")
 
-BATCH_SIZE = 5
+BATCH_SIZE = 8
+
+# Controlled tag vocabulary — the LLM must pick from this list, nothing else.
+# Keeps tags filterable (no synonym explosion). Mirror in frontend TAG_VOCAB.
+TAG_VOCAB = ["发布", "论文", "工具", "开源", "教程", "观点", "融资", "安全", "评测", "应用"]
 
 SYSTEM = (
-    "你是一名 AI/技术新闻的专业中英翻译员。\n"
-    "我会给你一组 RSS 抓取下来的英文文章条目，请把每条的 title 和 summary 翻译成自然、专业、紧凑的中文。\n"
-    "规则：\n"
-    "- 保留专有名词（OpenAI / GPT-4 / vLLM / RLHF 等）不翻译\n"
-    "- 不要营销词、不要加感叹号\n"
-    "- summary 限制在 150 字以内，可改写为信息密度更高的中文\n"
-    "- 输出必须是单个合法 JSON 数组，每项形如 {\"id\":\"...\",\"title_zh\":\"...\",\"summary_zh\":\"...\"}\n"
-    "- 不要带 markdown 代码块标记"
+    "你是一名 AI/技术新闻编辑。我会给你一组 RSS 抓取的英文（或中文）文章条目，"
+    "请对每条做三件事：翻译、评重要性、打标签。\n\n"
+    "1) 翻译：把 title 和 summary 翻成自然、专业、紧凑的中文。\n"
+    "   - 保留专有名词（OpenAI / GPT-4 / vLLM / RLHF 等）不翻译\n"
+    "   - 不要营销词、不要感叹号；summary 控制在 150 字内，可改写为信息密度更高的中文\n"
+    "   - 若原文已是中文，title_zh/summary_zh 直接整理原文\n"
+    "2) 重要性 importance：0-10 整数，评估这条对追 AI 前沿的人有多值得看。\n"
+    "   - 9-10：重大模型/产品发布、突破性论文、行业大事\n"
+    "   - 6-8：有价值的工具/方法/深度观点/重要更新\n"
+    "   - 3-5：一般资讯、增量更新\n"
+    "   - 0-2：噪音、闲聊、无实质信息、纯营销\n"
+    f"3) tags：从这个固定清单里选 1-3 个最贴切的（**只能用清单里的词**）：{TAG_VOCAB}\n\n"
+    "输出必须是单个合法 JSON 数组，每项形如："
+    '{"id":"...","title_zh":"...","summary_zh":"...","importance":7,"tags":["发布","工具"]}\n'
+    "不要带 markdown 代码块标记。"
 )
 
 
@@ -60,9 +75,11 @@ def _build_user_msg(batch: list[dict]) -> str:
                 "id": a.get("id"),
                 "title": a.get("title") or "",
                 "summary": (a.get("summary") or "")[:600],
+                "source": a.get("source") or "",
+                "category": a.get("category") or "",
             }
         )
-    return "请翻译以下文章：\n" + json.dumps(rows, ensure_ascii=False)
+    return "请处理以下文章：\n" + json.dumps(rows, ensure_ascii=False)
 
 
 _JSON_ARRAY_RE = re.compile(r"\[[\s\S]*\]")
@@ -71,7 +88,6 @@ _JSON_ARRAY_RE = re.compile(r"\[[\s\S]*\]")
 def _parse_response(body: str) -> list[dict[str, Any]]:
     body = body.strip()
     if body.startswith("```"):
-        # strip code-fence
         body = re.sub(r"^```[a-z]*\n?", "", body)
         body = re.sub(r"\n?```$", "", body)
     try:
@@ -86,25 +102,38 @@ def _parse_response(body: str) -> list[dict[str, Any]]:
     return data
 
 
+def _clean_importance(v: Any) -> int | None:
+    try:
+        n = int(v)
+    except (TypeError, ValueError):
+        return None
+    return max(0, min(10, n))
+
+
+def _clean_tags(v: Any) -> list[str]:
+    if not isinstance(v, list):
+        return []
+    return [t for t in v if t in TAG_VOCAB][:3]
+
+
 async def translate_once() -> int:
-    """Translate one batch. Returns number translated."""
+    """Enrich one batch (translate + score + tag). Returns number processed."""
     if not llm_configured():
         return 0
     articles = _load_articles()
     batch = _pick_pending(articles, BATCH_SIZE)
     if not batch:
         return 0
-    log.info("translation worker: batch of %d", len(batch))
+    log.info("enrich worker: batch of %d", len(batch))
     messages = [
         {"role": "system", "content": SYSTEM},
         {"role": "user", "content": _build_user_msg(batch)},
     ]
     try:
-        body = await chat_complete(messages, temperature=0.2, max_tokens=1400)
+        body = await chat_complete(messages, temperature=0.2, max_tokens=2200)
         parsed = _parse_response(body)
     except (LLMUnavailable, ValueError, json.JSONDecodeError) as e:
-        log.warning("translation batch failed: %s", e)
-        # Mark this batch failed so we don't loop on them forever
+        log.warning("enrich batch failed: %s", e)
         ids = {a.get("id") for a in batch}
         for a in articles:
             if a.get("id") in ids:
@@ -123,15 +152,21 @@ async def translate_once() -> int:
                 a["title_zh"] = title_zh
             if summary_zh:
                 a["summary_zh"] = summary_zh
+            imp = _clean_importance(p.get("importance"))
+            if imp is not None:
+                a["importance"] = imp
+            tags = _clean_tags(p.get("tags"))
+            if tags:
+                a["tags"] = tags
             a["translation_status"] = "ok" if title_zh else "failed"
             written += 1
-    # Catch entries that were in batch but missing from response → mark failed
+    # Entries in batch but missing from response → mark failed
     missing = {a["id"] for a in batch if a.get("id")} - set(by_id.keys())
     for a in articles:
         if a.get("id") in missing:
             a["translation_status"] = "failed"
     write_json_atomic(ARTICLES_FILE, articles)
-    log.info("translation worker: persisted %d entries", written)
+    log.info("enrich worker: persisted %d entries", written)
     return written
 
 

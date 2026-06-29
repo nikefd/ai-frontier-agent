@@ -327,6 +327,8 @@ def list_articles(
     pinned_only: bool = False,
     tier: str | None = None,
     category: str | None = None,
+    tag: str | None = None,
+    sort: str = "newest",
     offset: int = 0,
     limit: int = 20,
     user: UserPublic | None = Depends(current_user_optional),
@@ -364,8 +366,19 @@ def list_articles(
             a for a in articles
             if (a.get("category") or cat_by_name.get(a.get("source")) or "") in wanted_c
         ]
-    # newest first; pinned bubble up
-    articles.sort(key=lambda a: (not a.get("pinned"), -(_parse_ts(a.get("date") or ""))))
+    if tag:
+        wanted_t = {t.strip() for t in tag.split(",") if t.strip()}
+        articles = [a for a in articles if wanted_t & set(a.get("tags") or [])]
+    # Sort: pinned always bubble up; then by chosen key.
+    if sort == "important":
+        # Highest importance first; unscored (None) sink to the bottom; date breaks ties.
+        articles.sort(key=lambda a: (
+            not a.get("pinned"),
+            -(a.get("importance") if a.get("importance") is not None else -1),
+            -(_parse_ts(a.get("date") or "")),
+        ))
+    else:
+        articles.sort(key=lambda a: (not a.get("pinned"), -(_parse_ts(a.get("date") or ""))))
     total = len(articles)
     offset = max(0, offset)
     limit = max(1, min(limit, 100))

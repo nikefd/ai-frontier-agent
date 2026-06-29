@@ -40,6 +40,7 @@ class Article(BaseModel):
     title_zh: str | None = None
     summary_zh: str | None = None
     translation_status: str | None = None  # pending | ok | failed | skipped
+    importance: int | None = None  # 0-10 LLM-scored importance (set during enrich)
     deep_dive_status: str | None = None  # none | generating | ok | failed
     deep_dive_id: str | None = None  # file stem under deep-dives/
 
