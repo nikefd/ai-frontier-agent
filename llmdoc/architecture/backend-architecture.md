@@ -9,7 +9,7 @@
 整个后端是**一个** uvicorn 进程，里面同时跑着：
 
 - HTTP API（`/api/*`）
-- 静态前端托管（`/ui/*`）
+- 静态前端托管（根路径 + SPA catch-all）
 - APScheduler 后台任务（抓取 + 翻译），与 FastAPI **共用同一个 asyncio 事件循环**
 
 没有独立 worker 进程，没有消息队列，没有数据库服务。这是刻意的「克隆即可跑」取向——代价是抓取/翻译/LLM 调用都和 Web 请求共享同一进程的事件循环（IO 密集、异步，所以单进程够用；但 CPU 密集任务会阻塞，目前没有这类任务）。
@@ -33,15 +33,15 @@ flowchart TD
   subgraph 模块加载期（import 时）
     mount_news[挂载 ai_news 路由]
     mount_agent[尝试挂载 agent_chat 路由<br/>失败仅告警，新闻 API 不受影响]
-    mount_ui[挂载 /ui 静态目录]
+    mount_ui[挂载 /assets + 根 index + SPA catch-all]
   end
 ```
 
 几个关键设计点：
 
 - **agent 路由是「软挂载」**：`app/main.py` 用 try/except 包住 `from .agent_chat import router`。如果 agent 运行时初始化失败，只打一条 warning，**新闻 API 照常工作**。
-- **对话组件 sparrow-chat.js 随前端构建**：现在是仓库内源码 `frontend/public/sparrow-chat.js`，Vite 原样输出到 `/ui/sparrow-chat.js`。（历史：曾由 `_sync_sparrow_assets()` 启动时从 sparrow 包同步，agent 运行时内联后该机制已删。）
-- **`/` 与 `/ui` 的挂载顺序**：先显式注册 `GET /` → redirect 到 `/ui/`、`GET /ui/` → 返回 index.html，**再** `app.mount("/ui", StaticFiles(...))`。顺序很重要，否则 StaticFiles 会吃掉 `/ui/` 导致重定向逻辑失效。
+- **对话组件 sparrow-chat.js 随前端构建**：现在是仓库内源码 `frontend/public/sparrow-chat.js`，Vite 原样输出，后端在 `GET /sparrow-chat.js` 提供。（历史：曾由 `_sync_sparrow_assets()` 启动时从 sparrow 包同步，agent 运行时内联后该机制已删。）
+- **根路径托管 + SPA catch-all（路由顺序很重要）**：`GET /` 返回 index.html；`app.mount("/assets", ...)` 服务指纹文件（immutable 强缓存）；`GET /sparrow-chat.js`；最后注册 `GET /{full_path:path}` 作 SPA catch-all（非 `/api`、非真实文件 → 返回 index，交前端 History 路由接管）。catch-all 必须**最后**注册，否则会吃掉真实路由。`/ui` `/ui/` → 301 跳 `/`（旧书签兼容）。
 - **CORS 现按配置收口**：`allow_origins=settings.cors_origin_list` + `allow_credentials=True`（cookie 鉴权必需）。默认 `AIF_CORS_ORIGINS` 为空 = 仅同源。鉴权改动见 [认证架构](auth-architecture.md)。
 
 ## 3. 模块职责与依赖方向
