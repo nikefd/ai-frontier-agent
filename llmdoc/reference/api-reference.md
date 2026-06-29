@@ -46,7 +46,7 @@
 
 | 方法 | 路径 | 🔒 | 说明 |
 |---|---|---|---|
-| GET | `/articles` | 读* | 分页列表。query：`q` / `pinned_only` / `tier` / `category`（逗号分隔多值）/ `tag`（逗号分隔，受控词表）/ `sort`（`newest` 默认 / `important` 按重要性降序，未评分沉底）/ `offset` / `limit`（1–100）。返回 `{total, offset, limit, items}`，pinned 置顶。**每项的 `pinned`/`deep_dive_status` 按当前用户叠加**；`importance`(0-10)/`tags` 由富化 worker 写在全局文章上 |
+| GET | `/articles` | 读* | 分页列表。query：`q` / `pinned_only` / `tier` / `category`（逗号分隔多值）/ `tag`（逗号分隔，受控词表）/ `sort`（`newest` 默认 / `important` 按重要性降序，未评分沉底）/ `offset` / `limit`（1–100）。返回 `{total, offset, limit, items}`。**收藏不再置顶**（按 sort 正常排，仅带 ★ 标识；收藏夹用 `pinned_only` 看）。每项的 `pinned`/`deep_dive_status` 按当前用户叠加；`importance`(0-10)/`tags` 由富化 worker 写在全局文章上 |
 | POST | `/articles` | 写 | 手动新增一篇（`Article` body）；按 id/url 去重；超 400 滚动淘汰（被**任一用户** pin 的不淘汰）。也是 fetcher worker 入库的入口 |
 | DELETE | `/articles/{aid}` | 写 | 删除一篇（全局文章） |
 | POST | `/articles/{aid}/pin` | 写 | 收藏/取消收藏（toggle）。pin 存当前用户的 `pins.json`，不写全局文章对象 |
