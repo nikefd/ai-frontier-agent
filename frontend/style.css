@@ -77,6 +77,9 @@ body[data-agent="finance"] {
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+/* Never allow horizontal page scroll — a stray wide element shouldn't make the
+   whole page draggable sideways (was happening on mobile in the review view). */
+html, body { max-width: 100%; overflow-x: hidden; }
 body {
   margin: 0;
   font-family: var(--font-sans);
@@ -2016,12 +2019,14 @@ body.landing-active .bottom-tabs { display: none !important; }
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
   .bottom-tabs button {
-    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    flex: 1; min-width: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px;
     background: none; border: none; padding: 7px 0 6px; cursor: pointer;
-    color: var(--text-dim); font-size: 0;
+    color: var(--text-dim); -webkit-tap-highlight-color: transparent;
+    -webkit-appearance: none; appearance: none;
   }
   .bottom-tabs button span { font-size: 19px; line-height: 1; }
-  .bottom-tabs button b { font-size: 10.5px; font-weight: 500; }
+  .bottom-tabs button b { font-size: 10.5px; font-weight: 500; line-height: 1.2; }
   .bottom-tabs button.on { color: var(--accent); }
 
   /* Hide the desktop side-nav's 视图 group on mobile (bottom tabs replace it);
