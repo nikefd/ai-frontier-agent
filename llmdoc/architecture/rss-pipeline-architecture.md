@@ -89,13 +89,16 @@ flowchart TD
 - 单 feed 失败（HTTP 错误/超时/解析异常）只记进该源的 `last_error`，**绝不阻塞其它源**（`asyncio.gather(..., return_exceptions=True)`）。
 - 每个 feed 只取前 20 个 entry；摘要截断到 280 字符。
 
-## 3. 翻译（`translate_once`）
+## 3. 富化（`translate_once`，翻译 + 评分 + 打标签）
+
+worker 名义上叫翻译，实际**一次批量 LLM 调用同时做三件事**：中英翻译、重要性评分(0-10)、受控标签。这是「质量层」的核心——让文章流能从「全」筛出「好」。
 
 - **触发**：`scheduler.py` 每 2 分钟一个 `IntervalTrigger`（`max_instances=1, coalesce=True` 防堆积）；也可 `POST /translate/run` 手动跑一批。
-- **选批**：挑 `translation_status` 不在 `{ok, failed, skipped}` 且没有 `title_zh`/`summary_zh` 的文章，一次 `BATCH_SIZE=5` 篇。
-- **单次调用**：5 篇拼成一个 prompt，要求 LLM 返回**单个 JSON 数组**，每项 `{id, title_zh, summary_zh}`——比 5 次单独调用省钱。`_parse_response` 容忍 ```` ```json ```` 代码块包裹和数组外杂字符。
-- **写回**：按 id 匹配写 `title_zh`/`summary_zh`，标 `translation_status="ok"`。
-- **失败处理**：整批失败、或某篇在响应里缺失 → 标 `failed`。**`failed` 不会自动重试**（避免死循环），要重译得 `POST /articles/{aid}/retranslate` 把状态重置回 `pending`。
+- **选批**：挑 `translation_status` 不在 `{ok, failed, skipped}` 且没有 `title_zh`/`summary_zh` 的文章，一次 `BATCH_SIZE=8` 篇。
+- **单次调用**：8 篇拼成一个 prompt，要求 LLM 返回**单个 JSON 数组**，每项 `{id, title_zh, summary_zh, importance, tags}`——翻译/评分/打标签合一，**不拆成多次调用**。`importance` 0-10 整数（`_clean_importance` 钳位）；`tags` 从**受控词表** `TAG_VOCAB`（发布/论文/工具/开源/教程/观点/融资/安全/评测/应用）里选，`_clean_tags` 丢弃词表外的词、最多 3 个。
+- **写回**：按 id 匹配写 `title_zh`/`summary_zh`/`importance`/`tags` 到**全局** `articles.json`——内容全局共享，**一篇只富化一次，所有用户复用**（pin/画像才按用户隔离）。
+- **失败处理**：整批失败、或某篇在响应里缺失 → 标 `failed`。**`failed` 不会自动重试**，要重来得 `POST /articles/{aid}/retranslate` 重置回 `pending`。
+- 纯函数 `_clean_importance`/`_clean_tags`/`_parse_response` 有单测 `tests/test_enrich.py`。
 
 ## 4. 其它 LLM 加工产物
 

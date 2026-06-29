@@ -60,12 +60,13 @@
 | `title` / `url` / `source` | str | 原始标题 / 链接 / 来源名 |
 | `date` | str | ISO 时间（发布或入库时间） |
 | `summary` | str | 去标签后截断的英文摘要 |
-| `tags` | list | 标签 |
+| `tags` | list | 受控词表标签（富化 worker 从 `TAG_VOCAB` 选，最多 3 个） |
 | `tier` | str | high/med/low（源 tier，当前全 high） |
 | `category` | str | vendor/media/expert/x-ai/community/paper/blog/trending |
 | `ai_relevance` | str | keyword/curated/unknown/rejected（打标，不用于拒绝） |
 | `title_zh` / `summary_zh` | str | 中文翻译（翻译 worker 写） |
 | `translation_status` | str | pending/ok/failed/skipped |
+| `importance` | int? | 富化 worker 评的重要性 0-10（用于文章流 `sort=important`）；老文章/未富化为 null |
 
 > **多用户后**：`pinned` / `deep_dive_status` / `deep_dive_id` **不再持久化到全局 `articles.json`**。`pinned` 现按用户存于 `users/<uid>/pins.json`；`deep_dive_status` 由「该用户的 `deep-dives/{aid}.json` 是否存在」推导。`GET /articles` 在响应里**按当前用户叠加**这三个字段（匿名全为未 pin/无解读）。`manual` 合成文章也不再进全局流（手动解读只进用户深度解读库）。
 
