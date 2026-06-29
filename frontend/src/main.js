@@ -53,6 +53,14 @@ $$('.seg button[data-filter]').forEach(b => b.addEventListener('click', () => {
   refreshList();
 }));
 
+$$('#sort-seg button[data-sort]').forEach(b => b.addEventListener('click', () => {
+  $$('#sort-seg button[data-sort]').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  state.sort = b.dataset.sort;
+  state.offset = 0;
+  refreshList();
+}));
+
 $('#search').addEventListener('input', (e) => {
   state.q = e.target.value.trim();
   state.offset = 0;

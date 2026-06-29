@@ -12,6 +12,8 @@ export async function refreshList() {
   if (state.cat) params.set('category', state.cat);
   if (state.q) params.set('q', state.q);
   if (state.filter === 'pinned') params.set('pinned_only', 'true');
+  if (state.sort) params.set('sort', state.sort);
+  if (state.tag) params.set('tag', state.tag);
 
   const listEl = $('#article-list');
   listEl.innerHTML = '<div class="muted-card">加载中…</div>';
@@ -58,8 +60,11 @@ function articleCardHtml(a) {
     ? `<button class="btn-card ghost" data-action="translate">🔄 重新翻译</button>`
     : `<button class="btn-card ghost" data-action="translate">🌐 立即翻译</button>`;
   const tagsHtml = (a.tags && a.tags.length)
-    ? `<div class="article-tags">${a.tags.slice(0, 5).map(t => `<span class="chip chip-tag">${escapeHtml(t)}</span>`).join('')}</div>`
+    ? `<div class="article-tags">${a.tags.slice(0, 5).map(t => `<span class="chip chip-tag" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}</div>`
     : '';
+  // Importance badge: only show for clearly high-value items (>=8) to keep signal.
+  const impHtml = (typeof a.importance === 'number' && a.importance >= 8)
+    ? `<span class="imp-badge" title="重要性 ${a.importance}/10">🔥 ${a.importance}</span>` : '';
   const urlHost = a.url ? (() => { try { return new URL(a.url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } })() : '';
   const originBtn = a.url
     ? `<a class="btn-card primary" href="${escapeHtml(a.url)}" target="_blank" rel="noopener">🔗 阅读原文 ↗</a>` : '';
@@ -68,6 +73,7 @@ function articleCardHtml(a) {
     <article class="article-card ${pinClass}" data-aid="${escapeHtml(a.id)}">
       <header class="card-head">
         ${catBadge(a.category)}
+        ${impHtml}
         <div class="card-titlewrap">
           <h3 class="card-title">${escapeHtml(title)}</h3>
           ${enTitle ? `<div class="card-en">${escapeHtml(enTitle)}</div>` : ''}
@@ -100,6 +106,16 @@ export function renderList() {
     return;
   }
   listEl.innerHTML = state.items.map(articleCardHtml).join('');
+
+  // Tag chips → filter the feed by that tag (toggle off if already active).
+  listEl.querySelectorAll('[data-tag]').forEach(chip =>
+    chip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const t = chip.dataset.tag;
+      state.tag = state.tag === t ? '' : t;
+      state.offset = 0;
+      refreshList();
+    }));
 
   listEl.querySelectorAll('.article-card').forEach(el => {
     const aid = el.dataset.aid;

@@ -1982,3 +1982,11 @@ button.primary.lg:hover { transform: translateY(-1px); box-shadow: var(--shadow-
   border: 1px solid var(--border, #e5e7eb); background: var(--bg-elev-1, #fff); cursor: pointer;
 }
 .chip-suggest:hover { background: var(--accent-soft, #f3f0ff); border-color: var(--accent, #7c3aed); }
+
+/* ── Article importance + clickable tags ──────────────────────────── */
+.imp-badge {
+  font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 999px;
+  background: #fff1e6; color: #c2410c; white-space: nowrap;
+}
+.chip-tag[data-tag] { cursor: pointer; }
+.chip-tag[data-tag]:hover { background: var(--accent, #7c3aed); color: #fff; }

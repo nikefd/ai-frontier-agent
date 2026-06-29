@@ -4,6 +4,8 @@ export const state = {
   view: 'feed',
   cat: '',
   filter: 'all',     // all / pinned / translated
+  sort: 'newest',    // newest / important
+  tag: '',           // active tag filter (controlled vocab)
   q: '',
   offset: 0,
   limit: 20,
