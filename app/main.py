@@ -10,7 +10,7 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -117,46 +117,65 @@ def health() -> dict:
 
 
 # ── Static frontend (Vite build output) ─────────────────────────────
-# Vite builds frontend/ → static/dist/ with content-hashed asset filenames.
-# The agent chat component (sparrow-chat.js) ships via frontend/public/, served
-# verbatim at /ui/sparrow-chat.js — no runtime asset sync needed.
+# Vite builds frontend/ → static/dist/ with content-hashed asset filenames,
+# served at the ROOT path (no /ui/ prefix). The agent chat component
+# (sparrow-chat.js) ships via frontend/public/, served at /sparrow-chat.js.
 STATIC_DIR = Path(__file__).parent.parent / "static" / "dist"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
 
-@app.get("/")
-def root() -> RedirectResponse:
-    return RedirectResponse("/ui/")
-
-
-@app.get("/ui/")
-def ui_index() -> FileResponse:
+def _index_response() -> FileResponse:
     # The HTML entry is tiny and references content-hashed assets, so it must
     # always be revalidated (no-cache) — once it updates, the new hashed asset
     # URLs pull fresh JS/CSS automatically. A deploy is picked up immediately.
-    return FileResponse(
-        STATIC_DIR / "index.html",
-        headers={"Cache-Control": "no-cache"},
-    )
+    return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/")
+def root() -> FileResponse:
+    return _index_response()
+
+
+# Legacy /ui/ links → root (don't break old bookmarks from before the routing change).
+@app.get("/ui")
+@app.get("/ui/")
+def legacy_ui() -> RedirectResponse:
+    return RedirectResponse("/", status_code=301)
 
 
 class HashedAssetStaticFiles(StaticFiles):
-    """Serve Vite build output with correct caching.
+    """Serve Vite's content-hashed assets with a 1-year immutable cache.
 
-    Content-hashed files under /ui/assets/* are immutable — their name changes
-    when content changes — so they get a 1-year immutable cache (zero revalidation,
-    fast). Everything else (e.g. the runtime-synced sparrow-chat.js) falls back to
-    no-cache so updates aren't missed.
+    Mounted at /assets, so every file here is a hashed build artifact whose name
+    changes when content changes — safe to cache forever (zero revalidation).
     """
 
     async def get_response(self, path, scope):
         response = await super().get_response(path, scope)
-        if path.startswith("assets/"):
-            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-        else:
-            response.headers["Cache-Control"] = "no-cache"
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return response
 
 
-# Mount /ui after explicit / handler so / still redirects cleanly.
-app.mount("/ui", HashedAssetStaticFiles(directory=str(STATIC_DIR), html=True), name="ui")
+# Hashed assets get their own mount (long-cache). Mounted before the SPA
+# catch-all so /assets/* resolves to real files, not index.html.
+app.mount("/assets", HashedAssetStaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
+
+
+@app.get("/sparrow-chat.js")
+def sparrow_chat() -> FileResponse:
+    return FileResponse(STATIC_DIR / "sparrow-chat.js", headers={"Cache-Control": "no-cache"},
+                        media_type="application/javascript")
+
+
+# SPA catch-all: any non-/api, non-asset path (e.g. /feed, /reflection) returns
+# the index so the frontend router can take over. Registered LAST so real routes
+# win first. /api/* is handled by routers above and won't reach here.
+@app.get("/{full_path:path}")
+def spa_fallback(full_path: str) -> FileResponse:
+    if full_path.startswith("api/"):
+        raise HTTPException(404, "not found")
+    # Serve real static files at root (favicon etc.) if they exist; else index.
+    candidate = STATIC_DIR / full_path
+    if full_path and candidate.is_file():
+        return FileResponse(candidate, headers={"Cache-Control": "no-cache"})
+    return _index_response()
