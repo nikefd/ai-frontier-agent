@@ -295,6 +295,30 @@
   </div>
 </main>
 
+<!-- ───────── Mobile bottom tab bar (shown ≤720px via CSS) ───────── -->
+<nav class="bottom-tabs" id="bottom-tabs">
+  <button data-view="feed"><span>📰</span><b>文章</b></button>
+  <button data-view="foryou"><span>🎯</span><b>推荐</b></button>
+  <button data-view="reflection"><span>🪞</span><b>复盘</b></button>
+  <button data-view="review"><span>🗂️</span><b>知识卡</b></button>
+  <button id="tab-more"><span>☰</span><b>更多</b></button>
+</nav>
+
+<!-- "更多" bottom sheet: the rest of the views -->
+<div class="more-sheet hidden" id="more-sheet">
+  <div class="more-sheet-panel">
+    <div class="more-sheet-head"><b>更多</b><button id="more-close">✕</button></div>
+    <div class="more-sheet-grid">
+      <button data-view="summary"><span>✨</span> 今日速报</button>
+      <button data-view="dives"><span>🧠</span> 深度解读</button>
+      <button data-view="learning"><span>🗺️</span> 学习路径</button>
+      <button data-view="profile"><span>🪪</span> 我的画像</button>
+      <button data-view="sources"><span>🔌</span> 数据源</button>
+      <button data-view="admin" class="admin-only"><span>👥</span> 用户管理</button>
+    </div>
+  </div>
+</div>
+
 <!-- ───────── Agent chat (agent_runtime chat component) ───────── -->
 <!-- A plain IIFE script (window.SparrowChat), served verbatim from
      frontend/public/. Not an ES module, so it's not bundled. -->

@@ -33,6 +33,9 @@ export function switchView(v, push = true) {
   state.view = v;
   document.body.classList.remove('landing-active');
   $$('.side-nav button[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+  // Keep the mobile bottom tab highlight in sync (views not in the tab bar
+  // simply leave all tabs unhighlighted).
+  $$('.bottom-tabs button[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === v));
   $$('.view-pane').forEach(p => p.classList.toggle('hidden', p.id !== 'view-' + v));
   if (push && location.pathname !== '/' + v) history.pushState({ v }, '', '/' + v);
   _runLoader(v);

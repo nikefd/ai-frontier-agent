@@ -33,6 +33,17 @@ $('#brand').addEventListener('click', () => {
 $$('.side-nav button[data-view]').forEach(b =>
   b.addEventListener('click', () => switchView(b.dataset.view)));
 
+// ── Mobile bottom tab bar + "更多" sheet ──────────────────────────────
+$$('.bottom-tabs button[data-view]').forEach(b =>
+  b.addEventListener('click', () => switchView(b.dataset.view)));
+
+const moreSheet = $('#more-sheet');
+$('#tab-more').addEventListener('click', () => moreSheet.classList.remove('hidden'));
+$('#more-close').addEventListener('click', () => moreSheet.classList.add('hidden'));
+moreSheet.addEventListener('click', (e) => { if (e.target === moreSheet) moreSheet.classList.add('hidden'); });
+$$('#more-sheet button[data-view]').forEach(b =>
+  b.addEventListener('click', () => { switchView(b.dataset.view); moreSheet.classList.add('hidden'); }));
+
 $$('#cat-seg button').forEach(b => b.addEventListener('click', () => {
   $$('#cat-seg button').forEach(x => x.classList.remove('on'));
   b.classList.add('on');

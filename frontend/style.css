@@ -1990,3 +1990,68 @@ button.primary.lg:hover { transform: translateY(-1px); box-shadow: var(--shadow-
 }
 .chip-tag[data-tag] { cursor: pointer; }
 .chip-tag[data-tag]:hover { background: var(--accent, #7c3aed); color: #fff; }
+
+/* ── Mobile bottom tab bar + "更多" sheet (desktop: hidden) ────────── */
+.bottom-tabs { display: none; }
+.more-sheet { display: none; }
+/* Never over the landing/home page. */
+body.landing-active .bottom-tabs { display: none !important; }
+
+@media (max-width: 720px) {
+  /* Bottom tab bar: fixed, 5 cells. */
+  .bottom-tabs {
+    display: flex;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    background: rgba(255,255,255,0.96);
+    border-top: 1px solid var(--border);
+    backdrop-filter: saturate(180%) blur(12px);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .bottom-tabs button {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: none; border: none; padding: 7px 0 6px; cursor: pointer;
+    color: var(--text-dim); font-size: 0;
+  }
+  .bottom-tabs button span { font-size: 19px; line-height: 1; }
+  .bottom-tabs button b { font-size: 10.5px; font-weight: 500; }
+  .bottom-tabs button.on { color: var(--accent); }
+
+  /* Hide the desktop side-nav's 视图 group on mobile (bottom tabs replace it);
+     keep the 分类 group but make it a single horizontal-scroll row (D). */
+  aside .side-nav:first-child { display: none; }
+  #cat-seg {
+    flex-wrap: nowrap !important; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #cat-seg::-webkit-scrollbar { display: none; }
+  #cat-seg button { flex: 0 0 auto; white-space: nowrap; }
+
+  /* Compress the page header: drop the lede, shrink the title. */
+  .page-head { margin-bottom: 12px; }
+  .page-head h2 { font-size: 18px; }
+  .page-head .lede { display: none; }
+
+  /* Room so content isn't hidden behind the fixed tab bar. */
+  main { padding-bottom: 64px; }
+
+  /* "更多" bottom sheet */
+  .more-sheet {
+    display: block; position: fixed; inset: 0; z-index: 70;
+    background: rgba(0,0,0,0.35);
+  }
+  .more-sheet.hidden { display: none; }
+  .more-sheet-panel {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: var(--bg-elev-1); border-radius: 16px 16px 0 0; padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
+  }
+  .more-sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .more-sheet-head button { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-dim); }
+  .more-sheet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .more-sheet-grid button {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 14px 6px; border: 1px solid var(--border); border-radius: var(--r-md);
+    background: var(--bg-elev-1); cursor: pointer; font-size: 12.5px; color: var(--text);
+  }
+  .more-sheet-grid button span { font-size: 22px; }
+}
