@@ -77,9 +77,6 @@ body[data-agent="finance"] {
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
-/* Never allow horizontal page scroll — a stray wide element shouldn't make the
-   whole page draggable sideways (was happening on mobile in the review view). */
-html, body { max-width: 100%; overflow-x: hidden; }
 body {
   margin: 0;
   font-family: var(--font-sans);
@@ -1752,11 +1749,14 @@ body:not(.is-authed) .sp-dock { display: none !important; }
   text-align: center;
   background: var(--bg-elev-2, #f8fafc);
   border-radius: var(--r-md, 10px);
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
 }
-.srs-front { font-size: 18px; font-weight: 600; line-height: 1.6; }
-.srs-back { font-size: 15px; line-height: 1.7; color: var(--text-soft, #475569); }
-.srs-src { display: inline-block; margin-top: 8px; font-size: 12px; }
-.srs-controls { display: flex; justify-content: center; gap: 8px; margin-top: 18px; }
+.srs-front { font-size: 18px; font-weight: 600; line-height: 1.6; overflow-wrap: anywhere; }
+.srs-back { font-size: 15px; line-height: 1.7; color: var(--text-soft, #475569); overflow-wrap: anywhere; }
+.srs-src { display: inline-block; margin-top: 8px; font-size: 12px; word-break: break-all; }
+.srs-controls { display: flex; justify-content: center; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
 .srs-progress { margin-top: 12px; font-size: 12px; }
 .srs-row {
   display: flex;
