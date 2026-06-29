@@ -8,7 +8,7 @@ import { regenReflection } from './reflection.js';
 import { generateLearning } from './learning.js';
 import { manualNewDive } from './dives.js';
 import { addManualCard } from './review.js';
-import { switchView } from './nav.js';
+import { switchView, showLanding, applyRoute } from './nav.js';
 import { initAuth } from './auth.js';
 // Chat is provided by the bundled sparrow-chat.js component (mounted in index.html).
 
@@ -17,21 +17,17 @@ if (window.mermaid) {
 }
 
 // ── Landing / home ───────────────────────────────────────────────────
-// The bilingual hero shows on first load; entering reveals the app shell.
-function enterStation() {
-  document.body.classList.remove('landing-active');
-  switchView('feed');
-}
-$('#btn-enter').addEventListener('click', enterStation);
+// The bilingual hero is the root path "/"; entering goes to /feed.
+$('#btn-enter').addEventListener('click', () => switchView('feed'));
 
 // ── Nav + filters ────────────────────────────────────────────────────
+// Brand (logo) → back to the landing/home page.
 $('#brand').addEventListener('click', () => {
-  document.body.classList.add('landing-active');
   state.cat = ''; state.filter = 'all'; state.q = ''; state.offset = 0;
   const search = $('#search'); if (search) search.value = '';
   $$('#cat-seg button').forEach(x => x.classList.toggle('on', x.dataset.cat === ''));
   $$('.seg button[data-filter]').forEach(x => x.classList.toggle('on', x.dataset.filter === 'all'));
-  switchView('feed');
+  showLanding();
 });
 
 $$('.side-nav button[data-view]').forEach(b =>
@@ -112,6 +108,7 @@ $('#btn-toggle-newcard').addEventListener('click', () => {
 
 // ── Boot ─────────────────────────────────────────────────────────────
 initAuth();
-// Re-load views when the logged-in identity changes (login / logout).
-window.addEventListener('aif:auth-changed', () => { state.offset = 0; refreshList(); });
-refreshList();
+// Re-load the current view when the logged-in identity changes (login / logout).
+window.addEventListener('aif:auth-changed', () => { state.offset = 0; applyRoute(); });
+// Restore the view from the URL (deep-link / refresh / back-forward).
+applyRoute();
