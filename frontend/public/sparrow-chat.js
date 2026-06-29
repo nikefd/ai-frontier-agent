@@ -124,7 +124,7 @@
       'padding:2px 6px;border-radius:6px;opacity:0;transition:opacity .15s}',
       '.sp-conv:hover .sp-conv-del{opacity:1}.sp-conv-del:hover{background:#e7ebf2;color:#0f172a}',
       '.sp-empty{padding:24px 8px;text-align:center;color:#94a3b8;font-size:12px}',
-      '@media(max-width:520px){.sp-dock{right:8px;left:8px;width:auto;bottom:84px}.sp-fab{right:16px;bottom:16px}}',
+      '@media(max-width:520px){.sp-dock{right:8px;left:8px;width:auto;bottom:128px}.sp-fab{right:14px;bottom:72px;width:48px;height:48px;font-size:20px}.sp-input{padding:8px 10px}.sp-input textarea{font-size:13px;padding:6px 9px;max-height:88px}}',
     ].join('');
     var style = document.createElement('style');
     style.id = 'sparrow-chat-style';
