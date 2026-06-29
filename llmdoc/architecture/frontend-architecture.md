@@ -31,6 +31,8 @@
 - 监听 `popstate` → 浏览器前进/后退可用。
 - 所以每个 tab 有独立可分享的 URL；刷新停在当前 tab；首页和信息站 URL 区分开（`/` vs `/feed`）。
 
+**移动端导航（≤720px）**：桌面左侧 side-nav 的「视图」组隐藏，改用**底部固定 tab bar**（文章流/为你推荐/复盘/知识卡/更多）+「更多」底部弹出菜单（速报/解读/学习路径/画像/数据源/管理）。tab 和 menu 都调同一个 `switchView`，高亮同步。分类 `#cat-seg` 在窄屏改为单行横向滚动。对话仍是右下角悬浮球。纯 CSS+少量 JS，桌面端不变。
+
 ## 2. 模块划分（`frontend/src/`）
 
 ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<script type="module" src="/src/main.js">`（Vite 构建后替换为指纹化的 `/assets/index-<hash>.js`）。
