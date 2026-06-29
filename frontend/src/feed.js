@@ -4,6 +4,7 @@ import { $, escapeHtml, fmtDate, catBadge } from './util.js';
 import { api } from './api.js';
 import { state } from './state.js';
 import { jumpToDive } from './dives.js';
+import { isAuthed, openAuthModal } from './auth.js';
 
 export async function refreshList() {
   const params = new URLSearchParams();
@@ -93,6 +94,7 @@ function articleCardHtml(a) {
         ${originBtn}
         ${copyBtn}
         ${transAction}
+        <button class="btn-card ghost" data-action="ask" title="带这篇上下文问 AI 助手">🤖 问 AI</button>
         <button class="btn-card ghost" data-action="srs" title="加入间隔复习库">🗂️ 加入复习</button>
         <button class="btn-card ${ddActive ? 'success' : 'accent'} ${ddBusy}" data-action="dive">${ddBtnLabel}</button>
       </div>
@@ -125,6 +127,10 @@ export function renderList() {
       jumpToDive(aid, { generate });
     });
     el.querySelector('[data-action="pin"]')?.addEventListener('click', () => togglePin(aid));
+    el.querySelector('[data-action="ask"]')?.addEventListener('click', () => {
+      const a = state.items.find(x => x.id === aid);
+      askAboutArticle(a);
+    });
     el.querySelector('[data-action="srs"]')?.addEventListener('click', async (e) => {
       const btn = e.currentTarget, orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ 加入中…';
       try {
@@ -158,6 +164,24 @@ export function renderList() {
       }
     });
   });
+}
+
+// Open the chat agent pre-loaded with this article's context, so the user can
+// ask about the specific piece without retyping what it is. (Scene-embedded
+// agent — same mechanism the reflection "展开聊" uses.)
+function askAboutArticle(a) {
+  if (!a) return;
+  if (!isAuthed()) { openAuthModal('登录后即可用 AI 助手就这篇提问'); return; }
+  const chat = window.__sparrowChat;
+  if (!chat) { alert('AI 助手未就绪'); return; }
+  const title = a.title_zh || a.title || '(无标题)';
+  const prompt = `关于这篇文章：《${title}》${a.url ? '（' + a.url + '）' : ''}\n我想了解：`;
+  chat.toggle(true);
+  chat.input.value = prompt;
+  chat.input.focus();
+  // Move caret to end so the user just continues typing their question.
+  const len = chat.input.value.length;
+  try { chat.input.setSelectionRange(len, len); } catch (e) { /* ignore */ }
 }
 
 export function renderPageNav() {
