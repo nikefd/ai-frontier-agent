@@ -53,7 +53,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 `testpaths = ["tests"]` 和 pytest-asyncio。`tests/` 有 `test_feed_personal.py`（个性化排序）、`test_srs.py`（SM-2 调度）、`test_admin.py`（admin 护栏）、`test_email_verify.py`（邮箱验证 + 密码重置 token，含三类 token 隔离）、`test_reflection.py`（复盘 JSON 容错解析）、`test_learning.py`（学习路径解析 + 丢弃编造 ref）。覆盖率仍低。注意：开发环境不一定装了 `pytest`（`python -m pytest` 可能报 `No module named pytest`）——纯函数测试可 `python -c "import tests.xxx ..."` 跑断言，部分测试额外支持 `python tests/xxx.py` 直接运行（带 `__main__` 入口）。
+`pyproject.toml` 配了 `testpaths = ["tests"]` 和 pytest-asyncio。`tests/` 有 `test_feed_personal.py`（个性化排序）、`test_srs.py`（SM-2 调度）、`test_admin.py`（admin 护栏）、`test_email_verify.py`（邮箱验证 + 密码重置 token，含三类 token 隔离）、`test_reflection.py`（复盘 JSON 容错解析）、`test_learning.py`（学习路径解析）、`test_usage.py`（每日额度计数/重置）。覆盖率仍低。注意：开发环境不一定装了 `pytest`（`python -m pytest` 可能报 `No module named pytest`）——纯函数测试可 `python -c "import tests.xxx ..."` 跑断言，部分测试额外支持 `python tests/xxx.py` 直接运行（带 `__main__` 入口）。
 
 ## 11. `deploy/` 目录为空
 
@@ -73,7 +73,7 @@
 - **限流是单进程内存滑窗**：`/login`、`/register` 限 8 次/60s（按 IP + 邮箱）。多副本部署时每副本独立计数，整体阈值 = 单值 × 副本数；且重启清零。够挡暴力破解，不是分布式限流。
 - **`X-Forwarded-For` 信任**：限流取 XFF 第一跳作为客户端 IP。**前面必须有可信反代**（Coolify/Traefik）才准；直接裸暴露时 XFF 可伪造，限流可被绕过 IP 维度（邮箱维度仍有效）。
 - **防枚举/防时序**：登录对「邮箱不存在」和「密码错」返回**同一文案**（`邮箱或密码错误`），且邮箱不存在时也跑一次 dummy bcrypt 比对，消除时序差。注册对已存在邮箱返回 409 `该邮箱已注册`——这本身是一个枚举面，但注册场景下属可接受取舍。
-- **未做**：邮箱验证、找回密码、2FA（需求明确「不必」，留待后续分期，且依赖 SMTP 基建，当前无邮件服务配置）。
+- **已做**：邮箱验证（验证后才能用 LLM 功能）、找回密码、改密码、每日 LLM 额度限制。**未做**：2FA。
 
 ## 14. 数据迁移只跑一次（`_legacy` 哨兵）
 

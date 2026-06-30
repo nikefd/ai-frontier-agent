@@ -17,6 +17,8 @@
 
 **admin 角色**：`require_admin`（`auth.py`）在 `require_user` 之上加 `role == "admin"` 校验（非 admin 403）。`/api/admin/*`（用户管理：列表/改角色/删除）全挂它。护栏：admin 不能删/降自己、系统至少留一个 admin。前端用 `body.is-admin` class 控制「用户管理」入口显隐（auth.js 按当前用户 role 切）。端点见 [API 参考](../reference/api-reference.md) 0b 节。
 
+**LLM 端点的两道防滥用闸**（防未验证小号 / 单用户刷爆不限量的 LLM key）：所有烧 LLM 的端点（翻译/速报/解读/指南/对话/画像/复盘/学习路径生成）挂 `require_llm_quota`，它在 `require_user` 之上依次加：① `require_verified_user`——邮箱未验证 **403**（首个 admin 自动验证）；② 每日额度——普通用户超 `AIF_DAILY_LLM_LIMIT`（默认 50）返回 **429**，admin 豁免。计数在 `app/usage.py`（`users/<uid>/usage.json`，按主动操作计数、跨天重置）。普通浏览/收藏等非 LLM 操作不受这两道闸影响。
+
 ## 2. 数据切分
 
 只有**用户产物**按用户独立，其余全局共享。

@@ -40,6 +40,7 @@
 | `deep-dives/{aid}.json` | 每文件一篇 | 单篇文章的深度解读（带 mermaid） |
 | `profile.json` | dict | 该用户的兴趣画像缓存（按需 LLM 生成，见 §3.7） |
 | `review-cards.json` | list | 该用户的知识卡 + SM-2 间隔重复状态（见 §3.8） |
+| `usage.json` | dict | 当日 LLM 操作计数 `{date, count}`，跨天自动重置（防滥用限额） |
 | `reflection.json` | dict | 该用户最近一次 AI 复盘（recap + 苏格拉底问题，见 §3.9） |
 | `learning-paths/<slug>.json` | 每文件一条 | 该用户的分阶段学习路径（见 §3.10） |
 | `ui.db` | SQLite | 该用户的 sparrow 对话记忆（会话/消息/journal） |
