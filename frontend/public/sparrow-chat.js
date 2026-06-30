@@ -74,16 +74,16 @@
       'border:none;border-radius:50%;cursor:pointer;background:var(--sp-accent);color:#fff;',
       'font-size:24px;box-shadow:0 6px 20px rgba(0,0,0,.25);transition:transform .15s}',
       '.sp-fab:hover{transform:scale(1.06)}',
-      '.sp-dock{position:fixed;right:24px;bottom:92px;z-index:9000;width:420px;',
-      'max-width:calc(100vw - 32px);height:600px;max-height:calc(100vh - 120px);',
+      '.sp-dock{position:fixed;right:24px;top:24px;bottom:24px;z-index:9000;width:480px;',
+      'max-width:calc(100vw - 32px);height:auto;',
       'display:flex;flex-direction:column;background:#fff;border:1px solid #e3e7ef;',
       'border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.3);overflow:hidden;',
       'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;',
       'font-size:14px;color:#0f172a}',
       '.sp-dock.sp-hidden{display:none}',
-      '.sp-head{display:flex;align-items:center;justify-content:space-between;',
+      '.sp-head{display:flex;align-items:center;gap:8px;',
       'padding:12px 14px;border-bottom:1px solid #e3e7ef;background:#f1f3f8}',
-      '.sp-title{font-weight:600;font-size:14px}',
+      '.sp-title{font-weight:600;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.sp-head-actions{display:flex;gap:6px;align-items:center}',
       '.sp-btn{background:none;border:1px solid #e3e7ef;border-radius:6px;cursor:pointer;',
       'color:#64748b;font-size:13px;padding:3px 8px;line-height:1.2}',
@@ -124,7 +124,7 @@
       'padding:2px 6px;border-radius:6px;opacity:0;transition:opacity .15s}',
       '.sp-conv:hover .sp-conv-del{opacity:1}.sp-conv-del:hover{background:#e7ebf2;color:#0f172a}',
       '.sp-empty{padding:24px 8px;text-align:center;color:#94a3b8;font-size:12px}',
-      '@media(max-width:520px){.sp-dock{right:8px;left:8px;width:auto;bottom:128px}.sp-fab{right:14px;bottom:72px;width:48px;height:48px;font-size:20px}.sp-input{padding:8px 10px}.sp-input textarea{font-size:13px;padding:6px 9px;max-height:88px}}',
+      '@media(max-width:520px){.sp-dock{right:8px;left:8px;width:auto;top:12px;bottom:128px}.sp-fab{right:14px;bottom:72px;width:48px;height:48px;font-size:20px}.sp-input{padding:8px 10px}.sp-input textarea{font-size:13px;padding:6px 9px;max-height:88px}}',
     ].join('');
     var style = document.createElement('style');
     style.id = 'sparrow-chat-style';
@@ -146,9 +146,10 @@
     this.fab = h('<button class="sp-fab" title="' + esc(c.title) + '">' + c.fabIcon + '</button>');
     this.dock = h(
       '<div class="sp-dock sp-hidden">' +
-      '<div class="sp-head"><span class="sp-title">' + esc(c.title) + '</span>' +
-      '<div class="sp-head-actions">' +
+      '<div class="sp-head">' +
       '<button class="sp-btn" data-act="convs" title="History">🕘</button>' +
+      '<span class="sp-title">' + esc(c.title) + '</span>' +
+      '<div class="sp-head-actions">' +
       '<button class="sp-btn" data-act="new" title="New chat">＋</button>' +
       '<button class="sp-btn" data-act="close" title="Close">✕</button>' +
       '</div></div>' +
