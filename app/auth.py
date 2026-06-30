@@ -295,6 +295,23 @@ def require_verified_user(user: UserPublic = Depends(require_user)) -> UserPubli
     return user
 
 
+def require_llm_quota(user: UserPublic = Depends(require_verified_user)) -> UserPublic:
+    """Guard for LLM endpoints: verified + within today's quota, then count it.
+
+    Admins are exempt. Over-quota → 429. Counts on attempt (not on success) —
+    simpler than post-success plumbing across ~10 endpoints, and acceptable since
+    LLM failures are rare and the daily limit is generous. The check + increment
+    happen here so each guarded request spends exactly one unit.
+    """
+    if user.role == "admin":
+        return user
+    from .usage import has_quota, record_use
+    if not has_quota(user.id):
+        raise HTTPException(429, "今日 AI 使用额度已用完，请明天再试")
+    record_use(user.id)
+    return user
+
+
 def count_admins() -> int:
     """Number of admin accounts — used to refuse removing the last admin."""
     return sum(1 for u in load_users() if u.get("role") == "admin")

@@ -16,7 +16,7 @@ from fastapi.responses import StreamingResponse
 from .agent_runtime import AgentConfig, Harness, Memory, configure as llm_configure
 
 from .agent_tools import build_tools
-from .auth import current_user_optional, require_user, require_verified_user
+from .auth import current_user_optional, require_user, require_verified_user, require_llm_quota
 from .llm_client import llm_configured
 from .models import ChatRequest, UserPublic
 from .settings import settings
@@ -71,7 +71,7 @@ def _build_config(uid: str, memory: Memory) -> AgentConfig:
 
 
 @router.post("/chat")
-async def chat(req: ChatRequest, user: UserPublic = Depends(require_verified_user)):
+async def chat(req: ChatRequest, user: UserPublic = Depends(require_llm_quota)):
     if not llm_configured():
         from fastapi import HTTPException
         raise HTTPException(503, "LLM not configured")

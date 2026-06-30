@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..auth import current_user_optional, require_user, require_verified_user
+from ..auth import current_user_optional, require_user, require_verified_user, require_llm_quota
 from ..llm_client import LLMUnavailable, chat_complete, llm_configured
 from ..models import UserPublic
 from ..settings import settings
@@ -153,7 +153,7 @@ def get_profile(user: UserPublic | None = Depends(current_user_optional)) -> dic
 
 
 @router.post("/profile")
-async def generate_profile(user: UserPublic = Depends(require_verified_user)) -> dict:
+async def generate_profile(user: UserPublic = Depends(require_llm_quota)) -> dict:
     """Generate (or regenerate) the current user's interest portrait via LLM.
 
     Aggregates pins / deep-dives / tracks / conversation titles, asks the LLM for
