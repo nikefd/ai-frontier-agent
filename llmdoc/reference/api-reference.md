@@ -111,6 +111,16 @@
 
 > 实现：`app/routers/reflection.py`，`collect_recent_signals(uid, now_ts)` 按时间窗聚合（`now_ts` 注入便于测试），`_parse_llm_json` 容错解析模型 JSON（有单测 `tests/test_reflection.py`）。前端「展开聊」复用 sparrow 对话组件（`window.__sparrowChat`），「存为卡片」复用知识卡端点。
 
+## 4d. 主动建议 suggestions（prefix `/api/ai-news`）
+
+agent 主动提议（B2）：基于用户行为信号给「下一步」建议。**纯规则、0 LLM**。
+
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| GET | `/suggestions` | 读* | 返回当前最该提的 1-2 条建议 `{items:[{id,text,action,view}]}`；匿名空 |
+
+> 实现：`app/routers/suggestions.py`，规则示例：收藏 ≥5 篇且某类 ≥3 篇且无学习路径 → 建议生成路径；收藏 ≥5 篇且无画像 → 建议生成画像；收藏 ≥8 篇且无复盘 → 建议复盘。封顶 2 条不刷屏。前端文章流顶部显示为可关闭的建议条（`suggestions.js`），关闭/采纳记 localStorage 不再提示。注意与 `/learning-paths/suggestions`（推荐学习方向）是两个端点，别混。
+
 ## 5. 追踪主题 tracks（prefix `/api/ai-news`）
 
 | 方法 | 路径 | 🔒 | 说明 |
