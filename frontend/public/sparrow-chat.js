@@ -105,16 +105,19 @@
       '.sp-chip em{font-style:normal;opacity:.7}',
       '.sp-cites{margin-top:8px;font-size:12px;color:#94a3b8;border-top:1px dashed #e3e7ef;padding-top:6px}',
       '.sp-thinking{color:#94a3b8;font-style:italic}',
-      '.sp-input{display:flex;gap:8px;padding:12px 14px;border-top:1px solid #e3e7ef;background:#f1f3f8}',
-      '.sp-input textarea{flex:1;resize:none;border:1px solid #e3e7ef;border-radius:8px;padding:8px 10px;',
-      'font-family:inherit;font-size:14px;max-height:120px;color:#0f172a}',
+      '.sp-input{display:flex;gap:8px;align-items:flex-end;padding:10px 12px;border-top:1px solid #e3e7ef;background:#f1f3f8}',
+      '.sp-input textarea{flex:1;resize:none;border:1px solid #e3e7ef;border-radius:8px;padding:7px 10px;',
+      'font-family:inherit;font-size:13.5px;line-height:1.4;max-height:120px;color:#0f172a}',
       '.sp-input textarea:focus{outline:none;border-color:var(--sp-accent)}',
-      '.sp-send{border:none;border-radius:8px;background:var(--sp-accent);color:#fff;cursor:pointer;',
-      'padding:0 16px;font-size:14px}',
+      '.sp-send{flex:0 0 auto;align-self:flex-end;border:none;border-radius:8px;background:var(--sp-accent);color:#fff;cursor:pointer;',
+      'padding:8px 14px;font-size:13.5px;line-height:1.4}',
       '.sp-send:disabled{opacity:.5;cursor:default}',
       // conversation drawer
       '.sp-drawer{position:absolute;inset:0;background:#fff;z-index:5;display:flex;flex-direction:column}',
       '.sp-drawer.sp-hidden{display:none}',
+      '.sp-drawer-head{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #e3e7ef;background:#f1f3f8}',
+      '.sp-drawer-title{font-weight:600;font-size:14px}',
+      '.sp-drawer-list{flex:1;overflow-y:auto}',
       '.sp-conv{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #e3e7ef;cursor:pointer}',
       '.sp-conv:hover{background:#f1f3f8}',
       '.sp-conv-main{flex:1;min-width:0}',
@@ -147,7 +150,7 @@
     this.dock = h(
       '<div class="sp-dock sp-hidden">' +
       '<div class="sp-head">' +
-      '<button class="sp-btn" data-act="convs" title="History">🕘</button>' +
+      '<button class="sp-btn" data-act="convs" title="History">☰</button>' +
       '<span class="sp-title">' + esc(c.title) + '</span>' +
       '<div class="sp-head-actions">' +
       '<button class="sp-btn" data-act="new" title="New chat">＋</button>' +
@@ -210,11 +213,18 @@
 
   SparrowChat.prototype.loadConversations = function () {
     var self = this;
-    this.drawer.innerHTML = '<div class="sp-empty">Loading…</div>';
+    // Drawer header (with a back button) + a scrollable list area. The back
+    // button closes the drawer so the user can always return to the chat.
+    var head = '<div class="sp-drawer-head"><button class="sp-btn" data-act="drawer-back" title="返回">← 返回</button><span class="sp-drawer-title">历史会话</span></div>';
+    this.drawer.innerHTML = head + '<div class="sp-drawer-list"><div class="sp-empty">Loading…</div></div>';
+    this.drawer.querySelector('[data-act="drawer-back"]').addEventListener('click', function () {
+      self.drawer.classList.add('sp-hidden');
+    });
+    var listEl = this.drawer.querySelector('.sp-drawer-list');
     fetch(this.cfg.conversationsApi).then(function (r) { return r.json(); }).then(function (data) {
       var convs = Array.isArray(data) ? data : (data.conversations || []);
-      if (!convs.length) { self.drawer.innerHTML = '<div class="sp-empty">No conversations yet.</div>'; return; }
-      self.drawer.innerHTML = '';
+      if (!convs.length) { listEl.innerHTML = '<div class="sp-empty">No conversations yet.</div>'; return; }
+      listEl.innerHTML = '';
       convs.forEach(function (cv) {
         var row = h(
           '<div class="sp-conv" data-id="' + esc(cv.id) + '">' +
@@ -233,9 +243,9 @@
           fetch(self.cfg.conversationsApi + '/' + encodeURIComponent(cv.id), { method: 'DELETE' })
             .then(function () { self.loadConversations(); });
         });
-        self.drawer.appendChild(row);
+        listEl.appendChild(row);
       });
-    }).catch(function () { self.drawer.innerHTML = '<div class="sp-empty">Failed to load.</div>'; });
+    }).catch(function () { listEl.innerHTML = '<div class="sp-empty">Failed to load.</div>'; });
   };
 
   SparrowChat.prototype.loadMessages = function (convId) {
