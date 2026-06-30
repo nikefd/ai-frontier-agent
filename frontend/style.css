@@ -2033,11 +2033,19 @@ body.landing-active .bottom-tabs { display: none !important; }
      keep the 分类 group but make it a single horizontal-scroll row (D). */
   aside .side-nav:first-child { display: none; }
   #cat-seg {
-    flex-wrap: nowrap !important; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    display: flex !important;          /* override .seg's inline-flex so it fills width */
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;        /* override .seg's overflow:hidden (was clipping + breaking taps) */
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
   #cat-seg::-webkit-scrollbar { display: none; }
-  #cat-seg button { flex: 0 0 auto; white-space: nowrap; }
+  #cat-seg button {
+    flex: 0 0 auto; white-space: nowrap;
+    touch-action: manipulation;          /* avoid the scroll-container tap-vs-swipe delay */
+    -webkit-tap-highlight-color: transparent;
+  }
 
   /* Compress the page header: drop the lede, shrink the title. */
   .page-head { margin-bottom: 12px; }
