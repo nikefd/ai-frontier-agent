@@ -40,8 +40,14 @@ class Settings(BaseSettings):
     llm_api_key: str | None = None
 
     scheduler_enabled: bool = True
-    ai_news_cron_hour: int = 7
-    ai_news_cron_minute: int = 30
+    # Daily fetch at 05:00 (Asia/Shanghai) — early so the morning briefing has
+    # fresh content to summarize before users wake up.
+    ai_news_cron_hour: int = 5
+    ai_news_cron_minute: int = 0
+    # Daily briefing generated at 06:00 — after fetch (05:00) + translation
+    # have populated/enriched the day's cohort. Users see it first thing.
+    summary_cron_hour: int = 6
+    summary_cron_minute: int = 0
 
     log_level: str = "INFO"
 

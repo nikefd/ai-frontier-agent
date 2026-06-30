@@ -41,6 +41,21 @@ async def _ai_news_translate_job():
         log.exception("translation tick failed: %s", e)
 
 
+async def _ai_news_summary_job():
+    """Daily morning briefing — runs after fetch + translation so it summarizes
+    the freshest cohort. No-op if the LLM isn't configured or there's nothing new."""
+    from .llm_client import llm_configured
+    from .routers.ai_news import build_today_summary
+    if not llm_configured():
+        log.info("summary job skipped: LLM not configured")
+        return
+    try:
+        payload = await build_today_summary()
+        log.info("scheduled briefing: %s", "generated" if payload else "no recent articles")
+    except Exception as e:  # noqa
+        log.exception("briefing generation failed: %s", e)
+
+
 def start() -> AsyncIOScheduler | None:
     global _scheduler
     if not settings.scheduler_enabled:
@@ -62,6 +77,12 @@ def start() -> AsyncIOScheduler | None:
         replace_existing=True,
         max_instances=1,
         coalesce=True,
+    )
+    sched.add_job(
+        _ai_news_summary_job,
+        CronTrigger(hour=settings.summary_cron_hour, minute=settings.summary_cron_minute),
+        id="ai_news_summary",
+        replace_existing=True,
     )
     sched.start()
     _scheduler = sched

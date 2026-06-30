@@ -675,13 +675,16 @@ def get_today_summary() -> dict:
     }
 
 
-@router.post("/summary/today", dependencies=[Depends(require_llm_quota)])
-async def regenerate_today_summary() -> dict:
-    if not llm_configured():
-        raise HTTPException(503, "LLM not configured")
+async def build_today_summary() -> dict | None:
+    """Generate today's briefing from the recent cohort and persist it.
+
+    Returns the payload, or None if there's nothing recent to summarize. Shared
+    by the manual endpoint and the daily scheduler job (single source of truth).
+    Raises LLMUnavailable if the LLM call fails (caller decides how to surface it).
+    """
     cohort = _articles_for_today(limit=25)
     if not cohort:
-        raise HTTPException(400, "no recent articles to summarize")
+        return None
 
     lines = []
     for i, a in enumerate(cohort, 1):
@@ -706,10 +709,7 @@ async def regenerate_today_summary() -> dict:
             "content": f"今日候选 (按时间倒序，共 {len(cohort)} 条)：\n\n{article_block}",
         },
     ]
-    try:
-        body = await chat_complete(messages, max_tokens=1400)
-    except LLMUnavailable as e:
-        raise HTTPException(503, str(e))
+    body = await chat_complete(messages, max_tokens=1400)
 
     payload = {
         "generated_at": _now_iso(),
@@ -723,6 +723,19 @@ async def regenerate_today_summary() -> dict:
         ],
     }
     write_json_atomic(SUMMARY_FILE, payload)
+    return payload
+
+
+@router.post("/summary/today", dependencies=[Depends(require_llm_quota)])
+async def regenerate_today_summary() -> dict:
+    if not llm_configured():
+        raise HTTPException(503, "LLM not configured")
+    try:
+        payload = await build_today_summary()
+    except LLMUnavailable as e:
+        raise HTTPException(503, str(e))
+    if payload is None:
+        raise HTTPException(400, "no recent articles to summarize")
     return {"ok": True, "summary": payload}
 
 
