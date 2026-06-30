@@ -9,13 +9,14 @@ import { loadReview } from './review.js';
 import { loadReflection } from './reflection.js';
 import { loadLearning } from './learning.js';
 import { loadAdminUsers } from './admin.js';
+import { loadSuggestions } from './suggestions.js';
 
 // All routable views. The landing/home page is the root path "/".
 const VIEWS = ['feed', 'foryou', 'summary', 'dives', 'review', 'reflection',
                'profile', 'sources', 'admin', 'learning'];
 
 function _runLoader(v) {
-  if (v === 'feed') refreshList();
+  if (v === 'feed') { refreshList(); loadSuggestions(); }
   if (v === 'foryou') loadForYou();
   if (v === 'summary') loadSummary();
   if (v === 'dives') loadDives();

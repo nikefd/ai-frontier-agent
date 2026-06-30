@@ -2068,3 +2068,20 @@ body.landing-active .bottom-tabs { display: none !important; }
   }
   .more-sheet-grid button span { font-size: 22px; }
 }
+
+/* ── Proactive suggestion bars (B2 nudges) ────────────────────────── */
+.suggest-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; margin-bottom: 10px;
+  background: var(--accent-soft, #f3f0ff);
+  border: 1px solid var(--accent, #7c3aed);
+  border-radius: var(--r-md, 10px);
+  font-size: 13.5px;
+}
+.suggest-ico { font-size: 16px; flex: 0 0 auto; }
+.suggest-text { flex: 1; min-width: 0; line-height: 1.5; }
+.suggest-x {
+  flex: 0 0 auto; background: none; border: none; cursor: pointer;
+  color: var(--text-dim, #64748b); font-size: 14px; padding: 2px 4px;
+}
+.suggest-x:hover { color: var(--text, #0f172a); }
