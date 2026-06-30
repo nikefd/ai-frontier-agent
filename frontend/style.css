@@ -2030,20 +2030,20 @@ body.landing-active .bottom-tabs { display: none !important; }
   .bottom-tabs button.on { color: var(--accent); }
 
   /* Hide the desktop side-nav's 视图 group on mobile (bottom tabs replace it);
-     keep the 分类 group but make it a single horizontal-scroll row (D). */
+     keep the 分类 group. On mobile, wrap the chips to 2 rows (no hidden
+     horizontal scroll — users couldn't tell it scrolled). */
   aside .side-nav:first-child { display: none; }
   #cat-seg {
-    display: flex !important;          /* override .seg's inline-flex so it fills width */
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;        /* override .seg's overflow:hidden (was clipping + breaking taps) */
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    overflow: visible !important;        /* override .seg's overflow:hidden which clipped chips */
+    gap: 6px;
   }
-  #cat-seg::-webkit-scrollbar { display: none; }
   #cat-seg button {
-    flex: 0 0 auto; white-space: nowrap;
-    touch-action: manipulation;          /* avoid the scroll-container tap-vs-swipe delay */
+    flex: 0 0 auto;
+    border: 1px solid var(--border-strong) !important;  /* .seg removed per-button borders; restore for standalone chips */
+    border-radius: var(--r-sm) !important;
+    touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
 
