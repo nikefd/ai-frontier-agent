@@ -9,7 +9,7 @@
 
 ```mermaid
 flowchart TD
-  cron[APScheduler 每日 07:30] --> fetch
+  cron[APScheduler 每日 05:00] --> fetch
   manual[用户点「立即抓取」 POST /fetch] --> fetch
   fetch[fetch_once：异步并发拉 79 个 feed]
   fetch --> parse[feedparser 解析 + BS4 去标签摘要]
@@ -31,7 +31,7 @@ flowchart TD
 
 ### 2.1 触发方式
 
-- **定时**：`scheduler.py` 注册 `CronTrigger(hour=7, minute=30)`（可经 `AIF_AI_NEWS_CRON_*` 配），时区 Asia/Shanghai。
+- **定时**：`scheduler.py` 注册 `CronTrigger(hour=5, minute=0)`（可经 `AIF_AI_NEWS_CRON_*` 配），时区 Asia/Shanghai。
 - **手动**：`POST /api/ai-news/fetch` 即时跑一轮（前端「立即抓取」按钮）。
 
 抓取是 token-thrifty 的——每天只自动跑一次，临时要新内容靠手动触发。
@@ -107,8 +107,10 @@ worker 名义上叫翻译，实际**一次批量 LLM 调用同时做三件事**�
 | 产物 | 端点 | 存储 |
 |---|---|---|
 | 单篇深度解读（含 mermaid 图） | `POST /articles/{aid}/deep-dive` | `deep-dives/{aid}.json` |
-| 每日速报（聚合最近 30h） | `POST /summary/today` | `summary_today.json` |
+| 每日速报（聚合最近 30h） | `POST /summary/today`（手动）+ **每日 06:00 定时** | `summary_today.json` |
 | 主题深度指南 | `POST /guides/generate` | `guides/guide_*.json` |
 | 手动输入主题 → 深度解读 | `POST /manual-dive` | 合成一条 pinned 文章 + `deep-dives/{aid}.json` |
 
 这些产物的存储结构见 [数据存储参考](../reference/data-storage.md)。
+
+> **每日速报是唯一有定时的 LLM 产物**：`scheduler.py` 在每天 06:00（`AIF_SUMMARY_CRON_*`，在 05:00 抓取 + 翻译之后）调 `build_today_summary()` 自动生成，用户早起即见当天速报。该函数被手动端点 `POST /summary/today` 和定时 job 共用（单一实现）；无新内容或 LLM 未配置时跳过。其余 LLM 产物（解读/指南/画像/复盘/学习路径）都是按需触发，无定时。

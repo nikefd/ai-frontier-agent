@@ -15,8 +15,10 @@
 | `AIF_LLM_MODEL` | `llm_model` | `deepseek-chat` | 模型名 |
 | `AIF_LLM_API_KEY` | `llm_api_key` | `None` | LLM key。**为空时回退读 `DEEPSEEK_API_KEY` 环境变量** |
 | `AIF_SCHEDULER_ENABLED` | `scheduler_enabled` | `True` | 是否启用后台抓取/翻译任务 |
-| `AIF_AI_NEWS_CRON_HOUR` | `ai_news_cron_hour` | `7` | 每日抓取小时（Asia/Shanghai） |
-| `AIF_AI_NEWS_CRON_MINUTE` | `ai_news_cron_minute` | `30` | 每日抓取分钟 |
+| `AIF_AI_NEWS_CRON_HOUR` | `ai_news_cron_hour` | `5` | 每日抓取小时（Asia/Shanghai，早于速报） |
+| `AIF_AI_NEWS_CRON_MINUTE` | `ai_news_cron_minute` | `0` | 每日抓取分钟 |
+| `AIF_SUMMARY_CRON_HOUR` | `summary_cron_hour` | `6` | 每日速报生成小时（在抓取+翻译之后，用户早起即见） |
+| `AIF_SUMMARY_CRON_MINUTE` | `summary_cron_minute` | `0` | 每日速报生成分钟 |
 | `AIF_LOG_LEVEL` | `log_level` | `INFO` | 日志级别 |
 | `AIF_SECRET_KEY` | `secret_key` | `None` | 会话 cookie 的签名密钥（itsdangerous）。**为空时自动生成并落 `<data_dir>/auth/secret.key`**；生产建议显式配，否则连卷重建/多副本会让会话失效（全员登出） |
 | `AIF_SESSION_MAX_AGE_DAYS` | `session_max_age_days` | `30` | 会话有效期（天）；签名 cookie 超时即失效 |
