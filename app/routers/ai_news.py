@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
-from ..auth import current_user_optional, require_user
+from ..auth import current_user_optional, require_user, require_verified_user
 from ..llm_client import LLMUnavailable, chat_complete, chat_stream, llm_configured
 from ..models import Article, ChatRequest, Guide, Track, UserPublic
 from ..settings import settings
@@ -540,7 +540,7 @@ SYSTEM_PROMPT = (
 )
 
 
-@router.post("/chat", dependencies=[Depends(require_user)])
+@router.post("/chat", dependencies=[Depends(require_verified_user)])
 async def chat(req: ChatRequest):
     if not llm_configured():
         raise HTTPException(503, "LLM not configured")
@@ -675,7 +675,7 @@ def get_today_summary() -> dict:
     }
 
 
-@router.post("/summary/today", dependencies=[Depends(require_user)])
+@router.post("/summary/today", dependencies=[Depends(require_verified_user)])
 async def regenerate_today_summary() -> dict:
     if not llm_configured():
         raise HTTPException(503, "LLM not configured")
@@ -783,7 +783,7 @@ class GuideGenRequest(BaseModel):
 
 
 @router.post("/guides/generate")
-async def generate_long_guide(req: GuideGenRequest, user: UserPublic = Depends(require_user)) -> dict:
+async def generate_long_guide(req: GuideGenRequest, user: UserPublic = Depends(require_verified_user)) -> dict:
     """LLM-generated long-form learning guide on `topic`.
 
     If `article_ids` is given, those articles are used as anchor context;
@@ -871,7 +871,7 @@ async def generate_long_guide(req: GuideGenRequest, user: UserPublic = Depends(r
 
 
 # ── Translation control ───────────────────────────────────────────
-@router.post("/translate/run", dependencies=[Depends(require_user)])
+@router.post("/translate/run", dependencies=[Depends(require_verified_user)])
 async def translate_run() -> dict:
     """Manually trigger one translation batch (admin-style)."""
     from ..workers.ai_news_translator import translate_once
@@ -978,7 +978,7 @@ def get_deep_dive(aid: str, user: UserPublic | None = Depends(current_user_optio
 
 
 @router.post("/articles/{aid}/deep-dive")
-async def generate_deep_dive(aid: str, user: UserPublic = Depends(require_user)) -> dict:
+async def generate_deep_dive(aid: str, user: UserPublic = Depends(require_verified_user)) -> dict:
     """Generate (or regenerate) the current user's per-article deep dive with a
     mermaid diagram. Stored under users/<uid>/deep-dives/{aid}.json."""
     if not llm_configured():
@@ -1053,7 +1053,7 @@ class ManualDeepDiveRequest(BaseModel):
     context: str | None = None       # optional pasted abstract / notes / link
 
 @router.post("/manual-dive")
-async def manual_deep_dive(req: ManualDeepDiveRequest, user: UserPublic = Depends(require_user)) -> dict:
+async def manual_deep_dive(req: ManualDeepDiveRequest, user: UserPublic = Depends(require_verified_user)) -> dict:
     """Generate a deep-dive from a user-supplied topic (no RSS source).
 
     Persists only as a deep-dive under the user's library (``source='手动输入'``).

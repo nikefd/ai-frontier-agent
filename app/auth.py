@@ -283,6 +283,18 @@ def require_admin(user: UserPublic = Depends(require_user)) -> UserPublic:
     return user
 
 
+def require_verified_user(user: UserPublic = Depends(require_user)) -> UserPublic:
+    """Guard for LLM-burning endpoints: requires a verified email.
+
+    Anti-abuse: with an unmetered LLM key, unverified throwaway accounts must not
+    be able to spend tokens. Browsing/reads stay open; only LLM actions gate on
+    verification. The bootstrap admin is auto-verified, so the operator is fine.
+    """
+    if not user.email_verified:
+        raise HTTPException(403, "请先验证邮箱后再使用 AI 功能（顶栏「📧 未验证」可重发验证邮件）")
+    return user
+
+
 def count_admins() -> int:
     """Number of admin accounts — used to refuse removing the last admin."""
     return sum(1 for u in load_users() if u.get("role") == "admin")

@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ..llm_client import LLMUnavailable, chat_complete, llm_configured
 from ..models import UserPublic
-from ..auth import require_user, current_user_optional
+from ..auth import require_user, require_verified_user, current_user_optional
 from ..settings import settings
 from ..storage import read_json, sqlite_ro, write_json_atomic
 from .ai_news import (
@@ -143,7 +143,7 @@ def get_reflection(user: UserPublic | None = Depends(current_user_optional)) -> 
 
 
 @router.post("/reflection/generate")
-async def generate_reflection(user: UserPublic = Depends(require_user)) -> dict:
+async def generate_reflection(user: UserPublic = Depends(require_verified_user)) -> dict:
     # Check for data first so a no-activity user gets the actionable 400 rather
     # than a misleading 503 when the LLM happens to be unconfigured.
     sig = collect_recent_signals(user.id, _now_ts())

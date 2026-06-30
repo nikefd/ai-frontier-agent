@@ -24,7 +24,7 @@ from pydantic import BaseModel
 
 from ..llm_client import LLMUnavailable, chat_complete, llm_configured
 from ..models import UserPublic
-from ..auth import require_user, current_user_optional
+from ..auth import require_user, require_verified_user, current_user_optional
 from ..settings import settings
 from ..storage import read_json, write_json_atomic
 from .ai_news import (
@@ -208,7 +208,7 @@ def delete_path(slug: str, user: UserPublic = Depends(require_user)) -> dict:
 
 
 @router.post("/learning-paths/generate")
-async def generate_path(req: PathGenRequest, user: UserPublic = Depends(require_user)) -> dict:
+async def generate_path(req: PathGenRequest, user: UserPublic = Depends(require_verified_user)) -> dict:
     topic = (req.topic or "").strip()
     if not topic:
         raise HTTPException(400, "topic is required")
