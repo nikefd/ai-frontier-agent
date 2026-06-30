@@ -93,6 +93,10 @@ app.include_router(reflection.router)
 from .routers import learning
 app.include_router(learning.router)
 
+# Proactive nudges (rule-based, zero LLM) — agent suggesting the next step.
+from .routers import suggestions
+app.include_router(suggestions.router)
+
 # Auth (register / login / logout / me + session dependencies).
 from .auth import router as auth_router
 app.include_router(auth_router)
