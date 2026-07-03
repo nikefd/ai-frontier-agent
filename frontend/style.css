@@ -2047,6 +2047,10 @@ body.landing-active .bottom-tabs { display: none !important; }
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* iOS zooms the whole page when focusing an input with font-size < 16px.
+     Force ≥16px on mobile so tapping the search box / chat input doesn't zoom. */
+  input, textarea, select { font-size: 16px !important; }
+
   /* Compress the page header: drop the lede, shrink the title. */
   .page-head { margin-bottom: 12px; }
   .page-head h2 { font-size: 18px; }
