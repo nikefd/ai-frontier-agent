@@ -25,6 +25,7 @@
 | AI 复盘教练 / 苏格拉底问题 / 怎么接对话 | [API 参考](reference/api-reference.md)（第 4c 节）＋ [数据存储参考](reference/data-storage.md)（3.9）＋ `app/routers/reflection.py` |
 | 学习路径 / 和 guides 的区别 / 分阶段编排 | [API 参考](reference/api-reference.md)（第 6b 节）＋ [数据存储参考](reference/data-storage.md)（3.10）＋ `app/routers/learning.py` |
 | agent 主动建议怎么触发 / 规则 | [API 参考](reference/api-reference.md)（第 4d 节）＋ `app/routers/suggestions.py` |
+| PR 自动审查机器人怎么工作 / 改审查规范 | `.github/workflows/pr-review.yml`（触发）＋ `scripts/pr_review.py`（执行）＋ `.claude/skills/pr-review/SKILL.md`（**规范单一来源，改这里**） |
 | 为什么不能手动改 sparrow-chat.js | [前端架构](architecture/frontend-architecture.md)（第 5 节） |
 | 查全部 HTTP 端点 / 新增一个端点 | [API 参考](reference/api-reference.md) |
 | 用户注册登录 / 鉴权守卫 / 会话怎么做 | [认证架构](architecture/auth-architecture.md) |
