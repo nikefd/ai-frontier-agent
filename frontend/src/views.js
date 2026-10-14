@@ -3,6 +3,59 @@ import { $, $$, escapeHtml, fmtDate, catBadge } from './util.js';
 import { api, renderMermaidInside } from './api.js';
 
 // ── Today's summary ──────────────────────────────────────────────────
+function linkSummaryCitations(root, cohort = []) {
+  if (!root || !cohort.length) return;
+
+  const references = new Map();
+  cohort.forEach((article, index) => {
+    try {
+      const url = new URL(article.url || '', window.location.href);
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+      references.set(index + 1, { ...article, url: url.href });
+    } catch (e) { /* Ignore missing or malformed source URLs. */ }
+  });
+  if (!references.size) return;
+
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  textNodes.forEach(node => {
+    if (node.parentElement?.closest('a, code, pre, script, style')) return;
+    const text = node.textContent || '';
+    const matches = [...text.matchAll(/\[(\d+)\]/g)]
+      .filter(match => references.has(Number(match[1])));
+    if (!matches.length) return;
+
+    const fragment = document.createDocumentFragment();
+    let cursor = 0;
+    matches.forEach(match => {
+      const article = references.get(Number(match[1]));
+      fragment.append(document.createTextNode(text.slice(cursor, match.index)));
+
+      const link = document.createElement('a');
+      link.className = 'summary-citation';
+      link.href = article.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = match[0];
+      const label = article.title || article.source || `引用 ${match[1]}`;
+      link.title = `打开原文：${label}`;
+      link.setAttribute('aria-label', `引用 ${match[1]}，打开原文：${label}`);
+      fragment.append(link);
+      cursor = match.index + match[0].length;
+    });
+    fragment.append(document.createTextNode(text.slice(cursor)));
+    node.replaceWith(fragment);
+  });
+}
+
+async function renderSummary(body, summary) {
+  body.innerHTML = marked.parse(summary.body || '');
+  linkSummaryCitations(body, summary.cohort || []);
+  await renderMermaidInside(body);
+}
+
 export async function loadSummary() {
   const meta = $('#summary-meta'), body = $('#summary-body'), cohort = $('#summary-cohort');
   body.innerHTML = '<div class="muted-card">加载中…</div>';
@@ -13,8 +66,7 @@ export async function loadSummary() {
       ? `基于今日 ${r.cohort_size} 篇文章 · 日期 ${r.today || ''}` : `今日候选 0 篇`;
     if (s && s.body) {
       meta.textContent = s.generated_at ? '生成于 ' + fmtDate(s.generated_at) : '';
-      body.innerHTML = marked.parse(s.body);
-      await renderMermaidInside(body);
+      await renderSummary(body, s);
     } else {
       meta.textContent = '';
       body.innerHTML = `<div class="muted-card" style="padding:32px 20px">
@@ -33,10 +85,9 @@ export async function regenSummary() {
   try {
     const r = await api('POST', '/api/ai-news/summary/today');
     const s = r.summary || {};
-    body.innerHTML = marked.parse(s.body || '');
+    await renderSummary(body, s);
     $('#summary-meta').textContent = '生成于刚才';
     $('#summary-cohort').textContent = s.cohort_size ? `基于今日 ${s.cohort_size} 篇文章` : '';
-    await renderMermaidInside(body);
   } catch (e) {
     body.innerHTML = '<div class="muted-card">❌ ' + escapeHtml(e.message) + '</div>';
   }
