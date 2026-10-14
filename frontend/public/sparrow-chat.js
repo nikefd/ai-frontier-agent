@@ -17,7 +17,7 @@
  *     });
  *   </script>
  *
- * Markdown rendering is used if a global `marked` is present, else plain text.
+ * The host may provide a safe Markdown renderer as `window.__renderSafeMarkdown`.
  */
 (function (global) {
   'use strict';
@@ -46,8 +46,8 @@
   }
 
   function md(text) {
-    if (global.marked && typeof global.marked.parse === 'function') {
-      try { return global.marked.parse(text || ''); } catch (e) { /* fall through */ }
+    if (typeof global.__renderSafeMarkdown === 'function') {
+      try { return global.__renderSafeMarkdown(text || ''); } catch (e) { /* fall through */ }
     }
     return esc(text || '').replace(/\n/g, '<br>');
   }

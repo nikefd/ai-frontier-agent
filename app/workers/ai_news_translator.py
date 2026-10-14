@@ -17,6 +17,7 @@ Design notes:
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -24,11 +25,12 @@ from typing import Any
 
 from ..llm_client import LLMUnavailable, chat_complete, llm_configured
 from ..routers.ai_news import ARTICLES_FILE, _load_articles
-from ..storage import write_json_atomic
+from ..storage import update_json_atomic
 
 log = logging.getLogger("aif.translator")
 
 BATCH_SIZE = 8
+_TRANSLATE_LOCK = asyncio.Lock()
 
 # Controlled tag vocabulary — the LLM must pick from this list, nothing else.
 # Keeps tags filterable (no synonym explosion). Mirror in frontend TAG_VOCAB.
@@ -116,7 +118,7 @@ def _clean_tags(v: Any) -> list[str]:
     return [t for t in v if t in TAG_VOCAB][:3]
 
 
-async def translate_once() -> int:
+async def _translate_once() -> int:
     """Enrich one batch (translate + score + tag). Returns number processed."""
     if not llm_configured():
         return 0
@@ -135,39 +137,54 @@ async def translate_once() -> int:
     except (LLMUnavailable, ValueError, json.JSONDecodeError) as e:
         log.warning("enrich batch failed: %s", e)
         ids = {a.get("id") for a in batch}
-        for a in articles:
-            if a.get("id") in ids:
-                a["translation_status"] = "failed"
-        write_json_atomic(ARTICLES_FILE, articles)
+
+        def mark_failed(data):
+            latest = data if isinstance(data, list) else []
+            for article in latest:
+                if article.get("id") in ids:
+                    article["translation_status"] = "failed"
+            return latest
+
+        update_json_atomic(ARTICLES_FILE, [], mark_failed)
         return 0
 
     by_id = {p.get("id"): p for p in parsed if isinstance(p, dict)}
-    written = 0
-    for a in articles:
-        if a.get("id") in by_id:
-            p = by_id[a["id"]]
-            title_zh = (p.get("title_zh") or "").strip()
-            summary_zh = (p.get("summary_zh") or "").strip()
-            if title_zh:
-                a["title_zh"] = title_zh
-            if summary_zh:
-                a["summary_zh"] = summary_zh
-            imp = _clean_importance(p.get("importance"))
-            if imp is not None:
-                a["importance"] = imp
-            tags = _clean_tags(p.get("tags"))
-            if tags:
-                a["tags"] = tags
-            a["translation_status"] = "ok" if title_zh else "failed"
-            written += 1
-    # Entries in batch but missing from response → mark failed
     missing = {a["id"] for a in batch if a.get("id")} - set(by_id.keys())
-    for a in articles:
-        if a.get("id") in missing:
-            a["translation_status"] = "failed"
-    write_json_atomic(ARTICLES_FILE, articles)
+    written = 0
+
+    def merge_results(data):
+        nonlocal written
+        latest = data if isinstance(data, list) else []
+        for a in latest:
+            if a.get("id") in by_id:
+                p = by_id[a["id"]]
+                title_zh = (p.get("title_zh") or "").strip()
+                summary_zh = (p.get("summary_zh") or "").strip()
+                if title_zh:
+                    a["title_zh"] = title_zh
+                if summary_zh:
+                    a["summary_zh"] = summary_zh
+                imp = _clean_importance(p.get("importance"))
+                if imp is not None:
+                    a["importance"] = imp
+                tags = _clean_tags(p.get("tags"))
+                if tags:
+                    a["tags"] = tags
+                a["translation_status"] = "ok" if title_zh else "failed"
+                written += 1
+            elif a.get("id") in missing:
+                a["translation_status"] = "failed"
+        return latest
+
+    update_json_atomic(ARTICLES_FILE, [], merge_results)
     log.info("enrich worker: persisted %d entries", written)
     return written
+
+
+async def translate_once() -> int:
+    """Serialize enrichment sweeps so a scheduler and admin trigger cannot overlap."""
+    async with _TRANSLATE_LOCK:
+        return await _translate_once()
 
 
 if __name__ == "__main__":

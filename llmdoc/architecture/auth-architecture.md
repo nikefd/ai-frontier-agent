@@ -10,14 +10,15 @@
 | 身份 | 能做什么 |
 |---|---|
 | **未登录** | 浏览全局内容：文章流、今日速报、数据源、单篇阅读。用户产物的读（tracks/deep-dives/guides/conversations）返回**空** |
-| **未登录禁止** | 任何写（pin/track/guide/删除/fetch/translate）和任何 **LLM 调用**（深度解读/手动新建/速报/指南/对话 agent）→ **401** |
-| **登录后** | 可写、可调 LLM，且产物只属于自己 |
+| **未登录禁止** | 任何用户写操作和任何 LLM 调用 → **401** |
+| **普通登录用户** | 可管理自己的 pin/track/guide/解读/卡片等产物；通过验证和额度闸后可调用个人 LLM 功能 |
+| **管理员** | 具备普通用户能力；另可新增/删除全局文章、立即抓取、批量翻译、重生成全局速报和管理用户 |
 
 实现：写 & LLM 端点挂 `Depends(require_user)`（匿名 401）；用户产物的读挂 `Depends(current_user_optional)`（匿名得空）；全局只读端点不挂。
 
-**admin 角色**：`require_admin`（`auth.py`）在 `require_user` 之上加 `role == "admin"` 校验（非 admin 403）。`/api/admin/*`（用户管理：列表/改角色/删除）全挂它。护栏：admin 不能删/降自己、系统至少留一个 admin。前端用 `body.is-admin` class 控制「用户管理」入口显隐（auth.js 按当前用户 role 切）。端点见 [API 参考](../reference/api-reference.md) 0b 节。
+**admin 角色**：`require_admin`（`auth.py`）在 `require_user` 之上加 `role == "admin"` 校验（非 admin 403）。除 `/api/admin/*`，会改变全局内容的 `/articles` 新增/删除、`/fetch`、`/translate/run`、`/articles/{aid}/retranslate`、`POST /summary/today` 也挂该守卫。护栏：admin 不能删/降自己、系统至少留一个 admin。前端用 `body.is-admin` 控制管理入口和全局操作按钮显隐。
 
-**LLM 端点的两道防滥用闸**（防未验证小号 / 单用户刷爆不限量的 LLM key）：所有烧 LLM 的端点（翻译/速报/解读/指南/对话/画像/复盘/学习路径生成）挂 `require_llm_quota`，它在 `require_user` 之上依次加：① `require_verified_user`——邮箱未验证 **403**（首个 admin 自动验证）；② 每日额度——普通用户超 `AIF_DAILY_LLM_LIMIT`（默认 50）返回 **429**，admin 豁免。计数在 `app/usage.py`（`users/<uid>/usage.json`，按主动操作计数、跨天重置）。普通浏览/收藏等非 LLM 操作不受这两道闸影响。
+**个人 LLM 端点的两道防滥用闸**（防未验证小号 / 单用户刷爆 LLM key）：解读、指南、对话、画像、复盘和学习路径挂 `require_llm_quota`，它依次要求邮箱验证并原子消费每日额度；普通用户超 `AIF_DAILY_LLM_LIMIT` 返回 **429**，admin 豁免。全局翻译/速报属于 admin-only 运维操作，定时任务在进程内直接调用实现。
 
 ## 2. 数据切分
 
@@ -109,7 +110,7 @@ agent 工具也按用户绑定：`agent_tools.build_tools(uid)` 每请求构造�
 
 约束：没人匹配 `AIF_ADMIN_EMAIL` 时 `_legacy/` 会一直「无主」留存（数据不丢）。不配 `AIF_ADMIN_EMAIL` 由首注册者继承最稳。
 
-## 6. 前端（`static/js/auth.js`）
+## 6. 前端（`frontend/src/auth.js`）
 
 - 启动 `GET /api/auth/me` 取登录态，渲染顶栏（`#auth-slot`）：未登录显示「登录/注册」，登录显示 email + 登出。
 - 登录/注册弹窗（零构建，原生 DOM），不引框架。

@@ -32,11 +32,11 @@ cp .env.example .env
 uvicorn app.main:app --host 0.0.0.0 --port 9702 --reload
 ```
 
-打开 http://127.0.0.1:9702/ （会自动跳 `/ui/`）。改前端代码后需 `npm run build` 重新构建（或用 `npm run dev`）。
+打开 http://127.0.0.1:9702/ 。改前端代码后需 `npm run build` 重新构建（或用 `npm run dev`）。
 
 ### 数据目录
 
-裸机默认数据根是 `~/agent-data`（`AIF_DATA_DIR` 可改），新闻数据在 `~/agent-data/ai-news/`。首次跑是空的——点页面右上「立即抓取」拉第一批，或想要演示数据可手动把 `seed-data/ai-news/` 拷过去：
+裸机默认数据根是 `~/agent-data`（`AIF_DATA_DIR` 可改）。首次跑先注册首个账号（自动成为 admin），再点管理员可见的「立即抓取」；也可拷贝演示数据：
 
 ```bash
 mkdir -p ~/agent-data/ai-news
@@ -69,8 +69,8 @@ docker compose logs -f ai-frontier      # 看日志
 
 | 想做什么 | 怎么做 |
 |---|---|
-| 立即抓一轮 RSS | 页面右上「立即抓取」，或 `curl -XPOST localhost:9702/api/ai-news/fetch` |
-| 跑一批翻译 | 文章流工具栏「批量翻译」，或 `curl -XPOST localhost:9702/api/ai-news/translate/run` |
+| 立即抓一轮 RSS | admin 登录后点「立即抓取」（API 同样要求 admin session） |
+| 跑一批翻译 | admin 登录后点「批量翻译」（API 同样要求 admin session） |
 | 健康检查 | `curl localhost:9702/api/health` |
 | 单独跑抓取脚本（裸机调试） | `python -m app.workers.ai_news_fetcher` |
 | 单独跑翻译脚本（裸机调试） | `python -m app.workers.ai_news_translator` |
@@ -83,7 +83,7 @@ pip install -e ".[dev]"     # pytest + pytest-asyncio
 pytest
 ```
 
-> 注意：当前仓库 `pyproject.toml` 配了 `testpaths = ["tests"]`，但仓库里**还没有 `tests/` 目录**。`pytest` 会报「找不到测试」。新增测试时先建 `tests/`。
+当前安全/业务回归共 45 项；提交前同时运行 `pytest`、`cd frontend && npm run build && npm audit`。
 
 ## 排障
 
@@ -92,4 +92,4 @@ pytest
 | 所有 LLM 功能报 503 | 没配 key。检查 `AIF_LLM_API_KEY` 或 `DEEPSEEK_API_KEY`；`GET /api/health` 看 `llm_configured` |
 | 大量数据源「抓取失败」 | 多半是 rsshub 路由问题。裸机把 `AIF_RSSHUB_BASE` 指向可用实例；Twitter 源需自建 rsshub + `TWITTER_AUTH_TOKEN`，见 [部署指南](how-to-deploy.md) |
 | 启动日志有「agent chat router not loaded」 | agent 运行时（`app/agent_runtime/`）初始化失败。新闻 API 仍可用，但 `/api/agent/chat` 404。看 warning 详情排查 |
-| 对话组件加载不出来 | `sparrow-chat.js` 现随前端构建（`frontend/public/`）。确认 `npm run build` 跑过、`/ui/sparrow-chat.js` 可访问 |
+| 对话组件加载不出来 | 确认 `npm run build` 跑过、`/sparrow-chat.js` 可访问 |

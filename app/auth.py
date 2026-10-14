@@ -36,7 +36,7 @@ from .models import (
     UserRecord,
 )
 from .settings import settings
-from .storage import read_json, write_json_atomic
+from .storage import read_json, update_json_atomic
 
 log = logging.getLogger("aif.auth")
 
@@ -120,13 +120,20 @@ def read_reset_token(token: str) -> str | None:
 
 def set_password(uid: str, new_password: str) -> bool:
     """Replace a user's password hash. Returns False if the user is gone."""
-    users = load_users()
-    for u in users:
-        if u.get("id") == uid:
-            u["password_hash"] = hash_password(new_password)
-            _save_users(users)
-            return True
-    return False
+    password_hash = hash_password(new_password)
+    changed = {"value": False}
+
+    def mutate(data):
+        users = data if isinstance(data, list) else []
+        for user in users:
+            if user.get("id") == uid:
+                user["password_hash"] = password_hash
+                changed["value"] = True
+                break
+        return users
+
+    update_json_atomic(USERS_FILE, [], mutate)
+    return changed["value"]
 
 
 def make_verification_token(uid: str) -> str:
@@ -142,17 +149,20 @@ def read_verification_token(token: str) -> str | None:
 
 
 def mark_email_verified(uid: str) -> bool:
-    users = load_users()
-    changed = False
-    for u in users:
-        if u.get("id") == uid:
-            if not u.get("email_verified"):
-                u["email_verified"] = True
-                changed = True
-            break
-    if changed:
-        _save_users(users)
-    return changed
+    changed = {"value": False}
+
+    def mutate(data):
+        users = data if isinstance(data, list) else []
+        for user in users:
+            if user.get("id") == uid:
+                if not user.get("email_verified"):
+                    user["email_verified"] = True
+                    changed["value"] = True
+                break
+        return users
+
+    update_json_atomic(USERS_FILE, [], mutate)
+    return changed["value"]
 
 
 # ── password hashing ─────────────────────────────────────────────────
@@ -178,10 +188,6 @@ def load_users() -> list[dict]:
     return data if isinstance(data, list) else []
 
 
-def _save_users(users: list[dict]) -> None:
-    write_json_atomic(USERS_FILE, users)
-
-
 def find_by_email(email: str) -> dict | None:
     email = email.strip().lower()
     return next((u for u in load_users() if u.get("email") == email), None)
@@ -194,31 +200,41 @@ def find_by_id(uid: str) -> dict | None:
 def create_user(email: str, password: str) -> UserRecord:
     """Create + persist a user. First account becomes admin."""
     email = email.strip().lower()
-    users = load_users()
-    role = "admin" if not users else "user"
-    rec = UserRecord(
-        id="u_" + secrets.token_hex(8),
-        email=email,
-        password_hash=hash_password(password),
-        role=role,
-        # First account (the bootstrap admin) is trusted as verified, so the
-        # operator isn't locked behind a verification mail before SMTP is set up.
-        email_verified=(role == "admin"),
-        created_at=_now_iso(),
-        last_login_at=_now_iso(),
-    )
-    users.append(rec.model_dump())
-    _save_users(users)
-    return rec
+    password_hash = hash_password(password)
+    created = {}
+
+    def mutate(data):
+        users = data if isinstance(data, list) else []
+        if any(user.get("email") == email for user in users):
+            raise HTTPException(409, "该邮箱已注册")
+        role = "admin" if not users else "user"
+        rec = UserRecord(
+            id="u_" + secrets.token_hex(8),
+            email=email,
+            password_hash=password_hash,
+            role=role,
+            email_verified=(role == "admin"),
+            created_at=_now_iso(),
+            last_login_at=_now_iso(),
+        )
+        created["record"] = rec
+        users.append(rec.model_dump())
+        return users
+
+    update_json_atomic(USERS_FILE, [], mutate)
+    return created["record"]
 
 
 def _touch_login(uid: str) -> None:
-    users = load_users()
-    for u in users:
-        if u.get("id") == uid:
-            u["last_login_at"] = _now_iso()
-            break
-    _save_users(users)
+    def mutate(data):
+        users = data if isinstance(data, list) else []
+        for user in users:
+            if user.get("id") == uid:
+                user["last_login_at"] = _now_iso()
+                break
+        return users
+
+    update_json_atomic(USERS_FILE, [], mutate)
 
 
 # ── session token ────────────────────────────────────────────────────
@@ -305,16 +321,10 @@ def require_llm_quota(user: UserPublic = Depends(require_verified_user)) -> User
     """
     if user.role == "admin":
         return user
-    from .usage import has_quota, record_use
-    if not has_quota(user.id):
+    from .usage import consume_quota
+    if not consume_quota(user.id):
         raise HTTPException(429, "今日 AI 使用额度已用完，请明天再试")
-    record_use(user.id)
     return user
-
-
-def count_admins() -> int:
-    """Number of admin accounts — used to refuse removing the last admin."""
-    return sum(1 for u in load_users() if u.get("role") == "admin")
 
 
 # ── endpoints ────────────────────────────────────────────────────────

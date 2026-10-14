@@ -1,6 +1,6 @@
 // Knowledge cards + spaced-repetition review view.
 // Two panes: 今日复习 (flip-and-grade flow) and 卡片管理 (list / delete / add).
-import { $, escapeHtml, fmtDate } from './util.js';
+import { $, escapeHtml, fmtDate, safeExternalUrl } from './util.js';
 import { api } from './api.js';
 
 let dueQueue = [];   // cards due today, consumed one by one
@@ -33,11 +33,12 @@ function showCurrentCard() {
     return;
   }
   const c = dueQueue[0];
+  const sourceUrl = safeExternalUrl(c.source_url);
   box.innerHTML = `
     <div class="srs-card">
       <div class="srs-front">${escapeHtml(c.front)}</div>
       ${flipped ? `<hr class="hr"><div class="srs-back">${escapeHtml(c.back || '（无背面内容）')}</div>
-        ${c.source_url ? `<a class="srs-src" href="${escapeHtml(c.source_url)}" target="_blank" rel="noopener">看原文 ↗</a>` : ''}` : ''}
+        ${sourceUrl ? `<a class="srs-src" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">看原文 ↗</a>` : ''}` : ''}
       <div class="srs-controls">
         ${flipped ? `
           <button class="btn-card" data-grade="forgot">😵 忘了</button>
@@ -93,7 +94,7 @@ function cardRow(c) {
     <div class="srs-row">
       <div class="srs-row-main">
         <div class="srs-row-front">${escapeHtml(c.front)}</div>
-        <div class="srs-row-meta text-faint">${src} · 下次复习 ${srs.due || '—'} · 已复习 ${srs.reps || 0} 次</div>
+        <div class="srs-row-meta text-faint">${escapeHtml(src)} · 下次复习 ${escapeHtml(srs.due || '—')} · 已复习 ${Number(srs.reps) || 0} 次</div>
       </div>
       <button class="btn-card ghost sm" data-del="${escapeHtml(c.id)}" title="删除">🗑</button>
     </div>`;

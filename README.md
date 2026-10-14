@@ -23,7 +23,7 @@ cp .env.example .env          # 填 AIF_LLM_API_KEY=<DeepSeek key>；本地建�
 uvicorn app.main:app --host 0.0.0.0 --port 9702 --reload
 ```
 
-打开 http://127.0.0.1:9702/ ，点右上「立即抓取」拉第一批数据。
+打开 http://127.0.0.1:9702/ ，注册首个账号（自动成为 admin），点管理员可见的「立即抓取」拉第一批数据。
 
 ## 快速开始（Docker，最接近生产）
 
@@ -54,4 +54,4 @@ docker compose up -d --build
 
 ## 技术栈
 
-FastAPI · uvicorn · APScheduler · httpx · feedparser · BeautifulSoup · pydantic-settings · SQLite · [sparrow-agent](https://pypi.org/project/sparrow-agent/)（对话 agent）· DeepSeek（LLM）· 原生 ES module 前端（marked + mermaid）。
+FastAPI · uvicorn · APScheduler · httpx · feedparser · BeautifulSoup · pydantic-settings · SQLite · 内联 agent runtime · DeepSeek（LLM）· Vite ES module 前端（marked + DOMPurify + Mermaid strict）。

@@ -10,15 +10,15 @@
 
 后端是**进程内一体化**的 FastAPI 应用：HTTP API + 静态前端托管 + APScheduler 后台任务都跑在同一个 uvicorn 进程里，没有独立 worker 进程，也没有数据库服务。
 
-数据**全部落在文件系统**（`<data_dir>/ai-news/` 下的一组 JSON 文件 + 一个 SQLite `ui.db`），靠原子写（写 `.tmp` 再 rename）保证并发安全。这意味着「克隆即可跑」「卷挂载即持久化」，不需要 Postgres / Redis（自建 rsshub 那条链路除外）。
+数据**全部落在文件系统**（JSON + 每用户 SQLite `ui.db`）。覆盖写用 tmp+fsync+rename，读改写用按路径事务锁；当前并发保证以单 uvicorn 进程为边界。
 
 三条主要数据流：
 
-1. **抓取管线** — APScheduler 每天 07:30（可配）拉全部 feed，关键词打标 + 每源配额 + 全局上限后入库 `articles.json`；用户也能点「立即抓取」即时触发。详见 [RSS 抓取管线架构](../architecture/rss-pipeline-architecture.md)。
+1. **抓取管线** — APScheduler 每天 05:00（可配）拉全部 feed；管理员也能即时触发。详见 [RSS 抓取管线架构](../architecture/rss-pipeline-architecture.md)。
 2. **翻译 / LLM 加工** — 每 2 分钟一个翻译 tick 把 `pending` 文章批量译成中文；用户可对单篇生成「深度解读」（带 mermaid 图）、对一组生成「今日速报」、对任意主题生成「深度指南」。
 3. **对话 agent** — `/api/agent/chat` 是 sparrow `Harness` 跑的 ReAct agent，带读写工具（查文章/源/track、建 track、收藏），对话历史持久化在 `ui.db`。详见 [Agent 架构](../architecture/agent-architecture.md)。
 
-前端是 **Vite 构建的零框架 ES module** 单页应用，构建产物由后端 `/ui/` 托管；对话组件 `sparrow-chat.js` 是仓库内源码（`frontend/public/`），随前端构建输出。
+前端是 **Vite 构建的零框架 ES module** 单页应用，构建产物由后端根路径托管；对话组件是仓库内源码，随前端构建输出。
 
 ## 3. 技术栈
 
@@ -30,7 +30,7 @@
 | 数据存储 | 文件系统 JSON（原子写）+ SQLite（`ui.db`，对话记忆，只读 URI 模式） |
 | LLM | DeepSeek（OpenAI 兼容 `/chat/completions`），自写 httpx 薄封装，不引 openai/anthropic SDK |
 | 对话 agent | `app/agent_runtime/`（内联，原 sparrow；`Harness` / `AgentConfig` / `Memory` / `@tool`） |
-| 前端 | Vite 构建的 ES module，marked + mermaid（CDN），sparrow-chat.js 组件（`frontend/public/`） |
+| 前端 | Vite ES module；精确锁定的 marked + DOMPurify + Mermaid strict；无第三方运行时 CDN |
 | 容器化 | 单镜像（python:3.12-slim）+ docker-compose（app + 自建 rsshub + redis） |
 | 部署 | Coolify（Traefik 反代，命名卷持久化） |
 
@@ -49,7 +49,8 @@
 | `app/main.py` | FastAPI 入口：挂路由、CORS、静态托管（`static/dist/`）、lifespan 启停 scheduler |
 | `app/settings.py` | pydantic-settings 配置（`AIF_` 前缀），模块级单例 `settings` |
 | `app/models.py` | pydantic schema：`Article` / `Track` / `Guide` / `ChatMessage` / `ChatRequest` |
-| `app/storage.py` | 原子 JSON 读写 + 只读 SQLite 连接，跨模块共享 |
+| `app/storage.py` | 原子覆盖写 + 锁住完整 JSON 读改写事务 + 只读 SQLite |
+| `app/safe_fetch.py` | 阅读器 SSRF 校验、限流式抓取和惰性 HTML 清洗 |
 | `app/llm_client.py` | DeepSeek（OpenAI 兼容）薄封装：`chat_complete` / `chat_stream` |
 | `app/scheduler.py` | APScheduler：每日抓取 job + 每 2 分钟翻译 tick |
 | `app/routers/ai_news.py` | **核心路由**：articles/tracks/guides/sources/summary/deep-dive/manual-dive，以及 feed 清单与关键词表 |
@@ -67,7 +68,7 @@
 ## 6. 核心机制速览
 
 - **抓取入库:** 79 feed 异步并发拉取 → 每条关键词打标（`keyword`/`curated`，**不再用于拒绝**，所有源都是精选）→ 每源最多 `_PER_FEED_CAP=4` 篇保证多样性 → 全局 `_DAILY_FETCH_CAP=150` 封顶 → 滚动历史 `_ARTICLE_LIMIT=400`（pinned 不淘汰）。
-- **双语翻译:** 翻译 worker 每 2 分钟挑 5 篇 `pending`，单次 LLM 调用返回 JSON 数组，写回 `title_zh`/`summary_zh`；失败标 `failed` 不自动重试（需手动 retranslate）。
-- **LLM 产物分三类:** 单篇深度解读（带 mermaid 图，存 `deep-dives/{aid}.json`）、每日速报（存 `summary_today.json`）、主题深度指南（存 `guides/guide_*.json`）。还支持「手动输入」主题生成深度解读（合成一条 pinned 文章）。
+- **双语翻译:** 翻译 worker每批 8 篇，LLM 一次返回翻译/评分/标签，按 id 原子合并；失败不自动重试，管理员可重置。
+- **LLM 产物:** 单篇解读、全局每日速报、主题指南、画像、复盘和学习路径；手动主题解读只进用户库，不插入全局文章流。
 - **对话 agent:** sparrow `Harness` ReAct 循环 + 6 个工具（5 读 1 写组）+ 对话记忆（`ui.db`），SSE 推送 `tool_call`/`tool_result`/`final`/`title` 事件，每条工具结果带 `source` 供引用。
-- **存储即并发安全:** 所有 JSON 写经 `write_json_atomic`（tmp + fsync + rename + 进程内文件锁），SQLite 默认只读 URI 模式，多读者共享。
+- **安全边界:** 全局内容变更仅 admin；LLM Markdown 清洗后显示；阅读器逐跳阻断 SSRF 并只返回惰性 HTML；CSP 等响应头兜底。

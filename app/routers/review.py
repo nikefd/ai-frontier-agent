@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from ..auth import require_user
 from ..models import UserPublic
 from ..srs import is_due, new_srs, sm2_schedule
-from ..storage import read_json, write_json_atomic
+from ..storage import read_json, update_json_atomic
 from .ai_news import _load_articles, deep_dives_dir, review_cards_file
 
 router = APIRouter(prefix="/api/ai-news", tags=["review"])
@@ -34,10 +34,6 @@ def _now_iso() -> str:
 def _load_cards(uid: str) -> list[dict]:
     data = read_json(review_cards_file(uid), [])
     return data if isinstance(data, list) else []
-
-
-def _save_cards(uid: str, cards: list[dict]) -> None:
-    write_json_atomic(review_cards_file(uid), cards)
 
 
 def _card_id(front: str, source_id: str | None) -> str:
@@ -132,25 +128,30 @@ def create_card(req: CardCreate, user: UserPublic = Depends(require_user)) -> di
         "created_at": _now_iso(),
         "srs": new_srs(today),
     }
-    cards = _load_cards(user.id)
-    # Dedup: same source article/deep-dive shouldn't create duplicate cards.
-    if req.source_id and any(
-        c.get("source_id") == req.source_id and c.get("source_type") == req.source_type
-        for c in cards
-    ):
-        raise HTTPException(409, "这篇已经在复习库里了")
-    cards.append(card)
-    _save_cards(user.id, cards)
+    def mutate(data):
+        cards = data if isinstance(data, list) else []
+        if req.source_id and any(
+            c.get("source_id") == req.source_id and c.get("source_type") == req.source_type
+            for c in cards
+        ):
+            raise HTTPException(409, "这篇已经在复习库里了")
+        cards.append(card)
+        return cards
+
+    update_json_atomic(review_cards_file(user.id), [], mutate)
     return {"ok": True, "card": card}
 
 
 @router.delete("/review/cards/{cid}")
 def delete_card(cid: str, user: UserPublic = Depends(require_user)) -> dict:
-    cards = _load_cards(user.id)
-    kept = [c for c in cards if c.get("id") != cid]
-    if len(kept) == len(cards):
-        raise HTTPException(404, "card not found")
-    _save_cards(user.id, kept)
+    def mutate(data):
+        cards = data if isinstance(data, list) else []
+        kept = [card for card in cards if card.get("id") != cid]
+        if len(kept) == len(cards):
+            raise HTTPException(404, "card not found")
+        return kept
+
+    update_json_atomic(review_cards_file(user.id), [], mutate)
     return {"ok": True}
 
 
@@ -165,13 +166,19 @@ def due_cards(user: UserPublic = Depends(require_user)) -> dict:
 
 @router.post("/review/cards/{cid}/grade")
 def grade_card(cid: str, req: GradeRequest, user: UserPublic = Depends(require_user)) -> dict:
-    cards = _load_cards(user.id)
-    card = next((c for c in cards if c.get("id") == cid), None)
-    if not card:
-        raise HTTPException(404, "card not found")
-    try:
-        card["srs"] = sm2_schedule(card.get("srs") or new_srs(_today()), req.grade, _today())
-    except ValueError as e:
-        raise HTTPException(400, str(e))
-    _save_cards(user.id, cards)
-    return {"ok": True, "card": card}
+    updated = {}
+
+    def mutate(data):
+        cards = data if isinstance(data, list) else []
+        card = next((item for item in cards if item.get("id") == cid), None)
+        if not card:
+            raise HTTPException(404, "card not found")
+        try:
+            card["srs"] = sm2_schedule(card.get("srs") or new_srs(_today()), req.grade, _today())
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        updated["card"] = card
+        return cards
+
+    update_json_atomic(review_cards_file(user.id), [], mutate)
+    return {"ok": True, "card": updated["card"]}

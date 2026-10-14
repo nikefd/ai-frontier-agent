@@ -2,6 +2,7 @@
 import importlib
 import os
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 
 
 def _fresh(limit=3):
@@ -49,6 +50,15 @@ def test_stale_date_resets():
     write_json_atomic(u._usage_file(uid), {"date": "2000-01-01", "count": 3})
     assert u.usage_today(uid) == 0       # stale day → counted as 0
     assert u.has_quota(uid)
+
+
+def test_concurrent_consumption_never_exceeds_limit():
+    u = _fresh(limit=7)
+    uid = "u_concurrent"
+    with ThreadPoolExecutor(max_workers=20) as pool:
+        results = list(pool.map(lambda _: u.consume_quota(uid), range(40)))
+    assert sum(results) == 7
+    assert u.usage_today(uid) == 7
 
 
 if __name__ == "__main__":

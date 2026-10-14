@@ -13,7 +13,7 @@ import secrets
 from .agent_runtime import tool
 
 from .routers import ai_news as news
-from .storage import read_json, write_json_atomic
+from .storage import read_json, update_json_atomic
 
 
 _MAX_ARTICLES = 15  # per query, to stay within the context budget
@@ -150,13 +150,20 @@ def build_tools(uid: str) -> list:
             else:
                 flat.append(k)
         keywords = flat
-        tracks = news._load_tracks(uid)
-        if any(t.get("name") == name for t in tracks):
-            return {"error": f"track '{name}' already exists"}
         new = {"id": "t_" + secrets.token_hex(4), "name": name,
                "keywords": keywords or [], "sources": []}
-        tracks.append(new)
-        write_json_atomic(news.tracks_file(uid), tracks)
+
+        def append_track(data):
+            tracks = data if isinstance(data, list) else list(news.DEFAULT_TRACKS)
+            if any(t.get("name") == name for t in tracks):
+                raise ValueError(f"track '{name}' already exists")
+            tracks.append(new)
+            return tracks
+
+        try:
+            update_json_atomic(news.tracks_file(uid), list(news.DEFAULT_TRACKS), append_track)
+        except ValueError as exc:
+            return {"error": str(exc)}
         return {"ok": True, "id": new["id"], "message": f"track '{name}' created",
                 "source": "tracks.json"}
 
@@ -166,14 +173,20 @@ def build_tools(uid: str) -> list:
     def pin_article(id: str = "", conversation_id: str = "") -> dict:
         if not any(a.get("id") == id for a in news._load_articles()):
             return {"error": f"no article with id {id}"}
-        pins = news._load_pins(uid)
-        if id in pins:
-            pins.discard(id)
-            pinned = False
-        else:
-            pins.add(id)
-            pinned = True
-        news._save_pins(uid, pins)
+        pinned = False
+
+        def toggle(data):
+            nonlocal pinned
+            pins = set(data) if isinstance(data, list) else set()
+            if id in pins:
+                pins.discard(id)
+                pinned = False
+            else:
+                pins.add(id)
+                pinned = True
+            return sorted(pins)
+
+        update_json_atomic(news.pins_file(uid), [], toggle)
         return {"ok": True, "pinned": pinned,
                 "message": f"article {'pinned' if pinned else 'unpinned'}",
                 "source": "articles.json"}

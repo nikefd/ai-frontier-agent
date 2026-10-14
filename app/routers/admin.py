@@ -14,15 +14,9 @@ import shutil
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from ..auth import (
-    _save_users,
-    count_admins,
-    find_by_id,
-    load_users,
-    require_admin,
-)
+from ..auth import USERS_FILE, load_users, require_admin
 from ..models import UserPublic
-from ..storage import read_json
+from ..storage import read_json, update_json_atomic
 from .ai_news import deep_dives_dir, pins_file, review_cards_file, user_dir
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -73,19 +67,18 @@ def update_role(uid: str, req: RoleUpdate, admin: UserPublic = Depends(require_a
         raise HTTPException(400, "role must be 'admin' or 'user'")
     if uid == admin.id:
         raise HTTPException(400, "不能修改自己的角色")
-    target = find_by_id(uid)
-    if not target:
-        raise HTTPException(404, "user not found")
-    # Refuse demoting the last admin (defensive — self-demote is already blocked).
-    if target.get("role") == "admin" and role == "user" and count_admins() <= 1:
-        raise HTTPException(400, "系统至少要保留一个管理员")
+    def mutate(data):
+        users = data if isinstance(data, list) else []
+        target = next((user for user in users if user.get("id") == uid), None)
+        if not target:
+            raise HTTPException(404, "user not found")
+        admins = sum(1 for user in users if user.get("role") == "admin")
+        if target.get("role") == "admin" and role == "user" and admins <= 1:
+            raise HTTPException(400, "系统至少要保留一个管理员")
+        target["role"] = role
+        return users
 
-    users = load_users()
-    for u in users:
-        if u["id"] == uid:
-            u["role"] = role
-            break
-    _save_users(users)
+    update_json_atomic(USERS_FILE, [], mutate)
     return {"ok": True, "id": uid, "role": role}
 
 
@@ -93,14 +86,17 @@ def update_role(uid: str, req: RoleUpdate, admin: UserPublic = Depends(require_a
 def delete_user(uid: str, admin: UserPublic = Depends(require_admin)) -> dict:
     if uid == admin.id:
         raise HTTPException(400, "不能删除自己")
-    target = find_by_id(uid)
-    if not target:
-        raise HTTPException(404, "user not found")
-    if target.get("role") == "admin" and count_admins() <= 1:
-        raise HTTPException(400, "系统至少要保留一个管理员")
+    def mutate(data):
+        users = data if isinstance(data, list) else []
+        target = next((user for user in users if user.get("id") == uid), None)
+        if not target:
+            raise HTTPException(404, "user not found")
+        admins = sum(1 for user in users if user.get("role") == "admin")
+        if target.get("role") == "admin" and admins <= 1:
+            raise HTTPException(400, "系统至少要保留一个管理员")
+        return [user for user in users if user.get("id") != uid]
 
-    users = [u for u in load_users() if u["id"] != uid]
-    _save_users(users)
+    update_json_atomic(USERS_FILE, [], mutate)
 
     # Remove the user's per-user artifact directory (pins/deep-dives/cards/ui.db…).
     try:

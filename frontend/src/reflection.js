@@ -3,6 +3,7 @@
 // or saved as a knowledge card.
 import { $, escapeHtml, fmtDate } from './util.js';
 import { api } from './api.js';
+import { renderMarkdownInline } from './markdown.js';
 
 export async function loadReflection() {
   const body = $('#reflection-body'), meta = $('#reflection-meta');
@@ -38,7 +39,7 @@ export async function regenReflection() {
 
 function render(r) {
   const body = $('#reflection-body');
-  const recap = r.recap ? `<div class="reflection-recap">${marked.parseInline(r.recap)}</div>` : '';
+  const recap = r.recap ? `<div class="reflection-recap">${renderMarkdownInline(r.recap)}</div>` : '';
   const questions = (r.questions || []).map((q, i) => `
     <div class="reflection-q">
       <div class="reflection-q-text">${escapeHtml(q)}</div>

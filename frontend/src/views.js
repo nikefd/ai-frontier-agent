@@ -1,6 +1,7 @@
 // Secondary views: today's summary, source health.
-import { $, $$, escapeHtml, fmtDate, catBadge } from './util.js';
+import { $, $$, escapeHtml, fmtDate, catBadge, safeExternalUrl } from './util.js';
 import { api, renderMermaidInside } from './api.js';
+import { renderMarkdown } from './markdown.js';
 
 // ── Today's summary ──────────────────────────────────────────────────
 function linkSummaryCitations(root, cohort = []) {
@@ -9,9 +10,9 @@ function linkSummaryCitations(root, cohort = []) {
   const references = new Map();
   cohort.forEach((article, index) => {
     try {
-      const url = new URL(article.url || '', window.location.href);
-      if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
-      references.set(index + 1, { ...article, url: url.href });
+      const url = safeExternalUrl(article.url);
+      if (!url) return;
+      references.set(index + 1, { ...article, url });
     } catch (e) { /* Ignore missing or malformed source URLs. */ }
   });
   if (!references.size) return;
@@ -51,7 +52,7 @@ function linkSummaryCitations(root, cohort = []) {
 }
 
 async function renderSummary(body, summary) {
-  body.innerHTML = marked.parse(summary.body || '');
+  body.innerHTML = renderMarkdown(summary.body || '');
   linkSummaryCitations(body, summary.cohort || []);
   await renderMermaidInside(body);
 }
@@ -120,8 +121,9 @@ function forYouCard(a) {
   const reasons = (a._reasons && a._reasons.length)
     ? `<div class="fy-reasons">${a._reasons.map(r => `<span class="chip chip-tag">${escapeHtml(r)}</span>`).join('')}</div>`
     : '';
-  const link = a.url
-    ? `<a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">${escapeHtml(title)} ↗</a>`
+  const safeUrl = safeExternalUrl(a.url);
+  const link = safeUrl
+    ? `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener">${escapeHtml(title)} ↗</a>`
     : escapeHtml(title);
   return `
     <div class="fy-item">
@@ -143,7 +145,7 @@ export async function loadProfile() {
     const r = await api('GET', '/api/ai-news/profile');
     if (r.status === 'ok' && r.body) {
       meta.textContent = r.generated_at ? '生成于 ' + fmtDate(r.generated_at) : '';
-      body.innerHTML = marked.parse(r.body);
+      body.innerHTML = renderMarkdown(r.body);
     } else {
       meta.textContent = '';
       body.innerHTML = `<div class="muted-card" style="padding:32px 20px">
@@ -161,7 +163,7 @@ export async function regenProfile() {
   body.innerHTML = '<div class="muted-card">⏳ 生成中（约 15-25s）…</div>';
   try {
     const r = await api('POST', '/api/ai-news/profile');
-    body.innerHTML = marked.parse(r.body || '');
+    body.innerHTML = renderMarkdown(r.body || '');
     $('#profile-meta').textContent = '生成于刚才';
   } catch (e) {
     body.innerHTML = '<div class="muted-card">❌ ' + escapeHtml(e.message) + '</div>';
@@ -221,10 +223,11 @@ function sourceCard(s) {
     ? `<div class="src-err" title="${escapeHtml(s.last_error)}">${escapeHtml(s.last_error.length > 80 ? s.last_error.slice(0, 77) + '…' : s.last_error)}</div>`
     : '';
   const lastFetch = s.last_fetch ? fmtDate(s.last_fetch) : '—';
-  const desc = s.description || '<span class="text-faint">（无简介）</span>';
+  const desc = s.description ? escapeHtml(s.description) : '<span class="text-faint">（无简介）</span>';
   const host = s.url ? (s.url.replace(/^https?:\/\//, '').split('/')[0] || '') : '';
-  const linkRow = s.url
-    ? `<a class="src-link" href="${escapeHtml(s.url)}" target="_blank" rel="noopener" title="RSS 订阅地址">${escapeHtml(host)} ↗</a>`
+  const safeUrl = safeExternalUrl(s.url);
+  const linkRow = safeUrl
+    ? `<a class="src-link" href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener" title="RSS 订阅地址">${escapeHtml(host)} ↗</a>`
     : '<span class="text-faint">（无 URL）</span>';
   return `
     <div class="src-card">

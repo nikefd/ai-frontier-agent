@@ -3,6 +3,7 @@
 // user read inline, delete, regenerate, and manually create a new one.
 import { $, escapeHtml, fmtDate } from './util.js';
 import { api, renderMermaidInside } from './api.js';
+import { renderMarkdown } from './markdown.js';
 import { switchView } from './nav.js';
 
 // aid → desired action when the dives view next loads ('open' | 'generate').
@@ -79,7 +80,7 @@ async function toggleRead(aid, row) {
   body.innerHTML = '<div class="muted-card">⏳ 加载中…</div>';
   try {
     const r = await api('GET', `/api/ai-news/articles/${aid}/deep-dive`);
-    body.innerHTML = marked.parse(r.body || '');
+    body.innerHTML = renderMarkdown(r.body || '');
     await renderMermaidInside(body);
     body.dataset.loaded = 'true';
   } catch (e) {

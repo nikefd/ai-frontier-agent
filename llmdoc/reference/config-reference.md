@@ -3,6 +3,8 @@
 > 全部配置项。定义在 `app/settings.py`（pydantic-settings），环境变量前缀 **`AIF_`**，
 > 也读项目根 `.env`（模板见 `.env.example`）。模块级单例 `settings`。
 
+`docker-compose.yml` 已显式透传认证、防滥用、CORS、SMTP 和 Public URL 配置；在 Coolify 设置同名变量即可进入应用容器。生产至少设置随机 `AIF_SECRET_KEY`，HTTPS 域名设置 `AIF_COOKIE_SECURE=1`。
+
 ## 配置项一览
 
 | 环境变量 | 字段 | 默认值 | 说明 |

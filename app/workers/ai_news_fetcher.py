@@ -45,6 +45,7 @@ from ..models import Article
 log = logging.getLogger("aif.fetcher")
 
 USER_AGENT = "ai-frontier-agent/0.2 (RSS fetcher)"
+_FETCH_LOCK = asyncio.Lock()
 
 
 def _now_iso() -> str:
@@ -95,7 +96,7 @@ def _decide_relevance(entry: dict, tier: str) -> tuple[bool, str]:
     return True, ("keyword" if hit else "curated")
 
 
-async def fetch_once(feeds: Iterable[str] | None = None) -> int:
+async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
     """Pull all feeds → relevance-filter → keep top-N globally (tier × freshness).
 
     Per-feed counters in ``sources.json`` reflect what made the cut, so a feed
@@ -197,6 +198,12 @@ async def fetch_once(feeds: Iterable[str] | None = None) -> int:
         len(candidates), len(selected), added_total, len(feeds),
     )
     return added_total
+
+
+async def fetch_once(feeds: Iterable[str] | None = None) -> int:
+    """Serialize fetch sweeps so scheduler and admin-triggered runs cannot overlap."""
+    async with _FETCH_LOCK:
+        return await _fetch_once(feeds)
 
 
 if __name__ == "__main__":

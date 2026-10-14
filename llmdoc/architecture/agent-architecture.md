@@ -115,4 +115,4 @@ system prompt（英文写，见 `agent_chat.py`）给 agent 定了几条铁律�
 
 ## 4. 前端组件
 
-对话 UI 用 `sparrow-chat.js`（在 `frontend/index.html` 里 `SparrowChat.mount({...})`）。该文件现在是**仓库内源码** `frontend/public/sparrow-chat.js`，Vite 原样输出到 `/ui/sparrow-chat.js`，可直接改（改完 `npm run build`）。挂载配置包括 endpoint、会话 API、中文 i18n 文案、主题色。详见 [前端架构](frontend-architecture.md)。
+对话 UI 用仓库内的 `frontend/public/sparrow-chat.js`，Vite 原样输出到 `/sparrow-chat.js`。`main.js` 先注册安全 Markdown renderer，再执行 `SparrowChat.mount({...})`，因此历史消息和 SSE 最终答案统一经 DOMPurify 清洗。可直接修改组件源码，改完需 `npm run build`。详见 [前端架构](frontend-architecture.md)。

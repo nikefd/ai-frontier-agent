@@ -1,5 +1,5 @@
 // Personalized learning path view: generate a staged roadmap, browse saved ones.
-import { $, escapeHtml, fmtDate } from './util.js';
+import { $, escapeHtml, fmtDate, safeExternalUrl } from './util.js';
 import { api } from './api.js';
 import { jumpToDive } from './dives.js';
 import { switchView } from './nav.js';
@@ -88,7 +88,7 @@ function renderCurrent(path) {
   const stages = (path.stages || []).map((s, i) => {
     const learn = (s.learn || []).map(x => `<li>${escapeHtml(x)}</li>`).join('');
     const reads = (s.read || []).map(r => `
-      <div class="lp-read" data-type="${escapeHtml(r.type)}" data-id="${escapeHtml(r.id)}" data-url="${escapeHtml(r.url || '')}">
+      <div class="lp-read" data-type="${escapeHtml(r.type)}" data-id="${escapeHtml(r.id)}" data-url="${escapeHtml(safeExternalUrl(r.url))}">
         ${r.type === 'deep-dive' ? '🧠' : '📰'} ${escapeHtml(r.title)}
         ${r.note ? `<span class="text-faint"> · ${escapeHtml(r.note)}</span>` : ''}
       </div>`).join('');
@@ -115,6 +115,6 @@ function renderCurrent(path) {
   box.querySelectorAll('.lp-read').forEach(el => el.addEventListener('click', () => {
     const { type, id, url } = el.dataset;
     if (type === 'deep-dive') { switchView('dives'); jumpToDive(id, { generate: false }); }
-    else if (url) { window.open(url, '_blank', 'noopener'); }
+    else if (safeExternalUrl(url)) { window.open(safeExternalUrl(url), '_blank', 'noopener'); }
   }));
 }

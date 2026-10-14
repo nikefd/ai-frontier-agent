@@ -43,8 +43,14 @@ flowchart LR
 | `AIF_LLM_BASE_URL` | 否 | 默认 `https://api.deepseek.com` |
 | `AIF_LLM_MODEL` | 否 | 默认 `deepseek-chat` |
 | `AIF_RSSHUB_BASE` | 否 | 默认 `http://rsshub:1200`（容器网络内地址，别改成公共实例） |
+| `AIF_SECRET_KEY` | **是（生产）** | 会话签名密钥；生成随机长值，不入 git |
+| `AIF_COOKIE_SECURE` | **是（HTTPS）** | Coolify 域名走 HTTPS 时设 `1` |
+| `AIF_ADMIN_EMAIL` | 建议 | 指定继承旧数据的管理员邮箱 |
+| `AIF_DAILY_LLM_LIMIT` | 否 | 普通用户每日个人 LLM 调用额度，默认 50 |
+| `AIF_CORS_ORIGINS` | 否 | 内置同源 UI 留空；跨域时填明确 origin，不能 `*` |
+| `AIF_SMTP_*` / `AIF_PUBLIC_BASE_URL` | 建议 | 非 admin 用户验证邮箱与找回密码所需 |
 
-完整配置项见 [配置参考](../reference/config-reference.md)。
+这些变量现已由 `docker-compose.yml` 显式透传，Coolify 中设置后会进入应用容器。完整配置项见 [配置参考](../reference/config-reference.md)。
 
 ## 4. 数据持久化
 
@@ -57,11 +63,11 @@ flowchart LR
 ## 5. 部署步骤
 
 1. 在 Coolify 新建一个 **Docker Compose** 应用，指向本仓库。
-2. 在环境变量里填 `DEEPSEEK_API_KEY`（必填）和 `TWITTER_AUTH_TOKEN`（要 Twitter 源则填）。
+2. 配置 `DEEPSEEK_API_KEY`、随机 `AIF_SECRET_KEY`、`AIF_COOKIE_SECURE=1`；需要注册普通用户时再配 SMTP/Public URL；Twitter 源需要 `TWITTER_AUTH_TOKEN`。
 3. 配置域名（Coolify 会自动签 TLS 并经 Traefik 反代到容器 `:9702`）。
 4. 部署。首次会构建镜像、起三服务、灌种子数据。
 5. 访问域名验证；`GET /api/health` 应返回 `{ok:true, llm_configured:true}`。
-6. 等次日 07:30 自动抓取，或在页面点「立即抓取」拉第一批真实数据。
+6. 注册首个账号（自动成为 admin），等次日 05:00 自动抓取，或用管理员可见的「立即抓取」拉第一批真实数据；06:00 自动生成速报。
 
 ## 6. 健康检查
 
@@ -75,5 +81,6 @@ Dockerfile 内置 `HEALTHCHECK`，每 30s `curl http://127.0.0.1:9702/api/health
 | Twitter 源全失败 | `TWITTER_AUTH_TOKEN` 没填或失效，重新从浏览器取 x.com 的 auth_token |
 | LLM 功能 503 | `DEEPSEEK_API_KEY` 没配或额度用尽 |
 | 部署后数据没了 | 检查是否误用 bind mount；应为命名卷 `ai-frontier-data` |
+| HTTPS 下登录后仍像未登录 | 确认 compose 已透传 `AIF_COOKIE_SECURE=1`，域名确实通过 HTTPS 访问 |
 
 > 仓库根的 `deploy/` 目录当前为空——没有入库的 systemd/nginx 配置，部署细节都托管给 Coolify。

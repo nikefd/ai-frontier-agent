@@ -1,6 +1,6 @@
 # 已知问题与约束
 
-> 从当前代码（main @ 78739d3）如实记录的坑、约束和历史遗留。改任何一条前先确认影响面。
+> 从当前 main 如实记录的坑、约束和历史遗留。改任何一条前先确认影响面。
 
 ## 1. CORS 全开（`allow_origins=["*"]`）
 
@@ -42,18 +42,18 @@
 
 都不影响运行，属命名债。
 
-## 8. `/reader/{aid}` 代理抓取任意 URL
+## 8. `/reader/{aid}` SSRF / 原始 HTML（已修复）
 
-「阅读原文」端点会用服务端 httpx 抓 `article['url']` 并把**原始 HTML** 缓存到 `reader-cache/`。URL 来自 RSS 源（可信度中等）。绑公网时这是一个轻量 SSRF/缓存面，注意别让不可信来源写入 articles 的 url 字段。
+现由 `app/safe_fetch.py` 限定公共 http(s)，拒绝私网/回环/metadata/凭据 URL，每次重定向重新校验 DNS，并限制 HTML 类型与 2 MB。返回前白名单清洗，旧缓存也会惰性迁移；不再把远端主动 HTML 放到本站同源执行。全局文章新增/删除同时收紧为 admin-only。
 
 ## 9. 前端小问题
 
-- `static/js/views.js` 的数据源页 `SRC_CAT_LABELS` / `SRC_ORDER` 已覆盖全部 8 类（含 `expert` / `x-ai`）。
+- `frontend/src/views.js` 的数据源页 `SRC_CAT_LABELS` / `SRC_ORDER` 已覆盖全部 8 类（含 `expert` / `x-ai`）。
 - `frontend/public/sparrow-chat.js` 是仓库内源码（原 sparrow 组件，agent 运行时内联后纳入）。可直接改，但改完要 `npm run build` 才生效。
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 `testpaths = ["tests"]` 和 pytest-asyncio。`tests/` 有 `test_feed_personal.py`（个性化排序）、`test_srs.py`（SM-2 调度）、`test_admin.py`（admin 护栏）、`test_email_verify.py`（邮箱验证 + 密码重置 token，含三类 token 隔离）、`test_reflection.py`（复盘 JSON 容错解析）、`test_learning.py`（学习路径解析）、`test_usage.py`（每日额度计数/重置）。覆盖率仍低。注意：开发环境不一定装了 `pytest`（`python -m pytest` 可能报 `No module named pytest`）——纯函数测试可 `python -c "import tests.xxx ..."` 跑断言，部分测试额外支持 `python tests/xxx.py` 直接运行（带 `__main__` 入口）。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前测试覆盖排序、SRS、admin 护栏、邮箱/密码 token、复盘、学习路径、额度，以及 `test_security.py` 的 SSRF、HTML 清洗、安全头、全局权限和并发 JSON 更新。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 
@@ -61,7 +61,7 @@
 
 ## 12. `agent/` 是占位包
 
-`agent/__init__.py` 只有一行注释「LLM Harness 下个里程碑填充」。对话 agent 实际实现在 `app/agent_chat.py`（用 PyPI 的 sparrow），`agent/` 当前未被任何代码使用。
+`agent/__init__.py` 只有占位注释。对话 agent 实际实现在 `app/agent_chat.py` + `app/agent_runtime/`（sparrow 运行时已内联），`agent/` 当前未被使用。
 
 ## 13. 多用户鉴权：安全要点与约束
 
@@ -74,6 +74,7 @@
 - **`X-Forwarded-For` 信任**：限流取 XFF 第一跳作为客户端 IP。**前面必须有可信反代**（Coolify/Traefik）才准；直接裸暴露时 XFF 可伪造，限流可被绕过 IP 维度（邮箱维度仍有效）。
 - **防枚举/防时序**：登录对「邮箱不存在」和「密码错」返回**同一文案**（`邮箱或密码错误`），且邮箱不存在时也跑一次 dummy bcrypt 比对，消除时序差。注册对已存在邮箱返回 409 `该邮箱已注册`——这本身是一个枚举面，但注册场景下属可接受取舍。
 - **已做**：邮箱验证（验证后才能用 LLM 功能）、找回密码、改密码、每日 LLM 额度限制。**未做**：2FA。
+- **全局写边界**：文章增删、手动抓取/翻译/重译/速报重生成仅 admin；普通用户只写自己的产物。前端隐藏按钮只是体验层，后端守卫才是安全边界。
 
 ## 14. 数据迁移只跑一次（`_legacy` 哨兵）
 
@@ -88,7 +89,15 @@
 
 **现状（已解决）**：前端迁到 Vite 构建，产物文件名带内容指纹（`assets/index-<hash>.js`）。缓存策略改为：
 
-- `/ui/` 入口 HTML → `Cache-Control: no-cache`（小文件，每次校验）。
-- `/ui/assets/*` 指纹文件 → `max-age=31536000, immutable`（永久强缓存）。
+- `/` 入口 HTML → `Cache-Control: no-cache`（小文件，每次校验）。
+- `/assets/*` 指纹文件 → `max-age=31536000, immutable`（永久强缓存）。
+
+## 16. 前端主动内容 XSS（已修复）
+
+历史上 LLM Markdown 直接 `marked.parse → innerHTML`，Mermaid 为 loose，且库从 CDN 加载。现统一走 `markdown.js` 的 DOMPurify 白名单，Mermaid strict，普通外链只接受 http(s)，依赖精确锁定并随 Vite 打包；服务端再以 CSP/`nosniff` 等响应头兜底。`npm audit` 当前为 0。
+
+## 17. JSON 原子 rename 不等于事务（已修复，仍限单进程）
+
+历史 `write_json_atomic` 只能防文件写一半，不能防并发读改写丢更新。现在计数、toggle、append 和翻译合并用 `update_json_atomic` 锁住完整事务，fetch/translate sweep 也避免同进程重叠。锁仍是进程内锁；如果未来开多个 uvicorn worker，需迁到 SQLite/数据库或跨进程锁。
 
 因为内容一变文件名就变、入口 HTML 改引用新文件名，**强缓存与“立即生效”不再冲突**，也不再依赖 Cloudflare 配置——边缘的 `max-age` 反而是正确行为。详见 [前端架构](../architecture/frontend-architecture.md) 第 1 节。

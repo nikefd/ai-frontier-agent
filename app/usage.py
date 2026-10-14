@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .settings import settings
-from .storage import read_json, write_json_atomic
+from .storage import read_json, update_json_atomic
 
 USERS_DIR = settings.data_dir / "users"
 
@@ -52,7 +52,29 @@ def has_quota(uid: str) -> bool:
 def record_use(uid: str, n: int = 1) -> None:
     """Increment today's count (called after a successful LLM action)."""
     today = _today()
-    cur = usage_today(uid)  # already date-aware (0 if stale)
     p = _usage_file(uid)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    write_json_atomic(p, {"date": today, "count": cur + n})
+
+    def mutate(data):
+        cur = int(data.get("count", 0)) if isinstance(data, dict) and data.get("date") == today else 0
+        return {"date": today, "count": cur + n}
+
+    update_json_atomic(p, {"date": today, "count": 0}, mutate)
+
+
+def consume_quota(uid: str) -> bool:
+    """Atomically spend one unit if available; return False at the limit."""
+    limit = settings.daily_llm_limit
+    if limit <= 0:
+        return True
+    today = _today()
+    allowed = {"value": False}
+
+    def mutate(data):
+        cur = int(data.get("count", 0)) if isinstance(data, dict) and data.get("date") == today else 0
+        if cur >= limit:
+            return {"date": today, "count": cur}
+        allowed["value"] = True
+        return {"date": today, "count": cur + 1}
+
+    update_json_atomic(_usage_file(uid), {"date": today, "count": 0}, mutate)
+    return allowed["value"]

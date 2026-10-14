@@ -10,10 +10,31 @@ import { manualNewDive } from './dives.js';
 import { addManualCard } from './review.js';
 import { switchView, showLanding, applyRoute } from './nav.js';
 import { initAuth } from './auth.js';
-// Chat is provided by the bundled sparrow-chat.js component (mounted in index.html).
+import { renderMarkdown } from './markdown.js';
+// Chat is provided by the bundled classic component and mounted here after the
+// safe Markdown renderer is available.
 
-if (window.mermaid) {
-  window.mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+// The classic chat component cannot import ES modules itself. Give it the same
+// DOMPurify-backed renderer used by every other LLM content surface.
+window.__renderSafeMarkdown = renderMarkdown;
+if (window.SparrowChat) {
+  window.__sparrowChat = window.SparrowChat.mount({
+    endpoint: '/api/agent/chat',
+    conversationsApi: '/api/agent/conversations',
+    title: '💬 AI 助理',
+    hint: '我能查文章/数据源/追踪主题，并帮你建追踪主题、收藏文章。试试「帮我盯住 RAG 进展」。',
+    accent: '#7c3aed',
+    storageKey: 'aif_conv_id',
+    i18n: {
+      send: '发送', placeholder: '帮我查查最近的 Agent 进展…', history: '历史会话',
+      newChat: '新对话', resize: '放大 / 缩小', close: '收起', back: '返回',
+      thinking: '思考中', emptyNew: '开始一段新对话，或点 🕘 查看历史。',
+      newStarted: '新对话已开始 ✨', loading: '加载中…', noConversations: '还没有历史会话。',
+      loadFailed: '加载失败。', emptyConversation: '这个会话还没有消息。', sources: '来源',
+      messages: '条', untitled: '新对话', del: '删除', justNow: '刚刚',
+      minAgo: ' 分钟前', hourAgo: ' 小时前', dayAgo: ' 天前',
+    },
+  });
 }
 
 // ── Landing / home ───────────────────────────────────────────────────

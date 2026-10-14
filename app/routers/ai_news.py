@@ -22,11 +22,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
-from ..auth import current_user_optional, require_user, require_verified_user, require_llm_quota
+from ..auth import current_user_optional, require_admin, require_user, require_verified_user, require_llm_quota
 from ..llm_client import LLMUnavailable, chat_complete, chat_stream, llm_configured
 from ..models import Article, ChatRequest, Guide, Track, UserPublic
 from ..settings import settings
-from ..storage import read_json, write_json_atomic
+from ..safe_fetch import UnsafeUrl, fetch_public_html, sanitize_reader_html
+from ..storage import read_json, update_json_atomic, write_json_atomic, write_text_atomic
 
 log = logging.getLogger("aif.ai_news")
 
@@ -268,8 +269,10 @@ def _load_tracks(uid: str) -> list[dict]:
     data = read_json(tracks_file(uid), None)
     if data is None or not isinstance(data, list):
         # New users get the default tracking topics seeded once.
-        write_json_atomic(tracks_file(uid), DEFAULT_TRACKS)
-        return list(DEFAULT_TRACKS)
+        def seed(current):
+            return current if isinstance(current, list) else list(DEFAULT_TRACKS)
+
+        return update_json_atomic(tracks_file(uid), list(DEFAULT_TRACKS), seed)
     return data
 
 
@@ -282,10 +285,6 @@ def _load_guides(uid: str) -> list[dict]:
 def _load_pins(uid: str) -> set[str]:
     data = read_json(pins_file(uid), [])
     return set(data) if isinstance(data, list) else set()
-
-
-def _save_pins(uid: str, pins: set[str]) -> None:
-    write_json_atomic(pins_file(uid), sorted(pins))
 
 
 def _all_pinned_ids() -> set[str]:
@@ -397,37 +396,44 @@ def _parse_ts(ts: str) -> float:
         return 0.0
 
 
-@router.post("/articles", dependencies=[Depends(require_user)])
+@router.post("/articles", dependencies=[Depends(require_admin)])
 def add_article(article: Article) -> dict:
     """Manual add — for openclaw-compat write API and for the fetcher worker."""
-    articles = _load_articles()
     aid = article.id or _article_id(article.url)
-    if any(a.get("id") == aid or a.get("url") == article.url for a in articles):
-        return {"ok": True, "duplicate": True, "id": aid}
-    payload = article.model_dump()
-    payload["id"] = aid
-    payload["date"] = payload.get("date") or _now_iso()
-    # Per-user state never lives on the global article record.
-    for k in ("pinned", "deep_dive_status", "deep_dive_id"):
-        payload.pop(k, None)
-    articles.insert(0, payload)
-    if len(articles) > _ARTICLE_LIMIT:
-        # Keep any article pinned by *any* user even if over cap.
-        protected = _all_pinned_ids()
-        kept_pinned = [a for a in articles if a.get("id") in protected]
-        rest = [a for a in articles if a.get("id") not in protected][: _ARTICLE_LIMIT - len(kept_pinned)]
-        articles = kept_pinned + rest
-    write_json_atomic(ARTICLES_FILE, articles)
-    return {"ok": True, "id": aid}
+    result = {"ok": True, "id": aid}
+
+    def mutate(data):
+        articles = data if isinstance(data, list) else []
+        if any(a.get("id") == aid or a.get("url") == article.url for a in articles):
+            result["duplicate"] = True
+            return articles
+        payload = article.model_dump()
+        payload["id"] = aid
+        payload["date"] = payload.get("date") or _now_iso()
+        for k in ("pinned", "deep_dive_status", "deep_dive_id"):
+            payload.pop(k, None)
+        articles.insert(0, payload)
+        if len(articles) > _ARTICLE_LIMIT:
+            protected = _all_pinned_ids()
+            kept_pinned = [a for a in articles if a.get("id") in protected]
+            rest = [a for a in articles if a.get("id") not in protected][:_ARTICLE_LIMIT - len(kept_pinned)]
+            return kept_pinned + rest
+        return articles
+
+    update_json_atomic(ARTICLES_FILE, [], mutate)
+    return result
 
 
-@router.delete("/articles/{aid}", dependencies=[Depends(require_user)])
+@router.delete("/articles/{aid}", dependencies=[Depends(require_admin)])
 def delete_article(aid: str) -> dict:
-    articles = _load_articles()
-    new = [a for a in articles if a.get("id") != aid]
-    if len(new) == len(articles):
-        raise HTTPException(404, "article not found")
-    write_json_atomic(ARTICLES_FILE, new)
+    def mutate(data):
+        articles = data if isinstance(data, list) else []
+        kept = [a for a in articles if a.get("id") != aid]
+        if len(kept) == len(articles):
+            raise HTTPException(404, "article not found")
+        return kept
+
+    update_json_atomic(ARTICLES_FILE, [], mutate)
     return {"ok": True}
 
 
@@ -437,15 +443,19 @@ def toggle_pin(aid: str, user: UserPublic = Depends(require_user)) -> dict:
     not on the global article record)."""
     if not any(a.get("id") == aid for a in _load_articles()):
         raise HTTPException(404, "article not found")
-    pins = _load_pins(user.id)
-    if aid in pins:
-        pins.discard(aid)
-        pinned = False
-    else:
-        pins.add(aid)
-        pinned = True
-    _save_pins(user.id, pins)
-    return {"ok": True, "pinned": pinned}
+    result = {"pinned": False}
+
+    def mutate(data):
+        pins = set(data) if isinstance(data, list) else set()
+        if aid in pins:
+            pins.discard(aid)
+        else:
+            pins.add(aid)
+            result["pinned"] = True
+        return sorted(pins)
+
+    update_json_atomic(pins_file(user.id), [], mutate)
+    return {"ok": True, **result}
 
 
 @router.get("/reader/{aid}", response_class=HTMLResponse)
@@ -457,16 +467,23 @@ async def reader(aid: str) -> HTMLResponse:
     READER_CACHE.mkdir(parents=True, exist_ok=True)
     cache_file = READER_CACHE / f"{aid}.html"
     if cache_file.exists():
-        return HTMLResponse(cache_file.read_text(encoding="utf-8"))
+        cached_html = cache_file.read_text(encoding="utf-8")
+        if "<!-- aif-safe-reader-v2 -->" in cached_html[:100]:
+            safe_html = cached_html
+        else:
+            safe_html = sanitize_reader_html(cached_html, article["url"])
+            write_text_atomic(cache_file, safe_html)
+        return HTMLResponse(safe_html)
     try:
-        import httpx
-        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as c:
-            r = await c.get(article["url"], headers={"User-Agent": "Mozilla/5.0 ai-frontier-agent-reader/1"})
-            html = r.text
-    except Exception as e:  # noqa
-        return HTMLResponse(f"<h1>无法抓取</h1><pre>{e}</pre><p>原链接: <a href='{article['url']}'>{article['url']}</a></p>", status_code=502)
-    cache_file.write_text(html, encoding="utf-8")
-    return HTMLResponse(html)
+        raw_html, final_url = await fetch_public_html(article["url"])
+        safe_html = sanitize_reader_html(raw_html, final_url)
+    except UnsafeUrl as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:  # noqa: broad-except
+        log.warning("reader fetch failed for article %s: %s", aid, e)
+        return HTMLResponse("<h1>无法抓取</h1><p>原站暂时不可用。</p>", status_code=502)
+    write_text_atomic(cache_file, safe_html)
+    return HTMLResponse(safe_html)
 
 
 # ── Tracks ─────────────────────────────────────────────────────────
@@ -497,33 +514,38 @@ def list_guides(user: UserPublic | None = Depends(current_user_optional)) -> lis
 
 @router.post("/guides")
 def add_guide(guide: Guide, user: UserPublic = Depends(require_user)) -> dict:
-    guides = _load_guides(user.id)
     payload = guide.model_dump()
     payload["id"] = payload.get("id") or "g_" + secrets.token_hex(4)
     payload["updated_at"] = _now_iso()
-    # upsert
-    for i, g in enumerate(guides):
-        if g.get("id") == payload["id"]:
-            guides[i] = payload
-            break
-    else:
-        guides.insert(0, payload)
-    write_json_atomic(guides_file(user.id), guides)
+    def upsert(data):
+        guides = data if isinstance(data, list) else []
+        for i, saved in enumerate(guides):
+            if saved.get("id") == payload["id"]:
+                guides[i] = payload
+                break
+        else:
+            guides.insert(0, payload)
+        return guides
+
+    update_json_atomic(guides_file(user.id), [], upsert)
     return {"ok": True, "id": payload["id"]}
 
 
 @router.delete("/guides/{gid}")
 def delete_guide(gid: str, user: UserPublic = Depends(require_user)) -> dict:
-    guides = _load_guides(user.id)
-    new = [g for g in guides if g.get("id") != gid]
-    if len(new) == len(guides):
-        raise HTTPException(404, "guide not found")
-    write_json_atomic(guides_file(user.id), new)
+    def remove(data):
+        guides = data if isinstance(data, list) else []
+        new = [g for g in guides if g.get("id") != gid]
+        if len(new) == len(guides):
+            raise HTTPException(404, "guide not found")
+        return new
+
+    update_json_atomic(guides_file(user.id), [], remove)
     return {"ok": True}
 
 
 # ── Fetcher trigger ────────────────────────────────────────────────
-@router.post("/fetch", dependencies=[Depends(require_user)])
+@router.post("/fetch", dependencies=[Depends(require_admin)])
 async def trigger_fetch() -> dict:
     from ..workers.ai_news_fetcher import fetch_once  # local import to avoid cycle
     added = await fetch_once()
@@ -726,7 +748,7 @@ async def build_today_summary() -> dict | None:
     return payload
 
 
-@router.post("/summary/today", dependencies=[Depends(require_llm_quota)])
+@router.post("/summary/today", dependencies=[Depends(require_admin)])
 async def regenerate_today_summary() -> dict:
     if not llm_configured():
         raise HTTPException(503, "LLM not configured")
@@ -884,7 +906,7 @@ async def generate_long_guide(req: GuideGenRequest, user: UserPublic = Depends(r
 
 
 # ── Translation control ───────────────────────────────────────────
-@router.post("/translate/run", dependencies=[Depends(require_llm_quota)])
+@router.post("/translate/run", dependencies=[Depends(require_admin)])
 async def translate_run() -> dict:
     """Manually trigger one translation batch (admin-style)."""
     from ..workers.ai_news_translator import translate_once
@@ -892,21 +914,20 @@ async def translate_run() -> dict:
     return {"ok": True, "translated": n}
 
 
-@router.post("/articles/{aid}/retranslate", dependencies=[Depends(require_user)])
+@router.post("/articles/{aid}/retranslate", dependencies=[Depends(require_admin)])
 def retranslate_article(aid: str) -> dict:
     """Reset translation status so the worker picks the article up again."""
-    articles = _load_articles()
-    found = False
-    for a in articles:
-        if a.get("id") == aid:
-            a["title_zh"] = None
-            a["summary_zh"] = None
-            a["translation_status"] = "pending"
-            found = True
-            break
-    if not found:
+    def mutate(data):
+        articles = data if isinstance(data, list) else []
+        for article in articles:
+            if article.get("id") == aid:
+                article["title_zh"] = None
+                article["summary_zh"] = None
+                article["translation_status"] = "pending"
+                return articles
         raise HTTPException(404, "article not found")
-    write_json_atomic(ARTICLES_FILE, articles)
+
+    update_json_atomic(ARTICLES_FILE, [], mutate)
     return {"ok": True}
 
 

@@ -14,6 +14,19 @@ services:
       AIF_LLM_BASE_URL: ${AIF_LLM_BASE_URL:-https://api.deepseek.com}
       AIF_LLM_MODEL: ${AIF_LLM_MODEL:-deepseek-chat}
       AIF_DATA_DIR: /data
+      # 认证 / 防滥用配置必须显式透传；否则 Coolify 中设置同名变量也进不了容器。
+      AIF_SECRET_KEY: ${AIF_SECRET_KEY:-}
+      AIF_SESSION_MAX_AGE_DAYS: ${AIF_SESSION_MAX_AGE_DAYS:-30}
+      AIF_COOKIE_SECURE: ${AIF_COOKIE_SECURE:-0}
+      AIF_ADMIN_EMAIL: ${AIF_ADMIN_EMAIL:-}
+      AIF_DAILY_LLM_LIMIT: ${AIF_DAILY_LLM_LIMIT:-50}
+      AIF_CORS_ORIGINS: ${AIF_CORS_ORIGINS:-}
+      AIF_SMTP_HOST: ${AIF_SMTP_HOST:-}
+      AIF_SMTP_PORT: ${AIF_SMTP_PORT:-587}
+      AIF_SMTP_USER: ${AIF_SMTP_USER:-}
+      AIF_SMTP_PASSWORD: ${AIF_SMTP_PASSWORD:-}
+      AIF_SMTP_FROM: ${AIF_SMTP_FROM:-}
+      AIF_PUBLIC_BASE_URL: ${AIF_PUBLIC_BASE_URL:-}
       # 私有 rsshub：抓取时 rsshub.app 路由全改写到这个容器内地址，绕开公共实例限流/403
       AIF_RSSHUB_BASE: ${AIF_RSSHUB_BASE:-http://rsshub:1200}
       TZ: Asia/Shanghai

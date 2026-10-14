@@ -17,7 +17,9 @@ import tempfile
 import threading
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, TypeVar
+
+T = TypeVar("T")
 
 _FILE_LOCKS: dict[str, threading.Lock] = {}
 _LOCKS_GUARD = threading.Lock()
@@ -42,25 +44,49 @@ def read_json(path: Path, default: Any) -> Any:
         return default
 
 
-def write_json_atomic(path: Path, data: Any) -> None:
+def _write_text_unlocked(path: Path, payload: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(data, ensure_ascii=False, indent=2)
+    # tempfile in same dir → atomic rename works across the same filesystem
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        dir=path.parent,
+        prefix=path.name + ".",
+        suffix=".tmp",
+        delete=False,
+    ) as f:
+        tmp_name = f.name
+        f.write(payload)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_name, path)
+
+
+def write_text_atomic(path: Path, payload: str) -> None:
     lock = _lock_for(path)
     with lock:
-        # tempfile in same dir → atomic rename works across the same filesystem
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=path.parent,
-            prefix=path.name + ".",
-            suffix=".tmp",
-            delete=False,
-        ) as f:
-            tmp_name = f.name
-            f.write(payload)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp_name, path)
+        _write_text_unlocked(path, payload)
+
+
+def write_json_atomic(path: Path, data: Any) -> None:
+    payload = json.dumps(data, ensure_ascii=False, indent=2)
+    write_text_atomic(path, payload)
+
+
+def update_json_atomic(path: Path, default: T, mutator: Callable[[T], T]) -> T:
+    """Atomically perform a JSON read-modify-write transaction for one path.
+
+    Atomic rename alone prevents torn files but not lost updates. This helper
+    holds the same per-path lock across the read, mutation and replacement.
+    The mutator may raise; in that case nothing is written.
+    """
+    lock = _lock_for(path)
+    with lock:
+        data = read_json(path, default)
+        updated = mutator(data)
+        payload = json.dumps(updated, ensure_ascii=False, indent=2)
+        _write_text_unlocked(path, payload)
+        return updated
 
 
 @contextmanager

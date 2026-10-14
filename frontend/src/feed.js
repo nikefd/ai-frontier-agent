@@ -1,6 +1,6 @@
 // Article feed: list, render, pin, pagination. Deep-dives are read/managed in
 // the separate "深度解读" view (dives.js); the feed only triggers / links to them.
-import { $, escapeHtml, fmtDate, catBadge } from './util.js';
+import { $, escapeHtml, fmtDate, catBadge, safeExternalUrl } from './util.js';
 import { api } from './api.js';
 import { state } from './state.js';
 import { jumpToDive } from './dives.js';
@@ -58,18 +58,19 @@ function articleCardHtml(a) {
     : '<span class="chip chip-trans-pending" title="排队等待翻译">⏳ 待翻译</span>';
   const transAction = a.translation_status === 'ok' ? ''
     : a.translation_status === 'failed'
-    ? `<button class="btn-card ghost" data-action="translate">🔄 重新翻译</button>`
-    : `<button class="btn-card ghost" data-action="translate">🌐 立即翻译</button>`;
+    ? `<button class="btn-card ghost admin-only" data-action="translate">🔄 重新翻译</button>`
+    : `<button class="btn-card ghost admin-only" data-action="translate">🌐 立即翻译</button>`;
   const tagsHtml = (a.tags && a.tags.length)
     ? `<div class="article-tags">${a.tags.slice(0, 5).map(t => `<span class="chip chip-tag" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}</div>`
     : '';
   // Importance badge: only show for clearly high-value items (>=8) to keep signal.
   const impHtml = (typeof a.importance === 'number' && a.importance >= 8)
     ? `<span class="imp-badge" title="重要性 ${a.importance}/10">🔥 ${a.importance}</span>` : '';
-  const urlHost = a.url ? (() => { try { return new URL(a.url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } })() : '';
-  const originBtn = a.url
-    ? `<a class="btn-card primary" href="${escapeHtml(a.url)}" target="_blank" rel="noopener">🔗 阅读原文 ↗</a>` : '';
-  const copyBtn = a.url ? `<button class="btn-card ghost" data-action="copy">📋 复制链接</button>` : '';
+  const safeUrl = safeExternalUrl(a.url);
+  const urlHost = safeUrl ? new URL(safeUrl).hostname.replace(/^www\./, '') : '';
+  const originBtn = safeUrl
+    ? `<a class="btn-card primary" href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener">🔗 阅读原文 ↗</a>` : '';
+  const copyBtn = safeUrl ? `<button class="btn-card ghost" data-action="copy">📋 复制链接</button>` : '';
   return `
     <article class="article-card ${pinClass}" data-aid="${escapeHtml(a.id)}">
       <header class="card-head">

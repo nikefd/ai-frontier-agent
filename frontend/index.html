@@ -1,12 +1,10 @@
 <!doctype html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AI 前沿 Agent</title>
 <link rel="stylesheet" href="/style.css">
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head>
 <body data-agent="ai-news" class="landing-active">
 <header class="top">
@@ -68,7 +66,7 @@
     </div>
     <div class="row tight" style="flex:0 0 auto">
       <span class="pill" id="article-count">… 篇</span>
-      <button class="primary" id="btn-fetch" title="手动抓取一次（覆盖今天的自动抓取）">
+      <button class="primary admin-only" id="btn-fetch" title="手动抓取一次（覆盖今天的自动抓取）">
         <span id="fetch-icon">↻</span> 立即抓取
       </button>
     </div>
@@ -124,7 +122,7 @@
               <button class="on" data-sort="newest">🕘 最新</button>
               <button data-sort="important">🔥 最重要</button>
             </div>
-            <button class="ghost sm" id="btn-translate" title="手动跑一轮翻译">🌐 批量翻译</button>
+            <button class="ghost sm admin-only" id="btn-translate" title="手动跑一轮翻译">🌐 批量翻译</button>
           </div>
           <div id="article-list" class="article-cards">
             <div class="muted-card">加载中…</div>
@@ -158,7 +156,7 @@
             <h3>✨ 今日 AI 速报</h3>
             <div class="actions">
               <span id="summary-meta" class="text-xs text-faint"></span>
-              <button class="primary sm" id="btn-regen-summary">重新生成</button>
+              <button class="primary sm admin-only" id="btn-regen-summary">重新生成</button>
             </div>
           </div>
           <div id="summary-cohort" class="text-sm text-dim mb-12"></div>
@@ -324,40 +322,6 @@
 <!-- A plain IIFE script (window.SparrowChat), served verbatim from
      frontend/public/. Not an ES module, so it's not bundled. -->
 <script src="/sparrow-chat.js"></script>
-<script>
-  window.__sparrowChat = SparrowChat.mount({
-    endpoint: '/api/agent/chat',
-    conversationsApi: '/api/agent/conversations',
-    title: '💬 AI 助理',
-    hint: '我能查文章/数据源/追踪主题，并帮你建追踪主题、收藏文章。试试「帮我盯住 RAG 进展」。',
-    accent: '#7c3aed',
-    storageKey: 'aif_conv_id',
-    i18n: {
-      send: '发送',
-      placeholder: '帮我查查最近的 Agent 进展…',
-      history: '历史会话',
-      newChat: '新对话',
-      resize: '放大 / 缩小',
-      close: '收起',
-      back: '返回',
-      thinking: '思考中',
-      emptyNew: '开始一段新对话，或点 🕘 查看历史。',
-      newStarted: '新对话已开始 ✨',
-      loading: '加载中…',
-      noConversations: '还没有历史会话。',
-      loadFailed: '加载失败。',
-      emptyConversation: '这个会话还没有消息。',
-      sources: '来源',
-      messages: '条',
-      untitled: '新对话',
-      del: '删除',
-      justNow: '刚刚',
-      minAgo: ' 分钟前',
-      hourAgo: ' 小时前',
-      dayAgo: ' 天前',
-    },
-  });
-</script>
 <script type="module" src="/src/main.js"></script>
 </body>
 </html>

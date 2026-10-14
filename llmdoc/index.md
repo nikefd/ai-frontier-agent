@@ -1,6 +1,6 @@
 # AI Frontier Agent — 文档索引
 
-个人 AI 前沿信息站：FastAPI 单应用，定时从 ~79 个精选 RSS 源抓取 AI 资讯，自动中英翻译 + 每日速报 + 按需深度解读，外加一个 sparrow 驱动的对话式 ReAct agent。零数据库（状态全在文件），零构建前端，单进程一体化。
+个人 AI 前沿信息站：FastAPI 单应用，定时从 ~79 个精选 RSS 源抓取 AI 资讯，自动中英翻译 + 每日速报 + 按需深度解读，外加一个 ReAct agent。文件型主存储、Vite 构建前端、单进程一体化。
 
 ---
 
@@ -26,18 +26,20 @@
 | 学习路径 / 和 guides 的区别 / 分阶段编排 | [API 参考](reference/api-reference.md)（第 6b 节）＋ [数据存储参考](reference/data-storage.md)（3.10）＋ `app/routers/learning.py` |
 | agent 主动建议怎么触发 / 规则 | [API 参考](reference/api-reference.md)（第 4d 节）＋ `app/routers/suggestions.py` |
 | PR 自动审查机器人怎么工作 / 改审查规范 | `.github/workflows/pr-review.yml`（触发）＋ `scripts/pr_review.py`（执行）＋ `.claude/skills/pr-review/SKILL.md`（**规范单一来源，改这里**） |
-| 为什么不能手动改 sparrow-chat.js | [前端架构](architecture/frontend-architecture.md)（第 5 节） |
+| 如何修改 sparrow-chat.js / 安全渲染如何接入 | [前端架构](architecture/frontend-architecture.md)（第 5/6 节） |
 | 查全部 HTTP 端点 / 新增一个端点 | [API 参考](reference/api-reference.md) |
 | 用户注册登录 / 鉴权守卫 / 会话怎么做 | [认证架构](architecture/auth-architecture.md) |
 | 邮箱验证 / SMTP 怎么配 / 重发链接 | [认证架构](architecture/auth-architecture.md)（3.1b）＋ [配置参考](reference/config-reference.md)（`AIF_SMTP_*`）＋ `app/email.py` |
 | 修改密码 / 忘记密码找回 / 重置 token | [认证架构](architecture/auth-architecture.md)（3.1c）＋ [API 参考](reference/api-reference.md)（0 节 change/forgot/reset） |
 | admin 用户管理 / admin 守卫 / 护栏 | [认证架构](architecture/auth-architecture.md)（第 1 节）＋ [API 参考](reference/api-reference.md)（0b 节）＋ `app/routers/admin.py` |
+| XSS / Markdown / Mermaid / CSP 安全边界 | [前端架构](architecture/frontend-architecture.md)（第 4/6 节）＋ [后端架构](architecture/backend-architecture.md)（第 2/4b 节） |
+| reader SSRF 防护与安全 HTML 缓存 | [后端架构](architecture/backend-architecture.md)（第 4b 节）＋ [API 参考](reference/api-reference.md)（reader） |
 | 数据怎么按用户隔离 / pin 为什么迁出文章 / 老数据迁移 | [认证架构](architecture/auth-architecture.md)（第 2/5 节）＋ [数据存储参考](reference/data-storage.md) |
 | 为什么有两个 `/chat` 端点 | [后端架构](architecture/backend-architecture.md)（第 6 节）＋ [已知问题](reference/known-issues.md)（第 2 条） |
 | 查环境变量 / 配置项 / 容量常量 | [配置参考](reference/config-reference.md) |
 | 改抓取容量（多留文章 / 多抓几篇 / 加 RSS 源） | [配置参考](reference/config-reference.md)（代码内常量 + 修改约定） |
 | 数据存哪 / 各 JSON 文件结构 / Article 字段 | [数据存储参考](reference/data-storage.md) |
-| 为什么没有数据库 / 原子写怎么保证并发安全 | [数据存储参考](reference/data-storage.md)（第 4 节）＋ [后端架构](architecture/backend-architecture.md)（第 4 节） |
+| 为什么没有数据库 / 原子读改写怎么避免丢更新 | [数据存储参考](reference/data-storage.md)（第 4 节）＋ [后端架构](architecture/backend-architecture.md)（第 4 节） |
 | 大量数据源抓取失败怎么排查 | [部署指南](guides/how-to-deploy.md)（第 7 节）＋ [已知问题](reference/known-issues.md)（第 4 条） |
 | 所有 LLM 功能报 503 | [运行指南](guides/how-to-run.md)（排障）＋ [配置参考](reference/config-reference.md) |
 | 代码里的 zyb / zhangyangbin 残留是什么 | [已知问题](reference/known-issues.md)（第 7 条） |

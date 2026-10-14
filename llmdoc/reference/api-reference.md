@@ -5,7 +5,7 @@
 
 约定：除特别说明，请求/响应均为 JSON。所有 LLM 相关端点在未配置 key 时返回 **503**。
 
-**鉴权约定（多用户后）**：写操作（POST/PUT/DELETE）和所有 LLM 端点要求登录，未登录返回 **401**；只读端点公开（用户产物的读如 tracks/deep-dives/conversations 未登录返回**空**）。下表「🔒」列标注：`写` = 需登录写，`读*` = 按当前用户过滤的读（匿名得空），空 = 公开读。鉴权细节见 [认证架构](../architecture/auth-architecture.md)。
+**鉴权约定**：用户写操作和个人 LLM 端点要求登录；全局内容变更要求 admin（匿名 401、普通用户 403）；用户产物的读未登录返回空。下表「🔒」列：`写` = 登录用户，`admin` = 管理员，`读*` = 按当前用户过滤，空 = 公开读。
 
 ## 0. 认证（prefix `/api/auth`）
 
@@ -37,9 +37,9 @@
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| GET | `/` | 302 重定向到 `/ui/` |
-| GET | `/ui/` | 返回 `static/index.html` |
-| GET | `/ui/*` | 静态资源（StaticFiles 托管 `static/`） |
+| GET | `/` | 返回 Vite 构建的 `static/dist/index.html` |
+| GET | `/ui`、`/ui/` | 301 重定向到 `/`（旧链接兼容） |
+| GET | `/assets/*` | Vite 指纹静态资源（1 年 immutable 缓存） |
 | GET | `/api/health` | 健康检查：`{ok, version, llm_configured, data_dir}` |
 
 ## 2. 文章（prefix `/api/ai-news`）
@@ -47,11 +47,11 @@
 | 方法 | 路径 | 🔒 | 说明 |
 |---|---|---|---|
 | GET | `/articles` | 读* | 分页列表。query：`q` / `pinned_only` / `tier` / `category`（逗号分隔多值）/ `tag`（逗号分隔，受控词表）/ `sort`（`newest` 默认 / `important` 按重要性降序，未评分沉底）/ `offset` / `limit`（1–100）。返回 `{total, offset, limit, items}`。**收藏不再置顶**（按 sort 正常排，仅带 ★ 标识；收藏夹用 `pinned_only` 看）。每项的 `pinned`/`deep_dive_status` 按当前用户叠加；`importance`(0-10)/`tags` 由富化 worker 写在全局文章上 |
-| POST | `/articles` | 写 | 手动新增一篇（`Article` body）；按 id/url 去重；超 400 滚动淘汰（被**任一用户** pin 的不淘汰）。也是 fetcher worker 入库的入口 |
-| DELETE | `/articles/{aid}` | 写 | 删除一篇（全局文章） |
+| POST | `/articles` | admin | 手动新增一篇全局文章；按 id/url 去重；超 400 滚动淘汰。fetcher 在进程内直接复用该函数 |
+| DELETE | `/articles/{aid}` | admin | 删除一篇全局文章 |
 | POST | `/articles/{aid}/pin` | 写 | 收藏/取消收藏（toggle）。pin 存当前用户的 `pins.json`，不写全局文章对象 |
-| GET | `/reader/{aid}` | — | 尽力而为的「阅读原文」：先查 `reader-cache/`，否则代理抓取原 URL 并缓存，返回 HTML（失败 502） |
-| POST | `/articles/{aid}/retranslate` | 写 | 把翻译状态重置回 `pending`，让翻译 worker 重新翻 |
+| GET | `/reader/{aid}` | — | 安全阅读副本：只抓公共 http(s)，逐跳防 SSRF，限 HTML/2MB，清洗后缓存返回；不安全 URL 400、上游失败 502 |
+| POST | `/articles/{aid}/retranslate` | admin | 把全局文章翻译状态重置回 `pending` |
 
 ## 3. 深度解读（prefix `/api/ai-news`）
 
@@ -81,7 +81,7 @@
 | 方法 | 路径 | 🔒 | 说明 |
 |---|---|---|---|
 | GET | `/summary/today` | — | 返回缓存速报 + 今日候选元数据（`cohort_size` / `cohort_preview` / `today`）。全局共享 |
-| POST | `/summary/today` | 写 | **LLM** 基于最近 30h 文章（最多 25 篇）生成中文速报，存全局 `summary_today.json` |
+| POST | `/summary/today` | admin | **LLM** 基于最近 30h 文章生成全局中文速报；定时任务直接调用同一实现 |
 | GET | `/for-you` | 读* | **个性化排序**：把今日候选（同速报 cohort）按当前用户画像信号（pin 分类分布 / 高频标签 / track 关键词）加权重排，返回 `{personalized, today_count, items}`，每项带 `_score`/`_reasons`。**纯代码打分，0 LLM 调用**。匿名或无信号时 `personalized:false`、退化为按时间排序 |
 
 > `/for-you` 实现在独立模块 `app/routers/feed_personal.py`，打分纯函数 `score_articles()` 有单测（`tests/test_feed_personal.py`）。复用 ai_news 的 `_articles_for_today()` cohort 与 profile 的信号聚合。
@@ -161,8 +161,8 @@ agent 主动提议（B2）：基于用户行为信号给「下一步」建议。
 | 方法 | 路径 | 🔒 | 说明 |
 |---|---|---|---|
 | GET | `/sources` | — | 列 feed 及健康度（合并 `DEFAULT_FEED_SPECS` 与 `sources.json` 元数据 + 每源文章计数）。全局共享 |
-| POST | `/fetch` | 写 | 立即跑一轮抓取，返回 `{ok, added}` |
-| POST | `/translate/run` | 写 | 手动跑一批翻译，返回 `{ok, translated}` |
+| POST | `/fetch` | admin | 立即跑一轮全局抓取，返回 `{ok, added}` |
+| POST | `/translate/run` | admin | 手动跑一批全局翻译，返回 `{ok, translated}` |
 
 ## 8. legacy 直通 chat（prefix `/api/ai-news`）
 

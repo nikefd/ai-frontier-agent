@@ -20,7 +20,7 @@
 | `articles.json` | list | 文章主存储，上限 400（被任一用户 pin 的不淘汰）。每项是 `Article`。**不含 per-user 的 `pinned`/`deep_dive_status`** |
 | `sources.json` | dict（按 url 为 key） | 每个 feed 的抓取元数据 |
 | `summary_today.json` | dict | 缓存的「今日速报」 |
-| `reader-cache/*.html` | 每文件一篇 | 「阅读原文」代理抓取的 HTML 缓存 |
+| `reader-cache/*.html` | 每文件一篇 | 经白名单清洗后的安全阅读副本；旧原始缓存命中时自动迁移 |
 
 ### 2.2 认证（`auth/`，全局）
 
@@ -139,6 +139,7 @@ list，每项一张卡：
 
 ## 4. 并发与原子性
 
-- 所有 JSON 写经 `storage.write_json_atomic`：进程内文件锁 → 写 tmp → fsync → 原子 rename。崩溃不会留半截文件。
+- 覆盖式 JSON 写经 `storage.write_json_atomic`：进程内文件锁 → 写 tmp → fsync → 原子 rename。崩溃不会留半截文件。
+- append/toggle/计数/状态合并必须经 `storage.update_json_atomic`，同一把锁覆盖完整读改写，避免并发请求互相覆盖。
 - 读经 `storage.read_json`：文件缺失/损坏一律返回 default，不抛异常。
-- 抓取 worker、翻译 worker、HTTP 请求可能并发写 `articles.json`，靠上面的原子写 + 锁保证安全（同进程同事件循环，竞争窗口小但仍加锁兜底）。
+- fetch/translate sweep 各有进程内 asyncio 锁；翻译按 id 合并到最新文章列表。此保证以当前单 uvicorn 进程为边界，不是跨进程事务。

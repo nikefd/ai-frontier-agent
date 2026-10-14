@@ -43,6 +43,7 @@ flowchart TD
 - **对话组件 sparrow-chat.js 随前端构建**：现在是仓库内源码 `frontend/public/sparrow-chat.js`，Vite 原样输出，后端在 `GET /sparrow-chat.js` 提供。（历史：曾由 `_sync_sparrow_assets()` 启动时从 sparrow 包同步，agent 运行时内联后该机制已删。）
 - **根路径托管 + SPA catch-all（路由顺序很重要）**：`GET /` 返回 index.html；`app.mount("/assets", ...)` 服务指纹文件（immutable 强缓存）；`GET /sparrow-chat.js`；最后注册 `GET /{full_path:path}` 作 SPA catch-all（非 `/api`、非真实文件 → 返回 index，交前端 History 路由接管）。catch-all 必须**最后**注册，否则会吃掉真实路由。`/ui` `/ui/` → 301 跳 `/`（旧书签兼容）。
 - **CORS 现按配置收口**：`allow_origins=settings.cors_origin_list` + `allow_credentials=True`（cookie 鉴权必需）。默认 `AIF_CORS_ORIGINS` 为空 = 仅同源。鉴权改动见 [认证架构](auth-architecture.md)。
+- **统一安全响应头**：HTTP middleware 给页面/API 加 CSP、`nosniff`、`Referrer-Policy: no-referrer`、Permissions Policy、COOP/CORP；CSP 禁止外部脚本、object 和第三方 framing。
 
 ## 3. 模块职责与依赖方向
 
@@ -77,7 +78,7 @@ main.py ──┬─> routers/ai_news.py ──┬─> models.py
 
 ## 4. 存储层（`app/storage.py`）
 
-应用**不用数据库做主存储**，状态都在文件里。存储层只有两个职责，但都是为并发安全服务：
+应用**不用数据库做主存储**，状态都在文件里。存储层的职责都是为并发安全服务：
 
 ### 4.1 原子 JSON 写：`write_json_atomic`
 
@@ -91,11 +92,21 @@ main.py ──┬─> routers/ai_news.py ──┬─> models.py
 
 > 设计注释里明确对比了上游 openclaw 的反面教材——那边每个端点各自 `JSON.stringify + writeFileSync`，撞过半写文件的 bug。这里集中做一次。
 
-### 4.2 只读 SQLite：`sqlite_ro`
+### 4.2 原子读改写：`update_json_atomic`
+
+`write_json_atomic` 只能防半截文件，不能防两个请求都先读旧值、后写者覆盖前写者。凡是 append/toggle/计数/状态合并，都用 `update_json_atomic(path, default, mutator)`：同一把按路径锁覆盖完整的「读 → mutate → tmp+fsync → replace」。用户、额度、文章、收藏、复习卡、指南和翻译结果合并都已迁到它。
+
+抓取与翻译 sweep 另有 `asyncio.Lock`，防 scheduler 与管理员手动触发在同一进程内重叠；翻译完成后按 id 合并到**最新**文章列表，不再写回等待 LLM 之前的旧快照。当前设计仍以单 uvicorn 进程为前提，锁不是跨进程锁。
+
+### 4.3 只读 SQLite：`sqlite_ro`
 
 `ui.db`（sparrow 对话记忆）用 `file:...?mode=ro` URI 打开，多读者可共享。数据库不存在时返回 `:memory:` 空连接，让调用方拿到空结果而非崩溃。
 
 > 注意：sparrow 的 `Memory` 自己管对 `ui.db` 的**写**；`storage.sqlite_ro` 是为「应用其它地方只读查 ui.db」准备的通用工具。
+
+## 4b. 阅读器安全边界（`app/safe_fetch.py`）
+
+公开的 `/reader/{aid}` 不再回传原站原始 HTML。服务端只接受公共 `http(s)` URL，拒绝凭据、localhost、私网/回环/链路本地/保留地址；每次重定向都重新解析 DNS，响应必须是 HTML 且最多 2 MB。抓到的文档经标签/属性白名单清洗后才同源返回并缓存，脚本、表单、iframe、图片、事件属性和危险链接全部移除；历史原始缓存首次命中时会自动清洗重写。
 
 ## 5. LLM 客户端（`app/llm_client.py`）
 

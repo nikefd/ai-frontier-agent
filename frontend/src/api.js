@@ -1,4 +1,7 @@
 // HTTP + rendering helpers shared across views.
+import mermaid from 'mermaid';
+
+mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'strict' });
 
 // Global handler invoked whenever a request returns 401 (set by auth.js so the
 // login modal pops up). Kept here so every api() caller funnels through it.
@@ -25,7 +28,7 @@ export async function api(method, path, body) {
 
 // Convert ```mermaid fences inside a rendered markdown block into diagrams.
 export async function renderMermaidInside(rootEl) {
-  if (!rootEl || !window.mermaid) return;
+  if (!rootEl) return;
   rootEl.querySelectorAll('pre > code.language-mermaid').forEach(code => {
     try {
       const wrap = document.createElement('div');
@@ -35,9 +38,7 @@ export async function renderMermaidInside(rootEl) {
     } catch (e) { /* swallow */ }
   });
   try {
-    await window.mermaid.run({
-      querySelector: rootEl.tagName.toLowerCase() + ' .mermaid',
-      suppressErrors: true,
-    });
+    const nodes = Array.from(rootEl.querySelectorAll('.mermaid'));
+    if (nodes.length) await mermaid.run({ nodes, suppressErrors: true });
   } catch (e) { /* ignore */ }
 }
