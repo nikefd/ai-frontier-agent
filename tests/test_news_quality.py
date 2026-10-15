@@ -3,11 +3,14 @@ from __future__ import annotations
 
 from app.routers.ai_news import (
     _CATEGORY_FETCH_CAPS,
+    _dedupe_summary_articles,
     _parse_ts,
     _select_summary_cohort,
 )
 from app.workers.ai_news_fetcher import (
     _decide_relevance,
+    _parse_qwen_api_entries,
+    _parse_sitemap_index,
     _parse_sitemap_entries,
     _select_candidates,
 )
@@ -43,6 +46,32 @@ def test_official_sitemap_adapter_filters_and_sorts_paths() -> None:
     assert all("careers" not in e["url"] for e in entries)
 
 
+def test_sitemap_index_extracts_child_sitemaps() -> None:
+    xml = b"""<?xml version="1.0"?><sitemapindex>
+      <sitemap><loc>https://lab.test/news-sitemap.xml</loc></sitemap>
+      <sitemap><loc>https://lab.test/research-sitemap.xml</loc></sitemap>
+    </sitemapindex>"""
+    assert _parse_sitemap_index(xml) == [
+        "https://lab.test/news-sitemap.xml",
+        "https://lab.test/research-sitemap.xml",
+    ]
+
+
+def test_qwen_api_adapter_cleans_sorts_and_limits_entries() -> None:
+    payload = {"data": {"articles": [
+        {"title": "Older", "path": "older", "extra": {
+            "date": "2026-10-13T08:00:00+08:00", "introduction": "<b>Old</b> summary",
+        }},
+        {"title": "Newest", "path": "newest", "extra": {
+            "date": "2026-10-15T08:00:00+08:00", "introduction": "<p>New summary</p>",
+        }},
+    ]}}
+    entries = _parse_qwen_api_entries(payload)
+    assert [e["title"] for e in entries] == ["Newest", "Older"]
+    assert entries[0]["url"] == "https://qwen.ai/blog?id=newest"
+    assert entries[0]["summary"] == "New summary"
+
+
 def test_article_timestamp_accepts_iso_and_rfc822() -> None:
     iso = _parse_ts("2026-10-15T08:00:00+00:00")
     rfc822 = _parse_ts("Thu, 15 Oct 2026 08:00:00 GMT")
@@ -75,6 +104,31 @@ def test_fetch_selection_gives_each_feed_a_first_pass() -> None:
     ]
     selected = _select_candidates(candidates, global_cap=2)
     assert {c[4] for c in selected} == {"busy", "slow-but-important"}
+
+
+def test_fetch_selection_deduplicates_urls_across_feeds() -> None:
+    duplicate_a = _candidate(10, "vendor", feed="official")
+    duplicate_b = _candidate(9, "media", feed="media")
+    duplicate_a[2]["url"] = "https://lab.test/release"
+    duplicate_b[2]["url"] = "https://lab.test/release"
+    unique = _candidate(8, "media", feed="media")
+    unique[2]["url"] = "https://media.test/analysis"
+
+    selected = _select_candidates([duplicate_a, duplicate_b, unique], global_cap=3)
+    assert [c[2]["url"] for c in selected].count("https://lab.test/release") == 1
+    assert len(selected) == 2
+
+
+def test_summary_exact_headline_dedupe_prefers_official_source() -> None:
+    media = {
+        "id": "media", "title": "Introducing Model X!", "source": "Media",
+        "category": "media", "tier": "med", "importance": 10,
+    }
+    official = {
+        "id": "official", "title": "Introducing Model X", "source": "Lab",
+        "category": "vendor", "tier": "high", "importance": 8,
+    }
+    assert _dedupe_summary_articles([media, official]) == [official]
 
 
 def test_summary_cohort_caps_trending_and_preserves_source_diversity() -> None:

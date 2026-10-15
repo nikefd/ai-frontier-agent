@@ -13,7 +13,9 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 import secrets
+import unicodedata
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -156,6 +158,9 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://machinelearning.apple.com/rss.xml", "name": "Apple Machine Learning Research", "tier": "high", "category": "vendor", "description": "Apple 机器学习研究 · Foundation Models、端侧 AI 与隐私研究"},
     {"url": "https://aws.amazon.com/blogs/machine-learning/feed/", "name": "AWS Machine Learning Blog", "tier": "high", "category": "vendor", "description": "AWS 官方机器学习博客 · 模型、Agent、云端推理与工程实践"},
     {"url": "https://cohere.com/sitemap.xml", "name": "Cohere Blog", "tier": "high", "category": "vendor", "format": "sitemap", "include_paths": ["/blog/"], "description": "Cohere 官方博客 · 企业模型、检索、Agent 与研究发布"},
+    {"url": "https://mistral.ai/sitemap.xml", "name": "Mistral News", "tier": "high", "category": "vendor", "format": "sitemap", "include_paths": ["/news/"], "description": "Mistral 官方新闻 · 开源模型、Le Chat、Agent 与工程发布"},
+    {"url": "https://x.ai/sitemap.xml", "name": "xAI News", "tier": "high", "category": "vendor", "format": "sitemap", "include_paths": ["/news/"], "description": "xAI 官方新闻 · Grok 模型、API、研究与安全发布"},
+    {"url": "https://qwen.ai/api/v2/article/retrieval?type=qwen_ai&language=en-US", "name": "Qwen Blog", "tier": "high", "category": "vendor", "format": "qwen_api", "description": "Qwen 官方博客 · 通义千问模型、开源权重与多模态发布"},
     # ── media: AI 媒体
     {"url": "https://arstechnica.com/ai/feed/", "name": "Ars Technica AI", "tier": "high", "category": "media", "description": "Ars Technica AI · 技术深度评测，重视一手数据和复盘"},
     {"url": "https://www.technologyreview.com/topic/artificial-intelligence/feed", "name": "MIT Tech Review AI", "tier": "high", "category": "media", "description": "MIT Tech Review · 长篇深度报道与影响分析"},
@@ -168,6 +173,7 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://lilianweng.github.io/index.xml", "name": "Lilian Weng", "tier": "high", "category": "blog", "description": "OpenAI Lilian Weng 个人博客 · agent / hallucination / safety 级综述长文"},
     {"url": "https://magazine.sebastianraschka.com/feed", "name": "Sebastian Raschka", "tier": "high", "category": "blog", "description": "Raschka 通讯 · LLM 内部机制、训练 trick、技术综述"},
     {"url": "https://simonwillison.net/atom/everything/", "name": "Simon Willison", "tier": "high", "category": "blog", "description": "Simon Willison 博客 · LLM 工具评测、prompt 技巧、每日观察"},
+    {"url": "https://bair.berkeley.edu/blog/feed.xml", "name": "Berkeley AI Research", "tier": "high", "category": "blog", "description": "Berkeley AI Research 官方博客 · 学术前沿、系统与机器人研究"},
     # ── paper: arXiv 论文
     {"url": "http://export.arxiv.org/rss/cs.AI", "name": "arXiv cs.AI", "tier": "high", "category": "paper", "description": "arXiv 人工智能类目（规划、知识表示、智能体）"},
     {"url": "http://export.arxiv.org/rss/cs.CL", "name": "arXiv cs.CL", "tier": "high", "category": "paper", "description": "arXiv 计算语言学（NLP/LLM 论文主战场）"},
@@ -196,6 +202,7 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://www.wheresyoured.at/rss/", "name": "wheresyoured.at", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
     {"url": "https://worksonmymachine.ai/feed", "name": "worksonmymachine.substack.com", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
     {"url": "https://s.baoyu.io/feed.xml", "name": "宝玉的分享", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
+    {"url": "https://hai.stanford.edu/sitemap.xml", "name": "Stanford HAI", "tier": "high", "category": "expert", "format": "sitemap", "include_paths": ["/news/"], "description": "Stanford HAI 官方资讯 · 前沿研究、AI 政策与社会影响"},
     # ── x-ai: X 上的 AI 大V
     {"url": "https://api.xgo.ing/rss/user/341f7b9f8d9b477e8bb200caa7f32c6e", "name": "AK(@_akhaliq)", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
     {"url": "https://rsshub.app/twitter/user/aaditsh", "name": "Aadit Sheth", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
@@ -733,9 +740,46 @@ def _summary_rank(article: dict) -> tuple[int, int, int, float]:
     )
 
 
+def _headline_key(article: dict) -> str:
+    """Conservative exact-title key across case, spacing, and punctuation."""
+    title = str(article.get("title_zh") or article.get("title") or "")
+    normalized = unicodedata.normalize("NFKC", title).casefold()
+    return re.sub(r"[^\w]+", "", normalized, flags=re.UNICODE)
+
+
+def _dedupe_summary_articles(articles: list[dict]) -> list[dict]:
+    """Collapse exact syndicated headlines, preferring the primary source."""
+    category_quality = {
+        "vendor": 4, "blog": 3, "expert": 3, "paper": 2,
+        "media": 2, "community": 1, "x-ai": 0, "trending": 0,
+    }
+    by_headline: dict[str, dict] = {}
+    without_title: list[dict] = []
+    for article in articles:
+        key = _headline_key(article)
+        if not key:
+            without_title.append(article)
+            continue
+        current = by_headline.get(key)
+        authority = (
+            category_quality.get(_article_category(article), 1),
+            _summary_rank(article),
+        )
+        if current is None:
+            by_headline[key] = article
+            continue
+        current_authority = (
+            category_quality.get(_article_category(current), 1),
+            _summary_rank(current),
+        )
+        if authority > current_authority:
+            by_headline[key] = article
+    return list(by_headline.values()) + without_title
+
+
 def _select_summary_cohort(articles: list[dict], limit: int) -> list[dict]:
     """Build a quality-ranked, source-diverse briefing cohort."""
-    ranked = sorted(articles, key=_summary_rank, reverse=True)
+    ranked = sorted(_dedupe_summary_articles(articles), key=_summary_rank, reverse=True)
     selected: list[dict] = []
     selected_ids: set[str] = set()
     category_counts: dict[str, int] = {}
@@ -834,8 +878,9 @@ async def build_today_summary() -> dict | None:
             "content": (
                 "你是 AI 行业的早报编辑。我会给你最近 24-30 小时的 RSS/资讯片段，"
                 "请你筛选并整理一个高密度的中文每日速报：\n"
-                "- 标题层级：## 一句话总结 / ## 今日重点 (3-5 条) / ## 值得动手 / ## 更多动态\n"
-                "- 每条 1-2 句，必须包含来源名 + 用 [n] 标注引用片段编号\n"
+                "- 标题层级：## 一句话总结 / ## 今日重点 (3-5 条) / ## 值得动手 / ## 接下来关注 / ## 更多动态\n"
+                "- 今日重点每条 1-2 句，先说发生了什么，再说为什么重要或影响谁；必须包含来源名 + 用 [n] 标注引用片段编号\n"
+                "- 接下来关注列 2-3 个未来几天值得验证的具体信号（如权重/API/评测/开源时间），不得无依据预测\n"
                 "- 不要复述营销词；过滤掉与 AI/ML/Agent/Infra 无关的项\n"
                 "- 官方发布、关键研究、重大产品/政策事件优先；GitHub Trending 和社交观点只能作为补充信号\n"
                 "- 不要因为多个热门仓库讨论同一趋势就挤掉更重要的一手消息\n"

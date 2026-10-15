@@ -55,7 +55,7 @@
 | `_CATEGORY_FETCH_CAPS` | 共 150 | 单轮分类硬上限：vendor 38 / media 20 / blog 16 / paper 22 / community 18 / expert 18 / x-ai 12 / trending 6 |
 | `_DEFAULT_TIER_BY_CATEGORY` | 8 类映射 | 运行时按 category 归一化 tier：vendor/blog=high，media/paper/community/expert=med，x-ai/trending=low |
 | `_SUMMARY_CATEGORY_CAPS` | 8 类映射 | 速报候选上限；其中 trending=2、x-ai=3，且这两类永不放宽 |
-| `DEFAULT_FEED_SPECS` | 76 条 | RSS/Atom/官方 sitemap 清单；基础字段 url/name/tier/category/description，sitemap 源另带 format/include_paths |
+| `DEFAULT_FEED_SPECS` | 81 条 | RSS/Atom/官方 sitemap/API 清单；基础字段 url/name/tier/category/description，特殊源另带 format/include_paths |
 | `AI_KEYWORDS` | 一组中英词 | med/low 相关性过滤；high 与 paper 未命中时仍可按 curated 接受 |
 | `DEFAULT_TRACKS` | 3 条 | tracks.json 为空时的默认追踪主题 |
 
@@ -69,4 +69,4 @@
 
 - 新增/改环境变量：改 `app/settings.py` 的 `Settings` 字段 → 同步更新 `.env.example` → 回这张表补一行。
 - 调容量参数（如想多留文章、多抓几篇）：改 `ai_news.py` 顶部常量；`_CATEGORY_FETCH_CAPS` 总和当前等于 `_DAILY_FETCH_CAP=150`，新增分类或放宽一类时需重新检查全局预算和测试。
-- 加/删源：编辑 `DEFAULT_FEED_SPECS`，注意 `category` 要落在前端已识别的 8 类内（vendor/x-ai/community/expert/blog/media/trending/paper）。没有 RSS 但提供标准 sitemap 的官方站可设 `format="sitemap"` 和 `include_paths`，只采新闻/研究路径。
+- 加/删源：编辑 `DEFAULT_FEED_SPECS`，注意 `category` 要落在前端已识别的 8 类内（vendor/x-ai/community/expert/blog/media/trending/paper）。没有 RSS 但提供标准 sitemap 的官方站可设 `format="sitemap"` 和 `include_paths`，支持单层同站 sitemap index；官方 JSON 接口需在 fetcher 增加专用解析器和 format（现有 `qwen_api` 可参考）。

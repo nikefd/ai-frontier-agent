@@ -11,8 +11,8 @@
 flowchart TD
   cron[APScheduler 每日 05:00] --> fetch
   manual[管理员点「立即抓取」 POST /fetch] --> fetch
-  fetch[fetch_once：异步并发拉 76 个 RSS/sitemap 源]
-  fetch --> parse[feedparser 解析 RSS/Atom<br/>BS4 解析官方 sitemap]
+  fetch[fetch_once：异步并发拉 81 个 RSS/sitemap/API 源]
+  fetch --> parse[feedparser 解析 RSS/Atom<br/>BS4 解析官方 sitemap<br/>适配官方 JSON API]
   parse --> gate[tier/category 相关性门槛<br/>high/paper 接受，med/low 需关键词]
   gate --> rounds[每源分 4 轮取候选<br/>先各源 1 条，再各源第 2 条]
   rounds --> category[分类硬配额<br/>Trending 6 / X 12 / 其它分类]
@@ -39,17 +39,17 @@ flowchart TD
 
 ### 2.2 feed 清单与分类
 
-76 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；无稳定 RSS 的官方站可额外设置 `{format:"sitemap", include_paths:[...]}`。当前 Anthropic 只采官方 `/news/`、`/research/`，Cohere 只采官方 `/blog/`，避免依赖第三方镜像。
+81 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；无稳定 RSS 的官方站可设置 `{format:"sitemap", include_paths:[...]}`，官方 JSON 接口可设置专用 format。当前 Anthropic、Cohere、Mistral、xAI 直接读取官方 sitemap，Qwen 读取官方文章 API，避免依赖第三方镜像。
 
 `category` 同时驱动前端分组、tier 归一化与抓取配额，共 8 类：
 
 | category | 含义 | 数量 |
 |---|---|---|
-| `vendor` | 官方实验室 / 厂商第一手发布 | 16 |
+| `vendor` | 官方实验室 / 厂商第一手发布 | 19 |
 | `x-ai` | X(Twitter) 上的 AI 大 V | 24 |
 | `community` | 社区 / 周刊（含中文资讯） | 12 |
-| `expert` | 专家个人博客 | 9 |
-| `blog` | AI 博客（原始一批） | 5 |
+| `expert` | 专家个人博客 | 10 |
+| `blog` | AI 博客（原始一批） | 6 |
 | `media` | 科技媒体 | 5 |
 | `trending` | GitHub 热门风向 | 1 |
 | `paper` | arXiv 论文类目 | 4 |
@@ -60,7 +60,7 @@ flowchart TD
 
 部分 feed（主要是 Twitter/GitHub）写的是公共 `https://rsshub.app` 主机。模块加载时，若 `AIF_RSSHUB_BASE` 不等于公共实例，就**把所有 `rsshub.app` 前缀 URL 改写到配置的私有实例**（compose 内默认 `http://rsshub:1200`）。
 
-原因：公共 `rsshub.app` 容易对 Twitter/GitHub 路由限流或返回 403/404；私有实例更可控。Twitter 路由还需在 rsshub 容器配 `TWITTER_AUTH_TOKEN`（x.com 登录态 cookie）。Anthropic/Cohere 已改走官方 sitemap，不受 RSSHub 健康度影响。详见 [部署指南](../guides/how-to-deploy.md)。
+原因：公共 `rsshub.app` 容易对 Twitter/GitHub 路由限流或返回 403/404；私有实例更可控。Twitter 路由还需在 rsshub 容器配 `TWITTER_AUTH_TOKEN`（x.com 登录态 cookie）。Anthropic/Cohere/Mistral/xAI 已改走官方 sitemap，Qwen 走官方文章 API，不受 RSSHub 健康度影响。详见 [部署指南](../guides/how-to-deploy.md)。
 
 ### 2.4 相关性门槛
 
@@ -79,8 +79,9 @@ flowchart TD
 1. 每个来源内部先按 tier、发布时间排序。
 2. 进行 `_PER_FEED_CAP=4` 个分层轮次：先从每个来源取第 1 条，再从每个来源取第 2 条，直到第 4 条；不会让一个高频源先占满 4 个位置后才轮到慢源。
 3. 第 4 条之后的候选进入 overflow，等首轮完成后再考虑。
-4. 逐条执行 `_CATEGORY_FETCH_CAPS` 硬上限：vendor 38、media 20、blog 16、paper 22、community 18、expert 18、x-ai 12、trending 6。
-5. 最终无论有多少来源，严格停止在 `_DAILY_FETCH_CAP=150`；分类上限总和也等于 150。
+4. 候选按 URL 全局去重：同一文章即使被多个 feed 收录，本轮也只占一个位置。
+5. 逐条执行 `_CATEGORY_FETCH_CAPS` 硬上限：vendor 38、media 20、blog 16、paper 22、community 18、expert 18、x-ai 12、trending 6。
+6. 最终无论有多少来源，严格停止在 `_DAILY_FETCH_CAP=150`；分类上限总和也等于 150。
 
 旧实现会先给每个来源直接放入 4 条，79 个来源时 `selected` 本身就可能超过 150，所谓全局上限实际失效；同时 5 路高度重叠 Trending 会重复占位。新实现把 Trending 收敛为 1 路，并在来源轮次之后再执行分类与全局硬限制。
 
@@ -97,7 +98,7 @@ flowchart TD
 ### 2.7 容错
 
 - 单 feed 失败（HTTP 错误/超时/解析异常）只记进该源的 `last_error`，**绝不阻塞其它源**（`asyncio.gather(..., return_exceptions=True)`）。
-- 每个 RSS/Atom 只取前 20 个 entry；官方 sitemap 按 `lastmod` 排序、路径过滤后取前 20 个 URL。sitemap 标题由 URL slug 生成，后续交给富化 worker 整理；摘要为空属于预期。
+- 每个 RSS/Atom 只取前 20 个 entry；官方 sitemap 支持单层同站 sitemap index（最多展开 12 个子 sitemap），按 `lastmod` 排序、路径过滤后取前 20 个 URL。sitemap 标题由 URL slug 生成，后续交给富化 worker 整理；摘要为空属于预期。Qwen 的 `qwen_api` 适配器读取官方 JSON、清理简介 HTML、按时间取最新 20 条。
 - `_parse_ts()` 同时支持 ISO 8601 和 RSS 常见 RFC 822 日期；未知格式回退为 0。抓取候选排序、文章流排序和最近 30 小时速报窗口共用这一实现。
 - `fetch_once` 有进程内异步锁，避免定时任务和管理员手动触发重叠。
 
@@ -127,11 +128,11 @@ worker 名义上叫翻译，实际**一次批量 LLM 调用同时做三件事**�
 
 > **每日速报是唯一有定时的 LLM 产物**：`scheduler.py` 在每天 06:00（`AIF_SUMMARY_CRON_*`，在 05:00 抓取 + 翻译之后）调 `build_today_summary()` 自动生成，用户早起即见当天速报。该函数被手动端点 `POST /summary/today` 和定时 job 共用（单一实现）；无新内容或 LLM 未配置时跳过。其余 LLM 产物（解读/指南/画像/复盘/学习路径）都是按需触发，无定时。
 
-速报不再直接取“最新 25 条”。`_articles_for_today()` 先取最近 30 小时文章（不足 5 条时回退到近期库存），再由 `_select_summary_cohort()` 按 importance → 来源类别质量 → tier → 时效排序：
+速报不再直接取“最新 25 条”。`_articles_for_today()` 先取最近 30 小时文章（不足 5 条时回退到近期库存），再由 `_select_summary_cohort()` 先以 NFKC/casefold/去标点后的精确标题键合并重复报道（重复时优先官方与高质量类别），再按 importance → 来源类别质量 → tier → 时效排序：
 
 - 首轮同一来源最多 2 条，避免单一厂商/媒体包场。
 - 分类候选上限为 vendor 8、media 5、blog 4、paper 5、community 4、expert 4、x-ai 3、trending 2。
 - 候选不足时可以放宽可信/编辑类来源的分类和同源上限，但 **x-ai=3、trending=2 永不放宽**。
-- 生成 prompt 再强调官方发布、关键研究、重大产品/政策事件优先，并要求合并同主题的多源引用。
+- 生成 prompt 再强调官方发布、关键研究、重大产品/政策事件优先，并要求合并同主题的多源引用；输出除「一句话总结 / 今日重点 / 值得动手 / 更多动态」外，增加「接下来关注」，只列 2-3 个可验证信号（如权重、API、评测或开源日期），不做无依据预测。
 
 `GET /for-you`、学习路径近期素材等复用 `_articles_for_today()`，因此也会继承这套更平衡的候选集。已有 `summary_today.json` 不会自动迁移；部署后需等下一次 06:00 定时任务或管理员手动重新生成。

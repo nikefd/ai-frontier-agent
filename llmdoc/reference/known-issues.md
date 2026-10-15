@@ -22,7 +22,7 @@
 
 ## 4. X 来源仍依赖自建 RSSHub
 
-76 个源里仍有大量 X 路由走 RSSHub；公共实例可能 404/限流，24 个 x-ai 源还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS 与 Anthropic/Cohere 官方 sitemap 仍可工作。详见 [部署指南](../guides/how-to-deploy.md)。
+81 个源里仍有大量 X 路由走 RSSHub；公共实例可能 404/限流，24 个 x-ai 源还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS、Anthropic/Cohere/Mistral/xAI 官方 sitemap 与 Qwen 官方 API 仍可工作。Mistral/xAI sitemap 若在部署网络超时，只会记录该源失败，不阻塞其它来源。详见 [部署指南](../guides/how-to-deploy.md)。
 
 ## 5. tier 与分类配额已恢复生效
 
@@ -53,7 +53,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 pytest/pytest-asyncio。当前 52 项测试覆盖内容质量配额/官方 sitemap、ISO/RFC 822 时间解析、排序、SRS、admin 护栏、邮箱/密码 token、复盘、学习路径、额度，以及 `test_security.py` 的 SSRF、HTML 清洗、安全头、全局权限和并发 JSON 更新。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前 56 项测试覆盖内容质量配额、官方 sitemap/index、Qwen API、URL/标题去重、ISO/RFC 822 时间解析、排序、SRS、admin 护栏、邮箱/密码 token、复盘、学习路径、额度，以及 `test_security.py` 的 SSRF、HTML 清洗、安全头、全局权限和并发 JSON 更新。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 

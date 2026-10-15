@@ -2,7 +2,7 @@
 
 ## 1. 定位
 
-- **是什么:** 一个个人「AI 前沿信息站」。后端是 FastAPI 单应用，定时从 76 个分层 RSS/官方 sitemap 源抓取 AI 资讯，经相关性过滤、分类配额和质量排序后做中英翻译、生成每日速报、按需生成单篇深度解读，并提供一个 sparrow 驱动的对话式 ReAct agent。
+- **是什么:** 一个个人「AI 前沿信息站」。后端是 FastAPI 单应用，定时从 81 个分层 RSS、官方 sitemap/API 源抓取 AI 资讯，经相关性过滤、跨源去重、分类配额和质量排序后做中英翻译、生成每日速报、按需生成单篇深度解读，并提供一个 sparrow 驱动的对话式 ReAct agent。
 - **目标:** 一个人每天打开一个页面，就能跟住 AI 前沿：官方实验室发布、专家博客、X/Twitter 大 V、社区周刊、arXiv 论文、GitHub 风向；不想读英文有双语，想深挖有深度解读和对话助手。
 - **出身:** 从 `zhangyangbin-agents`（即 openclaw-deploy 体系）抽取的「AI 前沿 agent」骨架，砍掉了 finance / climbing 模块，LLM 默认改用 DeepSeek（自包含，不再依赖内网网关 / token 窃取）。代码注释和部分 logger 名仍残留 `zyb` / `zhangyangbin` 字样，属历史遗留（见 [known-issues](../reference/known-issues.md)）。
 
@@ -26,7 +26,7 @@
 |---|---|
 | Web 框架 | FastAPI + uvicorn（单进程，`app.main:app`，默认 `:9702`） |
 | 后台任务 | APScheduler（`AsyncIOScheduler`，与 FastAPI 共用事件循环，时区 Asia/Shanghai） |
-| RSS / sitemap 抓取 | httpx（异步并发拉取）+ feedparser（RSS/Atom）+ BeautifulSoup/lxml（摘要去标签、官方 sitemap 解析） |
+| RSS / sitemap/API 抓取 | httpx（异步并发拉取）+ feedparser（RSS/Atom）+ BeautifulSoup/lxml（摘要去标签、官方 sitemap 解析）+ 官方 JSON API 适配 |
 | 数据存储 | 文件系统 JSON（原子写）+ SQLite（`ui.db`，对话记忆，只读 URI 模式） |
 | LLM | DeepSeek（OpenAI 兼容 `/chat/completions`），自写 httpx 薄封装，不引 openai/anthropic SDK |
 | 对话 agent | `app/agent_runtime/`（内联，原 sparrow；`Harness` / `AgentConfig` / `Memory` / `@tool`） |
@@ -40,7 +40,7 @@
 |---|---|---|
 | DeepSeek API | 翻译 / 速报 / 深度解读 / 深度指南 / 对话 agent，全部共用一个 key | 未配置 key 时，所有 LLM 端点返回 503，但 RSS 浏览仍可用 |
 | RSSHub | 部分 X 大 V / GitHub 路由的 RSS 源 | 公共 `rsshub.app` 容易限流/403/404，需自建私有实例（compose 内置）；Twitter 路由还需 `TWITTER_AUTH_TOKEN` |
-| 各资讯源 | 76 个分层 feed（官方/媒体/博客/论文/社区/专家/X 大 V/GitHub 风向）；Anthropic/Cohere 直接读官方 sitemap | 清单硬编码在 `app/routers/ai_news.py` 的 `DEFAULT_FEED_SPECS` |
+| 各资讯源 | 81 个分层源（官方/媒体/博客/论文/社区/专家/X 大 V/GitHub 风向）；Anthropic/Cohere/Mistral/xAI 读官方 sitemap，Qwen 读官方文章 API | 清单硬编码在 `app/routers/ai_news.py` 的 `DEFAULT_FEED_SPECS` |
 
 ## 5. 目录结构
 
@@ -67,8 +67,8 @@
 
 ## 6. 核心机制速览
 
-- **抓取入库:** 76 个 RSS/官方 sitemap 异步并发拉取 → category 归一化 high/med/low → med/low 必须命中 AI 关键词（paper 除外）→ 每源分轮取候选 → 分类硬配额（Trending 6、X 12 等）→ `_DAILY_FETCH_CAP=150` 真正封顶 → 滚动历史 `_ARTICLE_LIMIT=400`（pinned 不淘汰）。
-- **速报选材:** 最近 30 小时文章按 importance、来源类别、tier、时效综合排序，首轮限制同源最多 2 条；Trending 最多 2 条、X 最多 3 条，官方发布/关键研究优先。
+- **抓取入库:** 81 个 RSS、官方 sitemap/API 异步并发拉取 → category 归一化 high/med/low → med/low 必须命中 AI 关键词（paper 除外）→ 跨源 URL 去重 → 每源分轮取候选 → 分类硬配额（Trending 6、X 12 等）→ `_DAILY_FETCH_CAP=150` 真正封顶 → 滚动历史 `_ARTICLE_LIMIT=400`（pinned 不淘汰）。
+- **速报选材:** 最近 30 小时文章先按规范化标题合并重复报道，再按 importance、来源类别、tier、时效综合排序；首轮限制同源最多 2 条，Trending 最多 2 条、X 最多 3 条，官方发布/关键研究优先。
 - **双语翻译:** 翻译 worker每批 8 篇，LLM 一次返回翻译/评分/标签，按 id 原子合并；失败不自动重试，管理员可重置。
 - **LLM 产物:** 单篇解读、全局每日速报、主题指南、画像、复盘和学习路径；手动主题解读只进用户库，不插入全局文章流。
 - **对话 agent:** sparrow `Harness` ReAct 循环 + 6 个工具（5 读 1 写组）+ 对话记忆（`ui.db`），SSE 推送 `tool_call`/`tool_result`/`final`/`title` 事件，每条工具结果带 `source` 供引用。

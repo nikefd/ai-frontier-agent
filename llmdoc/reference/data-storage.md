@@ -100,7 +100,7 @@
 
 ### 3.5 summary_today.json
 
-`{generated_at, date, model, cohort_size, body, cohort[]}`。`body` 是 Markdown 速报，`cohort` 是参与生成的文章列表。候选来自最近 30 小时，并按 importance、来源类别、tier、时效与来源多样性预筛；Trending 最多 2 条、X 最多 3 条。旧缓存不会因算法升级自动重写，需等定时任务或管理员重新生成。
+`{generated_at, date, model, cohort_size, body, cohort[]}`。`body` 是 Markdown 速报，`cohort` 是参与生成的文章列表。候选来自最近 30 小时，先按规范化标题精确去重（重复报道优先保留官方/高质量来源），再按 importance、来源类别、tier、时效与来源多样性预筛；Trending 最多 2 条、X 最多 3 条。旧缓存不会因算法升级自动重写，需等定时任务或管理员重新生成。
 
 ### 3.6 ui.db（SQLite，每用户一个）
 

@@ -86,6 +86,81 @@ def _parse_sitemap_entries(content: bytes, include_paths: list[str]) -> list[dic
     return entries[:20]
 
 
+def _parse_sitemap_index(content: bytes) -> list[str]:
+    """Return child sitemap URLs from a sitemap index, if present."""
+    soup = BeautifulSoup(content, "xml")
+    urls: list[str] = []
+    for node in soup.find_all("sitemap"):
+        loc_node = node.find("loc")
+        if loc_node:
+            url = loc_node.get_text(strip=True)
+            if url:
+                urls.append(url)
+    return urls
+
+
+def _parse_qwen_api_entries(payload: dict) -> list[dict]:
+    """Convert Qwen's first-party article API into feed-like entries."""
+    articles = ((payload.get("data") or {}).get("articles") or [])
+    entries: list[dict] = []
+    for article in articles:
+        title = str(article.get("title") or "").strip()
+        path = str(article.get("path") or "").strip()
+        if not title or not path:
+            continue
+        extra = article.get("extra") if isinstance(article.get("extra"), dict) else {}
+        summary_raw = str(extra.get("introduction") or extra.get("description") or "")
+        summary = BeautifulSoup(summary_raw, "lxml").get_text(" ", strip=True)
+        if len(summary) > 280:
+            summary = summary[:280] + "…"
+        entries.append({
+            "title": title,
+            "url": f"https://qwen.ai/blog?id={path}",
+            "date": str(extra.get("date") or ""),
+            "summary": summary,
+            "tags": [],
+        })
+    entries.sort(key=lambda e: _parse_ts(e.get("date") or ""), reverse=True)
+    return entries[:20]
+
+
+async def _entries_from_sitemap(
+    client: httpx.AsyncClient,
+    root_url: str,
+    content: bytes,
+    include_paths: list[str],
+) -> list[dict]:
+    """Parse a urlset or one level of same-host sitemap-index children."""
+    child_urls = _parse_sitemap_index(content)
+    if not child_urls:
+        return _parse_sitemap_entries(content, include_paths)
+
+    root_host = urlparse(root_url).hostname
+    child_urls = [u for u in child_urls if urlparse(u).hostname == root_host][:12]
+
+    async def fetch_child(child_url: str) -> bytes | None:
+        try:
+            response = await client.get(
+                child_url, timeout=15.0, headers={"User-Agent": USER_AGENT},
+            )
+            response.raise_for_status()
+            return response.content
+        except (httpx.HTTPError, asyncio.TimeoutError):
+            log.warning("child sitemap %s failed", child_url)
+            return None
+
+    payloads = await asyncio.gather(*(fetch_child(u) for u in child_urls))
+    by_url: dict[str, dict] = {}
+    for payload in payloads:
+        if not payload:
+            continue
+        for entry in _parse_sitemap_entries(payload, include_paths):
+            by_url[entry["url"]] = entry
+    entries = list(by_url.values())
+    entries.sort(key=lambda e: _parse_ts(e.get("date") or ""), reverse=True)
+    return entries[:20]
+
+
 async def _fetch_feed(
     client: httpx.AsyncClient,
     url: str,
@@ -99,7 +174,15 @@ async def _fetch_feed(
         return [], None, str(e)
     spec = FEED_SPEC_BY_URL.get(url, {})
     if spec.get("format") == "sitemap":
-        entries = _parse_sitemap_entries(r.content, spec.get("include_paths") or [])
+        entries = await _entries_from_sitemap(
+            client, url, r.content, spec.get("include_paths") or [],
+        )
+        return entries, spec.get("name") or url, None
+    if spec.get("format") == "qwen_api":
+        try:
+            entries = _parse_qwen_api_entries(r.json())
+        except ValueError as e:
+            return [], spec.get("name") or url, f"invalid Qwen API JSON: {e}"
         return entries, spec.get("name") or url, None
 
     feed = feedparser.parse(r.content)
@@ -168,14 +251,20 @@ def _select_candidates(candidates: list[tuple], global_cap: int = _DAILY_FETCH_C
     overflow.sort(key=lambda t: (t[0], t[1]))
     selected: list[tuple] = []
     category_counts: dict[str, int] = {}
+    seen_urls: set[str] = set()
     for cand in first_pass + overflow:
         if len(selected) >= global_cap:
             break
+        url = str(cand[2].get("url") or "")
+        if url and url in seen_urls:
+            continue
         category = cand[2].get("category") or "community"
         cap = _CATEGORY_FETCH_CAPS.get(category, global_cap)
         if category_counts.get(category, 0) >= cap:
             continue
         selected.append(cand)
+        if url:
+            seen_urls.add(url)
         category_counts[category] = category_counts.get(category, 0) + 1
     return selected
 

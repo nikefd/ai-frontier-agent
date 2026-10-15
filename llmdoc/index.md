@@ -1,6 +1,6 @@
 # AI Frontier Agent — 文档索引
 
-个人 AI 前沿信息站：FastAPI 单应用，定时从 76 个分层 RSS/官方 sitemap 源抓取 AI 资讯，经相关性过滤、分类配额和质量排序后生成双语文章流与每日速报，外加按需深度解读和 ReAct agent。文件型主存储、Vite 构建前端、单进程一体化。
+个人 AI 前沿信息站：FastAPI 单应用，定时从 81 个分层 RSS、官方 sitemap/API 源抓取 AI 资讯，经相关性过滤、跨源去重、分类配额和质量排序后生成双语文章流与每日速报，外加按需深度解读和 ReAct agent。文件型主存储、Vite 构建前端、单进程一体化。
 
 ---
 
@@ -15,6 +15,7 @@
 | 理解整个后端的进程模型 / 启动流程 / 模块依赖 | [后端架构](architecture/backend-architecture.md) |
 | 理解「一篇文章从 RSS 到入库到翻译」怎么发生 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md) |
 | 理解信源分层、分类硬配额、每源轮次和 150 条全局上限 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.2-2.5 节） |
+| 理解官方 sitemap/API、跨源 URL 去重与速报标题去重 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.2/2.5/4 节） |
 | 理解今日速报为什么不会被 Trending/X 淹没 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 4 节）＋ [API 参考](reference/api-reference.md)（第 4 节） |
 | 理解对话 agent（sparrow ReAct）怎么工作 / 加工具 | [Agent 架构](architecture/agent-architecture.md) |
 | agent 能调哪些工具 | [Agent 架构](architecture/agent-architecture.md)（第 3 节） |
@@ -94,4 +95,4 @@
 - 新增数据文件或改 Article 字段 → 更新 [data-storage.md](reference/data-storage.md)
 - 改鉴权 / 守卫 / 会话 / 用户隔离 → 更新 [auth-architecture.md](architecture/auth-architecture.md)
 - 发现新坑 → 记入 [known-issues.md](reference/known-issues.md)
-- **以上任何更新，同时在本文件「快速导航」补一行入口。** 是否更新文档由用户决定，完成代码改动后先问再改。
+- **以上任何更新，同时在本文件「快速导航」补一行入口。** 当前项目约定：代码改动验证通过后默认同步文档、提交并推送，不再单独确认；破坏性操作、敏感配置或产品取舍仍需先确认。
