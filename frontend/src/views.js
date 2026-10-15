@@ -51,9 +51,35 @@ function linkSummaryCitations(root, cohort = []) {
   });
 }
 
+function collapseSecondarySummary(root) {
+  const heading = [...root.querySelectorAll('h1, h2, h3')]
+    .find(node => node.parentElement === root && ['边角料', '更多动态'].includes(node.textContent.trim()));
+  if (!heading) return;
+
+  const details = document.createElement('details');
+  details.className = 'summary-more';
+  const toggle = document.createElement('summary');
+  const label = document.createElement('span');
+  label.textContent = '更多动态';
+  const content = document.createElement('div');
+  content.className = 'summary-more-content';
+  toggle.append(label);
+  details.append(toggle, content);
+  heading.replaceWith(details);
+
+  while (details.nextSibling) content.append(details.nextSibling);
+  const count = content.querySelectorAll('li').length;
+  if (count) {
+    const meta = document.createElement('small');
+    meta.textContent = `${count} 条`;
+    toggle.append(meta);
+  }
+}
+
 async function renderSummary(body, summary) {
   body.innerHTML = renderMarkdown(summary.body || '');
   linkSummaryCitations(body, summary.cohort || []);
+  collapseSecondarySummary(body);
   await renderMermaidInside(body);
 }
 

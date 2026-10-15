@@ -653,6 +653,35 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   border-color: var(--accent);
   text-decoration: none;
 }
+.summary-more {
+  margin-top: 1.35em;
+  border-top: 1px solid var(--border);
+}
+.summary-more > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 2px 6px;
+  list-style: none;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 650;
+}
+.summary-more > summary::-webkit-details-marker { display: none; }
+.summary-more > summary small {
+  color: var(--text-faint);
+  font-size: 12px;
+  font-weight: 500;
+}
+.summary-more > summary::after {
+  content: "＋";
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: 14px;
+}
+.summary-more[open] > summary::after { content: "−"; }
+.summary-more-content > :first-child { margin-top: 0.5em; }
 
 /* Footer */
 footer.bottom {
@@ -2301,4 +2330,13 @@ body.is-admin .more-sheet-grid button.admin-only { display: flex; }
   .hero-cta-row { flex-direction: column; align-items: stretch; }
   .hero-proof { align-items: center; flex-direction: column; gap: 5px; }
   .card-more-menu { left: auto; right: 0; }
+  #view-summary > .card { padding: 14px; }
+  #summary-body.reader {
+    padding: 4px 0 10px;
+    border: 0;
+    border-radius: 0;
+  }
+  #summary-body.reader h2 { font-size: 17px; }
+  #summary-body.reader ul,
+  #summary-body.reader ol { padding-left: 1.25em; }
 }
