@@ -38,8 +38,9 @@ if (window.SparrowChat) {
 }
 
 // ── Landing / home ───────────────────────────────────────────────────
-// The bilingual hero is the root path "/"; entering goes to /feed.
-$('#btn-enter').addEventListener('click', () => switchView('feed'));
+// The concise home page offers two useful starting points.
+$$('[data-enter-view]').forEach(b =>
+  b.addEventListener('click', () => switchView(b.dataset.enterView)));
 
 // ── Nav + filters ────────────────────────────────────────────────────
 // Brand (logo) → back to the landing/home page.

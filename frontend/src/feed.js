@@ -37,7 +37,6 @@ export async function refreshList() {
 
 function articleCardHtml(a) {
   const title = a.title_zh || a.title || '(无标题)';
-  const enTitle = a.title_zh && a.title ? a.title : '';
   const pinClass = a.pinned ? 'is-pinned' : '';
   const preview = (a.summary_zh || a.summary || '').toString()
     .replace(/https?:\/\/\S+/g, '')
@@ -45,32 +44,30 @@ function articleCardHtml(a) {
     .replace(/\s+/g, ' ')
     .trim();
   const ddStatus = a.deep_dive_status;
-  const ddBtnLabel = ddStatus === 'ok' ? '🧠 查看解读 →'
+  const ddBtnLabel = ddStatus === 'ok' ? '查看解读'
     : ddStatus === 'generating' ? '⏳ 生成中…'
-    : ddStatus === 'failed' ? '⚠️ 重试解读'
-    : '🧠 深度解读';
+    : ddStatus === 'failed' ? '重试解读'
+    : '深度解读';
   const ddBusy = ddStatus === 'generating' ? 'is-busy' : '';
   const ddActive = ddStatus === 'ok' ? 'is-done' : '';
-  const transBadge = a.translation_status === 'ok'
-    ? '<span class="chip chip-trans" title="已翻译">🌐 已翻译</span>'
-    : a.translation_status === 'failed'
+  const transBadge = a.translation_status === 'failed'
     ? '<span class="chip chip-trans-fail" title="翻译失败，可点下方按钮重试">⚠️ 翻译失败</span>'
-    : '<span class="chip chip-trans-pending" title="排队等待翻译">⏳ 待翻译</span>';
+    : a.translation_status === 'ok' ? ''
+    : '<span class="chip chip-trans-pending" title="排队等待翻译">待翻译</span>';
   const transAction = a.translation_status === 'ok' ? ''
     : a.translation_status === 'failed'
     ? `<button class="btn-card ghost admin-only" data-action="translate">🔄 重新翻译</button>`
     : `<button class="btn-card ghost admin-only" data-action="translate">🌐 立即翻译</button>`;
   const tagsHtml = (a.tags && a.tags.length)
-    ? `<div class="article-tags">${a.tags.slice(0, 5).map(t => `<span class="chip chip-tag" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}</div>`
+    ? `<div class="article-tags">${a.tags.slice(0, 2).map(t => `<span class="chip chip-tag" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}</div>`
     : '';
   // Importance badge: only show for clearly high-value items (>=8) to keep signal.
   const impHtml = (typeof a.importance === 'number' && a.importance >= 8)
     ? `<span class="imp-badge" title="重要性 ${a.importance}/10">🔥 ${a.importance}</span>` : '';
   const safeUrl = safeExternalUrl(a.url);
-  const urlHost = safeUrl ? new URL(safeUrl).hostname.replace(/^www\./, '') : '';
   const originBtn = safeUrl
-    ? `<a class="btn-card primary" href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener">🔗 阅读原文 ↗</a>` : '';
-  const copyBtn = safeUrl ? `<button class="btn-card ghost" data-action="copy">📋 复制链接</button>` : '';
+    ? `<a class="btn-card primary" href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener">原文 ↗</a>` : '';
+  const copyBtn = safeUrl ? `<button class="btn-card ghost" data-action="copy">复制链接</button>` : '';
   return `
     <article class="article-card ${pinClass}" data-aid="${escapeHtml(a.id)}">
       <header class="card-head">
@@ -78,7 +75,6 @@ function articleCardHtml(a) {
         ${impHtml}
         <div class="card-titlewrap">
           <h3 class="card-title">${escapeHtml(title)}</h3>
-          ${enTitle ? `<div class="card-en">${escapeHtml(enTitle)}</div>` : ''}
         </div>
         <button class="pin-btn ${a.pinned ? 'on' : ''}" data-action="pin" title="${a.pinned ? '取消收藏' : '收藏'}">${a.pinned ? '★' : '☆'}</button>
       </header>
@@ -86,18 +82,22 @@ function articleCardHtml(a) {
         <span class="meta-src">${escapeHtml(a.source || '')}</span>
         <span class="sep">·</span>
         <span>${fmtDate(a.date)}</span>
-        ${urlHost ? `<span class="sep">·</span><span class="meta-host">${escapeHtml(urlHost)}</span>` : ''}
         ${transBadge}
       </div>
       ${preview ? `<div class="card-preview">${escapeHtml(preview)}</div>` : ''}
       ${tagsHtml}
       <div class="card-actions">
         ${originBtn}
-        ${copyBtn}
-        ${transAction}
-        <button class="btn-card ghost" data-action="ask" title="带这篇上下文问 AI 助手">🤖 问 AI</button>
-        <button class="btn-card ghost" data-action="srs" title="加入间隔复习库">🗂️ 加入复习</button>
         <button class="btn-card ${ddActive ? 'success' : 'accent'} ${ddBusy}" data-action="dive">${ddBtnLabel}</button>
+        <details class="card-more">
+          <summary>更多</summary>
+          <div class="card-more-menu">
+            ${copyBtn}
+            <button class="btn-card ghost" data-action="ask" title="带这篇上下文问 AI 助手">问 AI</button>
+            <button class="btn-card ghost" data-action="srs" title="加入间隔复习库">加入知识卡</button>
+            ${transAction}
+          </div>
+        </details>
       </div>
     </article>`;
 }

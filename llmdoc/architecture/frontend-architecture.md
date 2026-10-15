@@ -31,7 +31,17 @@
 - 监听 `popstate` → 浏览器前进/后退可用。
 - 所以每个 tab 有独立可分享的 URL；刷新停在当前 tab；首页和信息站 URL 区分开（`/` vs `/feed`）。
 
-**移动端导航（≤720px）**：桌面左侧 side-nav 的「视图」组隐藏，改用**底部固定 tab bar**（文章流/为你推荐/复盘/知识卡/更多）+「更多」底部弹出菜单（速报/解读/学习路径/画像/数据源/管理）。tab 和 menu 都调同一个 `switchView`，高亮同步。分类 `#cat-seg` 在窄屏改为单行横向滚动。对话仍是右下角悬浮球。纯 CSS+少量 JS，桌面端不变。
+**移动端导航（≤720px）**：桌面左侧 side-nav 隐藏，改用**底部固定 tab bar**（速报/文章/解读/知识卡/更多）+「更多」底部弹出菜单（为你推荐/复盘/学习路径/画像/数据源/管理）。tab 和 menu 都调同一个 `switchView`，高亮同步。对话仍是右下角悬浮球。
+
+### 1.2 阅读优先的信息架构
+
+页面把最常用的阅读动作放在第一层，低频能力按需展开：
+
+- 根路径首页只提供「看今日速报」和「浏览最新文章」两个入口，不再展示大段双语营销文案和功能卡片。
+- 桌面 side-nav 按「阅读」（速报、最新文章、推荐、解读）和「沉淀」（知识卡、复盘、学习路径）分组；画像、数据源、用户管理放入原生 `<details>`「更多」。
+- 文章流顶部常驻搜索和最新/重要排序；范围、来源分类和管理员批量翻译收进「筛选」弹层。
+- 文章卡片只把「原文」和「深度解读」作为主操作；复制链接、问 AI、加入知识卡和管理员翻译放进卡片「更多」。
+- `nav.js` 用 `VIEW_META` 维护视图标题/说明，并在 `<body data-view>` 记录当前视图，供 CSS 控制文章数量等仅与 feed 有关的界面元素。
 
 ## 2. 模块划分（`frontend/src/`）
 
@@ -59,7 +69,7 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 
 | 视图 | DOM id | 数据来源 |
 |---|---|---|
-| 落地首页 | `#view-home` | 无（静态中英双语 hero + 功能介绍） |
+| 落地首页 | `#view-home` | 无（静态精简 hero，直达今日速报或最新文章） |
 | 文章流 | `#view-feed` | `GET /api/ai-news/articles`（分页） |
 | 今日速报 | `#view-summary` | `GET/POST /api/ai-news/summary/today` |
 | 深度解读 | `#view-dives` | `GET /api/ai-news/deep-dives`（独立内容库，直接扫 `deep-dives/*.json`） |
@@ -67,11 +77,13 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 
 `state.js` 的单例对象在模块间共享。文章流的筛选（分类 `cat` / all-pinned-translated 的 `filter` / 搜索 `q`）改变 `state` 后调 `refreshList()` 重新拉数据；分页改 `state.offset`。`translated` 筛选是**前端二次过滤**（后端不支持该参数），所以它只过滤当前页。
 
-落地首页 `#view-home` 不走 side-nav，而是用 `<body>` 上的 `landing-active` 类控制（隐藏应用主体、只显首页）。路由层据 URL 决定：路径 `/` 时 `showLanding()` 加该类；进入某视图（如点「进入」按钮 → `switchView('feed')`）移除该类。点顶栏标题 brand → `showLanding()` 回 `/`。详见 §1.1 路由。
+落地首页 `#view-home` 不走 side-nav，而是用 `<body>` 上的 `landing-active` 类控制（隐藏应用主体、只显首页）。路由层据 URL 决定：路径 `/` 时 `showLanding()` 加该类；首页的 `data-enter-view` 按钮可分别进入 `summary` 或 `feed`，进入视图时移除该类。点顶栏标题 brand → `showLanding()` 回 `/`。详见 §1.1 路由。
 
 ## 4. 关键交互
 
 - **深度解读（与文章流解耦）**：文章流卡片按钮跳到独立解读视图；正文先走 `renderMarkdown` 清洗，再交 `renderMermaidInside`。
+- **文章卡片降噪**：优先显示中文标题、来源、时间、摘要和最多两个标签；成功翻译不再重复显示状态，失败/待翻译仍保留提示。原文和深度解读保持直接可见，其余动作收进原生 `<details>` 菜单。
+- **筛选收纳**：搜索与最新/重要排序始终可见；收藏/已翻译范围和来源分类放进筛选面板，仍由 `main.js` 更新同一份 `state` 并调用 `refreshList()`。
 - **安全 Markdown / mermaid**：LLM/RSS 可控文本不能直接进 `innerHTML`。`markdown.js` 禁止 script/style/iframe/form/svg/img 和事件/样式属性；mermaid 使用 `securityLevel: 'strict'`。普通外链再经 `safeExternalUrl` 限定为 http(s)。
 - **立即抓取 / 批量翻译 / 重生成速报**：仅 admin 看得到按钮，后端也用 `require_admin` 强制校验，不能靠改 DOM 绕过。
 

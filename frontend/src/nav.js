@@ -1,6 +1,6 @@
 // View switching + URL routing (History API). Extracted so feed.js / dives.js
 // can trigger navigation without importing main.js (avoids an import cycle).
-import { $$ } from './util.js';
+import { $, $$ } from './util.js';
 import { state } from './state.js';
 import { refreshList } from './feed.js';
 import { loadSummary, loadSources, loadProfile, loadForYou } from './views.js';
@@ -14,6 +14,19 @@ import { loadSuggestions } from './suggestions.js';
 // All routable views. The landing/home page is the root path "/".
 const VIEWS = ['feed', 'foryou', 'summary', 'dives', 'review', 'reflection',
                'profile', 'sources', 'admin', 'learning'];
+
+const VIEW_META = {
+  summary: ['今日速报', '先用几分钟掌握今天最值得关注的 AI 动态'],
+  feed: ['最新文章', '来自精选信源的最新 AI 动态'],
+  foryou: ['为你推荐', '根据你的收藏、追踪和阅读偏好排序'],
+  dives: ['深度解读', '把值得关注的主题读深、读懂'],
+  review: ['知识卡', '复习并沉淀读过的内容'],
+  reflection: ['复盘', '回顾最近的关注方向和行动'],
+  learning: ['学习路径', '围绕一个主题建立阶段化学习路线'],
+  profile: ['我的画像', '查看 AI 对你关注方向的理解'],
+  sources: ['数据源', '查看信源覆盖与抓取状态'],
+  admin: ['用户管理', '管理站点用户与权限'],
+};
 
 function _runLoader(v) {
   if (v === 'feed') { refreshList(); loadSuggestions(); }
@@ -33,7 +46,13 @@ function _runLoader(v) {
 export function switchView(v, push = true) {
   state.view = v;
   document.body.classList.remove('landing-active');
+  document.body.dataset.view = v;
+  const [title, desc] = VIEW_META[v] || ['AI 前沿', ''];
+  $('#current-view-title').textContent = title;
+  $('#current-view-desc').textContent = desc;
   $$('.side-nav button[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === v));
+  const activeSideButton = document.querySelector(`.side-more button[data-view="${v}"]`);
+  if (activeSideButton) activeSideButton.closest('.side-more').open = true;
   // Keep the mobile bottom tab highlight in sync (views not in the tab bar
   // simply leave all tabs unhighlighted).
   $$('.bottom-tabs button[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === v));
@@ -46,6 +65,7 @@ export function switchView(v, push = true) {
 export function showLanding(push = true) {
   state.view = 'home';
   document.body.classList.add('landing-active');
+  delete document.body.dataset.view;
   if (push && location.pathname !== '/') history.pushState({ v: 'home' }, '', '/');
 }
 

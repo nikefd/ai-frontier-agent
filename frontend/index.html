@@ -3,68 +3,38 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI 前沿 Agent</title>
+<title>AI 前沿</title>
 <link rel="stylesheet" href="/style.css">
 </head>
 <body data-agent="ai-news" class="landing-active">
 <header class="top">
-  <h1 id="brand" title="返回首页"><span class="dot"></span> AI 前沿 Agent</h1>
+  <h1 id="brand" title="返回首页"><span class="dot"></span> AI 前沿</h1>
   <div class="auth-slot" id="auth-slot"></div>
 </header>
 
 <main class="fluid">
   <!-- ───────── Landing / Home (bilingual hero) ───────── -->
   <section id="view-home">
-    <div class="hero">
-      <span class="hero-badge">🛰️ AI Frontier Agent · 你的 AI 成长伙伴</span>
-      <h1 class="hero-title">
-        别人给你更多信息，<span class="grad">我帮你把信息变成成长</span>
-        <small>Others give you more to read — we turn it into growth</small>
-      </h1>
-      <p class="hero-lede">
-        每天从 80+ 精选源筛出真正重要的 AI 前沿，自动双语、按你的兴趣排序；
-        再用知识卡、复盘、学习路径，把「读过」沉淀成「记得住、想得清、学得会」。
-        <br>
-        <span class="en">We surface what actually matters from 80+ curated AI sources daily,
-        ranked to your interests — then turn reading into knowledge you keep,
-        reflection you act on, and paths you can follow.</span>
-      </p>
-      <div class="hero-cta">
-        <button class="primary lg" id="btn-enter">进入信息站 · Enter →</button>
-        <span class="hero-cta-sub">无需安装 · 打开即用 / No setup, just open</span>
+    <div class="hero hero-simple">
+      <span class="hero-badge">每天更新 · 80+ 精选 AI 信源</span>
+      <h1 class="hero-title">每天 10 分钟，<span class="grad">跟上 AI 前沿</span></h1>
+      <p class="hero-lede">先看一份有引用的中文速报，再按兴趣阅读、收藏和深挖。少一点噪音，多一点真正有用的信息。</p>
+      <div class="hero-cta hero-cta-row">
+        <button class="primary lg" data-enter-view="summary">看今日速报</button>
+        <button class="ghost lg" data-enter-view="feed">浏览最新文章</button>
       </div>
-
-      <div class="hero-features">
-        <div class="hf-card">
-          <span class="hf-ico">📖</span>
-          <b>读 · 只看重要的<small>Read what matters</small></b>
-          <p>80+ 源自动抓取、双语、AI 评重要性并排序，按你的兴趣推荐 —— 不再被信息淹没。</p>
-        </div>
-        <div class="hf-card">
-          <span class="hf-ico">🗂️</span>
-          <b>记 · 留得住<small>Remember</small></b>
-          <p>一键把文章/解读变知识卡，间隔重复（SM-2）在你快忘时复习，把读过的变成记得住的。</p>
-        </div>
-        <div class="hf-card">
-          <span class="hf-ico">🪞</span>
-          <b>思 · 想得清<small>Reflect</small></b>
-          <p>AI 教练基于你这周读了什么，用苏格拉底式提问带你复盘，把输入连到自己的目标。</p>
-        </div>
-        <div class="hf-card">
-          <span class="hf-ico">🗺️</span>
-          <b>学 · 学得会<small>Learn</small></b>
-          <p>结合你的画像生成分阶段学习路径，把碎片资讯编排成「入门→进阶」的成长地图。</p>
-        </div>
+      <div class="hero-proof" aria-label="核心能力">
+        <span>✓ 自动双语</span><span>✓ 原文可追溯</span><span>✓ 收藏与深度解读</span>
       </div>
     </div>
   </section>
 
   <div class="page-head">
     <div>
-      <h2>🛰️ AI 前沿信息站</h2>
-      <p class="lede">每天自动抓取 80+ 精选 AI 源 · 双语 · 按需深度解读</p>
+      <h2 id="current-view-title">最新文章</h2>
+      <p class="lede" id="current-view-desc">来自 80+ 精选信源的最新 AI 动态</p>
     </div>
-    <div class="row tight" style="flex:0 0 auto">
+    <div class="row tight" id="feed-status" style="flex:0 0 auto">
       <span class="pill" id="article-count">… 篇</span>
       <button class="primary admin-only" id="btn-fetch" title="手动抓取一次（覆盖今天的自动抓取）">
         <span id="fetch-icon">↻</span> 立即抓取
@@ -76,31 +46,23 @@
     <!-- ───────── Sidebar ───────── -->
     <aside>
       <div class="side-nav">
-        <div class="group">视图</div>
-        <button class="on" data-view="feed"><span>📰</span> 文章流 <span class="count" id="cnt-feed">·</span></button>
-        <button data-view="foryou"><span>🎯</span> 为你推荐</button>
+        <div class="group">阅读</div>
         <button data-view="summary"><span>✨</span> 今日速报</button>
+        <button class="on" data-view="feed"><span>📰</span> 最新文章 <span class="count" id="cnt-feed">·</span></button>
+        <button data-view="foryou"><span>🎯</span> 为你推荐</button>
         <button data-view="dives"><span>🧠</span> 深度解读 <span class="count" id="cnt-dives">·</span></button>
+        <div class="group">沉淀</div>
         <button data-view="review"><span>🗂️</span> 知识卡 <span class="count" id="cnt-review">·</span></button>
         <button data-view="reflection"><span>🪞</span> 复盘</button>
         <button data-view="learning"><span>🗺️</span> 学习路径</button>
-        <button data-view="profile"><span>🪪</span> 我的画像</button>
-        <button data-view="sources"><span>🔌</span> 数据源 <span class="count" id="cnt-sources">·</span></button>
-        <button data-view="admin" class="admin-only"><span>👥</span> 用户管理</button>
-      </div>
-
-      <div class="side-nav mt-12">
-        <div class="group">分类</div>
-        <div class="seg tier-seg" id="cat-seg" style="flex-wrap:wrap;gap:4px;padding:6px 8px">
-          <button class="on" data-cat="">全部</button>
-          <button data-cat="vendor">🏢 官方</button>
-          <button data-cat="expert">✍️ 专家</button>
-          <button data-cat="x-ai">𝕏 大V</button>
-          <button data-cat="community">🌐 社区</button>
-          <button data-cat="media">📰 媒体</button>
-          <button data-cat="paper">📄 论文</button>
-          <button data-cat="trending">🔥 风向</button>
-        </div>
+        <details class="side-more">
+          <summary>更多</summary>
+          <div class="side-more-items">
+            <button data-view="profile"><span>🪪</span> 我的画像</button>
+            <button data-view="sources"><span>🔌</span> 数据源 <span class="count" id="cnt-sources">·</span></button>
+            <button data-view="admin" class="admin-only"><span>👥</span> 用户管理</button>
+          </div>
+        </details>
       </div>
     </aside>
 
@@ -111,18 +73,39 @@
       <div class="view-pane" id="view-feed">
         <div class="feed-cards">
           <div id="suggestions-bar"></div>
-          <div class="feed-toolbar feed-toolbar-top">
-            <input id="search" placeholder="🔍 搜标题 / 摘要…" style="flex:1;min-width:240px" />
-            <div class="seg">
-              <button class="on" data-filter="all">全部</button>
-              <button data-filter="pinned">📌 收藏</button>
-              <button data-filter="translated">🌐 已译</button>
-            </div>
+          <div class="feed-toolbar feed-toolbar-top compact-toolbar">
+            <input id="search" placeholder="搜索标题或摘要" />
             <div class="seg" id="sort-seg">
-              <button class="on" data-sort="newest">🕘 最新</button>
-              <button data-sort="important">🔥 最重要</button>
+              <button class="on" data-sort="newest">最新</button>
+              <button data-sort="important">重要</button>
             </div>
-            <button class="ghost sm admin-only" id="btn-translate" title="手动跑一轮翻译">🌐 批量翻译</button>
+            <details class="filter-menu">
+              <summary>筛选</summary>
+              <div class="filter-panel">
+                <div class="filter-block">
+                  <b>范围</b>
+                  <div class="seg">
+                    <button class="on" data-filter="all">全部</button>
+                    <button data-filter="pinned">收藏</button>
+                    <button data-filter="translated">已翻译</button>
+                  </div>
+                </div>
+                <div class="filter-block">
+                  <b>来源</b>
+                  <div class="seg tier-seg" id="cat-seg">
+                    <button class="on" data-cat="">全部</button>
+                    <button data-cat="vendor">官方</button>
+                    <button data-cat="expert">专家</button>
+                    <button data-cat="x-ai">大V</button>
+                    <button data-cat="community">社区</button>
+                    <button data-cat="media">媒体</button>
+                    <button data-cat="paper">论文</button>
+                    <button data-cat="trending">风向</button>
+                  </div>
+                </div>
+                <button class="ghost sm admin-only" id="btn-translate" title="手动跑一轮翻译">批量翻译</button>
+              </div>
+            </details>
           </div>
           <div id="article-list" class="article-cards">
             <div class="muted-card">加载中…</div>
@@ -296,9 +279,9 @@
 
 <!-- ───────── Mobile bottom tab bar (shown ≤720px via CSS) ───────── -->
 <nav class="bottom-tabs" id="bottom-tabs">
+  <button data-view="summary"><span>✨</span><b>速报</b></button>
   <button data-view="feed"><span>📰</span><b>文章</b></button>
-  <button data-view="foryou"><span>🎯</span><b>推荐</b></button>
-  <button data-view="reflection"><span>🪞</span><b>复盘</b></button>
+  <button data-view="dives"><span>🧠</span><b>解读</b></button>
   <button data-view="review"><span>🗂️</span><b>知识卡</b></button>
   <button id="tab-more"><span>☰</span><b>更多</b></button>
 </nav>
@@ -308,8 +291,8 @@
   <div class="more-sheet-panel">
     <div class="more-sheet-head"><b>更多</b><button id="more-close">✕</button></div>
     <div class="more-sheet-grid">
-      <button data-view="summary"><span>✨</span> 今日速报</button>
-      <button data-view="dives"><span>🧠</span> 深度解读</button>
+      <button data-view="foryou"><span>🎯</span> 为你推荐</button>
+      <button data-view="reflection"><span>🪞</span> 本周复盘</button>
       <button data-view="learning"><span>🗺️</span> 学习路径</button>
       <button data-view="profile"><span>🪪</span> 我的画像</button>
       <button data-view="sources"><span>🔌</span> 数据源</button>
