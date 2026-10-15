@@ -20,17 +20,17 @@ flowchart LR
 | 服务 | 镜像 | 作用 |
 |---|---|---|
 | `ai-frontier` | 本仓库 Dockerfile | FastAPI 应用，进程内含抓取/翻译 scheduler，映射 `127.0.0.1:9702` |
-| `rsshub` | `diygod/rsshub:latest` | 自建 RSSHub，把 Twitter/GitHub/Anthropic 等路由从公共实例迁到私有 |
+| `rsshub` | `diygod/rsshub:latest` | 自建 RSSHub，把 Twitter/GitHub 等路由从公共实例迁到私有 |
 | `rsshub-redis` | `redis:alpine` | rsshub 缓存后端，减少对上游重复请求、降被限流概率 |
 
 ## 2. 为什么要自建 RSSHub
 
-79 个 feed 里很多写的是公共 `https://rsshub.app`。但公共实例：
+76 个来源里仍有不少 X/GitHub 路由写的是公共 `https://rsshub.app`。但公共实例：
 
 - 对 **Twitter 路由 404**
-- 对 **GitHub / Anthropic 路由 403**
+- 对部分 **GitHub 路由 403/限流**
 
-应用启动时会把所有 `rsshub.app` 前缀的 URL 改写到 `AIF_RSSHUB_BASE`（compose 内默认 `http://rsshub:1200`，即自建实例）。这样这些源才抓得到。
+应用启动时会把所有 `rsshub.app` 前缀的 URL 改写到 `AIF_RSSHUB_BASE`（compose 内默认 `http://rsshub:1200`，即自建实例）。这样这些源才抓得到。Anthropic/Cohere 已直接读取官方 sitemap，不依赖 RSSHub。
 
 **Twitter 路由额外需要登录态**：在 rsshub 容器配 `TWITTER_AUTH_TOKEN`（x.com 的 `auth_token` cookie）。留空则 Twitter 路由（24 个 x-ai 源）抓不到，其余源正常。这个 token 是登录凭证，**绝不写进代码/git**，在 Coolify 环境变量里手填。
 

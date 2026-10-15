@@ -11,11 +11,12 @@
 flowchart TD
   cron[APScheduler 每日 05:00] --> fetch
   manual[管理员点「立即抓取」 POST /fetch] --> fetch
-  fetch[fetch_once：异步并发拉 79 个 feed]
-  fetch --> parse[feedparser 解析 + BS4 去标签摘要]
-  parse --> tag[关键词打标 reason=keyword/curated<br/>不再拒绝，全部接受]
-  tag --> quota[每源配额 _PER_FEED_CAP=4]
-  quota --> global[全局回填至 _DAILY_FETCH_CAP=150]
+  fetch[fetch_once：异步并发拉 76 个 RSS/sitemap 源]
+  fetch --> parse[feedparser 解析 RSS/Atom<br/>BS4 解析官方 sitemap]
+  parse --> gate[tier/category 相关性门槛<br/>high/paper 接受，med/low 需关键词]
+  gate --> rounds[每源分 4 轮取候选<br/>先各源 1 条，再各源第 2 条]
+  rounds --> category[分类硬配额<br/>Trending 6 / X 12 / 其它分类]
+  category --> global[硬性全局上限 _DAILY_FETCH_CAP=150]
   global --> store[add_article：去重 + 滚动淘汰至 400]
   store --> articles[(articles.json)]
   store --> meta[(sources.json 每源抓取元数据)]
@@ -38,41 +39,50 @@ flowchart TD
 
 ### 2.2 feed 清单与分类
 
-79 个 feed 硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`，每条是 `{url, name, tier, category, description}`。`category` 驱动前端分组，共 8 类：
+76 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；无稳定 RSS 的官方站可额外设置 `{format:"sitemap", include_paths:[...]}`。当前 Anthropic 只采官方 `/news/`、`/research/`，Cohere 只采官方 `/blog/`，避免依赖第三方镜像。
+
+`category` 同时驱动前端分组、tier 归一化与抓取配额，共 8 类：
 
 | category | 含义 | 数量 |
 |---|---|---|
-| `vendor` | 官方实验室 / 厂商第一手发布 | 15 |
+| `vendor` | 官方实验室 / 厂商第一手发布 | 16 |
 | `x-ai` | X(Twitter) 上的 AI 大 V | 24 |
 | `community` | 社区 / 周刊（含中文资讯） | 12 |
 | `expert` | 专家个人博客 | 9 |
 | `blog` | AI 博客（原始一批） | 5 |
 | `media` | 科技媒体 | 5 |
-| `trending` | GitHub 热门风向 | 5 |
+| `trending` | GitHub 热门风向 | 1 |
 | `paper` | arXiv 论文类目 | 4 |
 
-> 所有 feed 的 `tier` 当前都是 `high`。tier 原本用于分级过滤，现已弱化（见 2.4）。
+启动时 `_DEFAULT_TIER_BY_CATEGORY` 会统一归一化 tier：vendor/blog 为 `high`，media/paper/community/expert 为 `med`，x-ai/trending 为 `low`。这样新增来源即使复制了旧条目的 tier，也不会绕过分类策略。
 
 ### 2.3 rsshub.app 主机改写
 
-很多 feed（Twitter/GitHub/Anthropic 等）写的是公共 `https://rsshub.app` 主机。模块加载时，若 `AIF_RSSHUB_BASE` 不等于公共实例，就**把所有 `rsshub.app` 前缀 URL 改写到配置的私有实例**（compose 内默认 `http://rsshub:1200`）。
+部分 feed（主要是 Twitter/GitHub）写的是公共 `https://rsshub.app` 主机。模块加载时，若 `AIF_RSSHUB_BASE` 不等于公共实例，就**把所有 `rsshub.app` 前缀 URL 改写到配置的私有实例**（compose 内默认 `http://rsshub:1200`）。
 
-原因：公共 `rsshub.app` 对 Twitter 路由 404、对 GitHub/Anthropic 路由 403；私有实例无此限制。Twitter 路由还需在 rsshub 容器配 `TWITTER_AUTH_TOKEN`（x.com 登录态 cookie）。详见 [部署指南](../guides/how-to-deploy.md)。
+原因：公共 `rsshub.app` 容易对 Twitter/GitHub 路由限流或返回 403/404；私有实例更可控。Twitter 路由还需在 rsshub 容器配 `TWITTER_AUTH_TOKEN`（x.com 登录态 cookie）。Anthropic/Cohere 已改走官方 sitemap，不受 RSSHub 健康度影响。详见 [部署指南](../guides/how-to-deploy.md)。
 
-### 2.4 关键词打标（不再拒绝）
+### 2.4 相关性门槛
 
-`_decide_relevance()` 当前**接受所有条目**——因为每个 feed 都是手挑的 AI 源，关键词预过滤已关闭。它仍会跑 `_is_ai_relevant_keywords()`（在标题+摘要里匹配 `AI_KEYWORDS` 中英关键词表），但结果只用于打 `ai_relevance` 标签（`keyword` 命中 / `curated` 未命中），**永远返回接受**。
+`_decide_relevance()` 在标题+摘要里匹配 `AI_KEYWORDS` 中英关键词表，并结合 tier/category 决定是否进入候选：
 
-> 这是从「关键词硬过滤」演进来的：早期 med/low tier 源要靠关键词命中才入库，现在全是 high tier 精选源，过滤逻辑保留但不生效。
+- `high`：信任官方/AI 原生编辑源，即使没命中关键词也接受；标记为 `curated`。
+- `paper`：arXiv 类目本身已限定 AI/ML，按 curated 接受，避免标题未含通用关键词时漏掉重要论文。
+- `med` / `low`：必须命中关键词才接受；未命中计入该源 `last_filtered`，不会进入文章库或 LLM 富化队列。
 
-### 2.5 每源配额 + 全局回填
+这条规则尤其约束 X 与 GitHub Trending：热度只作为发现信号，不能因为“热门”就自动成为 AI 前沿内容。
 
-这是抓取管线最关键的设计。**不是**简单按时间全局取 top-N，而是：
+### 2.5 每源轮次 + 分类硬配额 + 全局上限
 
-1. **每源配额**：每个 feed 先按时间倒序取自己最新的 `_PER_FEED_CAP=4` 篇 → `selected`。
-2. **全局回填**：剩下的（leftover）按时间倒序，填满全局预算 `_DAILY_FETCH_CAP=150` 为止。
+`_select_candidates()` 同时解决来源公平、类别失衡和全局容量三个问题：
 
-为什么这么做：纯全局时间排序会让高频 vendor 源（时间戳最新）挤掉慢但有价值的源——比如某 Twitter 账号最新一条是几天前的，永远进不了 top-N，于是「这个源好像从来没抓到东西」。每源配额保证每个源都有露脸机会。
+1. 每个来源内部先按 tier、发布时间排序。
+2. 进行 `_PER_FEED_CAP=4` 个分层轮次：先从每个来源取第 1 条，再从每个来源取第 2 条，直到第 4 条；不会让一个高频源先占满 4 个位置后才轮到慢源。
+3. 第 4 条之后的候选进入 overflow，等首轮完成后再考虑。
+4. 逐条执行 `_CATEGORY_FETCH_CAPS` 硬上限：vendor 38、media 20、blog 16、paper 22、community 18、expert 18、x-ai 12、trending 6。
+5. 最终无论有多少来源，严格停止在 `_DAILY_FETCH_CAP=150`；分类上限总和也等于 150。
+
+旧实现会先给每个来源直接放入 4 条，79 个来源时 `selected` 本身就可能超过 150，所谓全局上限实际失效；同时 5 路高度重叠 Trending 会重复占位。新实现把 Trending 收敛为 1 路，并在来源轮次之后再执行分类与全局硬限制。
 
 每源抓取结果写入 `sources.json`（按 url 为 key）：`last_fetch` / `last_ok` / `last_error` / `eligible` / `last_added` / `last_filtered` / `name` / `tier` / `category`。前端「数据源」页读这个展示健康度。
 
@@ -87,7 +97,8 @@ flowchart TD
 ### 2.7 容错
 
 - 单 feed 失败（HTTP 错误/超时/解析异常）只记进该源的 `last_error`，**绝不阻塞其它源**（`asyncio.gather(..., return_exceptions=True)`）。
-- 每个 feed 只取前 20 个 entry；摘要截断到 280 字符。
+- 每个 RSS/Atom 只取前 20 个 entry；官方 sitemap 按 `lastmod` 排序、路径过滤后取前 20 个 URL。sitemap 标题由 URL slug 生成，后续交给富化 worker 整理；摘要为空属于预期。
+- `_parse_ts()` 同时支持 ISO 8601 和 RSS 常见 RFC 822 日期；未知格式回退为 0。抓取候选排序、文章流排序和最近 30 小时速报窗口共用这一实现。
 - `fetch_once` 有进程内异步锁，避免定时任务和管理员手动触发重叠。
 
 ## 3. 富化（`translate_once`，翻译 + 评分 + 打标签）
@@ -96,7 +107,7 @@ worker 名义上叫翻译，实际**一次批量 LLM 调用同时做三件事**�
 
 - **触发**：`scheduler.py` 每 2 分钟一个 `IntervalTrigger`；admin 也可 `POST /translate/run` 手动跑一批。worker 自身还有异步锁，防两种入口重叠。
 - **选批**：挑 `translation_status` 不在 `{ok, failed, skipped}` 且没有 `title_zh`/`summary_zh` 的文章，一次 `BATCH_SIZE=8` 篇。
-- **单次调用**：8 篇拼成一个 prompt，要求 LLM 返回**单个 JSON 数组**，每项 `{id, title_zh, summary_zh, importance, tags}`——翻译/评分/打标签合一，**不拆成多次调用**。`importance` 0-10 整数（`_clean_importance` 钳位）；`tags` 从**受控词表** `TAG_VOCAB`（发布/论文/工具/开源/教程/观点/融资/安全/评测/应用）里选，`_clean_tags` 丢弃词表外的词、最多 3 个。
+- **单次调用**：8 篇拼成一个 prompt，要求 LLM 返回**单个 JSON 数组**，每项 `{id, title_zh, summary_zh, importance, tags}`——翻译/评分/打标签合一，**不拆成多次调用**。prompt 会传 source/category，并明确“官方一手发布和扎实研究优先，GitHub Trending、社区热度、单条社交观点本身不等于重要”。`importance` 0-10 整数（`_clean_importance` 钳位）；`tags` 从**受控词表** `TAG_VOCAB`（发布/论文/工具/开源/教程/观点/融资/安全/评测/应用）里选，`_clean_tags` 丢弃词表外的词、最多 3 个。
 - **写回**：LLM 返回后通过 `update_json_atomic` 重新读取最新文章列表并按 id 合并，避免等待模型期间覆盖新抓取文章。内容全局共享，一篇只富化一次。
 - **失败处理**：整批失败、或某篇在响应里缺失 → 标 `failed`。**`failed` 不会自动重试**，要重来得 `POST /articles/{aid}/retranslate` 重置回 `pending`。
 - 纯函数 `_clean_importance`/`_clean_tags`/`_parse_response` 有单测 `tests/test_enrich.py`。
@@ -115,3 +126,12 @@ worker 名义上叫翻译，实际**一次批量 LLM 调用同时做三件事**�
 这些产物的存储结构见 [数据存储参考](../reference/data-storage.md)。
 
 > **每日速报是唯一有定时的 LLM 产物**：`scheduler.py` 在每天 06:00（`AIF_SUMMARY_CRON_*`，在 05:00 抓取 + 翻译之后）调 `build_today_summary()` 自动生成，用户早起即见当天速报。该函数被手动端点 `POST /summary/today` 和定时 job 共用（单一实现）；无新内容或 LLM 未配置时跳过。其余 LLM 产物（解读/指南/画像/复盘/学习路径）都是按需触发，无定时。
+
+速报不再直接取“最新 25 条”。`_articles_for_today()` 先取最近 30 小时文章（不足 5 条时回退到近期库存），再由 `_select_summary_cohort()` 按 importance → 来源类别质量 → tier → 时效排序：
+
+- 首轮同一来源最多 2 条，避免单一厂商/媒体包场。
+- 分类候选上限为 vendor 8、media 5、blog 4、paper 5、community 4、expert 4、x-ai 3、trending 2。
+- 候选不足时可以放宽可信/编辑类来源的分类和同源上限，但 **x-ai=3、trending=2 永不放宽**。
+- 生成 prompt 再强调官方发布、关键研究、重大产品/政策事件优先，并要求合并同主题的多源引用。
+
+`GET /for-you`、学习路径近期素材等复用 `_articles_for_today()`，因此也会继承这套更平衡的候选集。已有 `summary_today.json` 不会自动迁移；部署后需等下一次 06:00 定时任务或管理员手动重新生成。

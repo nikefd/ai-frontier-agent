@@ -2,14 +2,14 @@
 
 Pipeline per entry:
   1. Parse feed → raw entry (title, url, summary, date)
-  2. Keyword pre-filter (AI_KEYWORDS allowlist; cn + en)
+  2. Keyword relevance check (AI_KEYWORDS allowlist; cn + en)
   3. Tier-based gating:
-     - tier=high  → accept (even if no keyword hit; trusted source)
-     - tier=med   → accept iff keyword hit (skip LLM to save cost; arXiv/community)
-     - tier=low   → accept iff keyword hit (HN keyword stream already pre-filtered;
-                    GitHub Changelog only AI-related items)
-  4. Persist via add_article() with tier + ai_relevance fields
-  5. Mark translation_status="pending" so the translation worker picks it up
+     - tier=high  → accept (trusted first-party/editorial source)
+     - paper      → accept (the category itself is AI/ML scoped)
+     - tier=med/low → accept only on keyword hit
+  4. Enforce per-feed diversity, category ceilings, and a hard global ceiling
+  5. Persist via add_article() with tier + ai_relevance fields
+  6. Mark translation_status="pending" so the translation worker picks it up
 
 Best-effort guarantees retained:
   - one feed failing never blocks others
@@ -23,6 +23,7 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Iterable
+from urllib.parse import unquote, urlparse
 
 import feedparser
 import httpx
@@ -32,6 +33,7 @@ from ..routers.ai_news import (
     DEFAULT_FEEDS,
     DEFAULT_FEED_SPECS,
     FEED_SPEC_BY_URL,
+    _CATEGORY_FETCH_CAPS,
     _DAILY_FETCH_CAP,
     _PER_FEED_CAP,
     _is_ai_relevant_keywords,
@@ -52,6 +54,38 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _parse_sitemap_entries(content: bytes, include_paths: list[str]) -> list[dict]:
+    """Convert selected official sitemap URLs into feed-like entries.
+
+    Some frontier labs publish no RSS but do maintain a dated sitemap. Keeping
+    this adapter generic lets us ingest their first-party links without relying
+    on a third-party social mirror.
+    """
+    soup = BeautifulSoup(content, "xml")
+    entries: list[dict] = []
+    for node in soup.find_all("url"):
+        loc_node = node.find("loc")
+        if not loc_node:
+            continue
+        link = loc_node.get_text(strip=True)
+        path = urlparse(link).path
+        if include_paths and not any(path.startswith(prefix) for prefix in include_paths):
+            continue
+        slug = unquote(path.rstrip("/").rsplit("/", 1)[-1])
+        if not slug:
+            continue
+        lastmod_node = node.find("lastmod")
+        entries.append({
+            "title": slug.replace("-", " ").strip().title(),
+            "url": link,
+            "date": lastmod_node.get_text(strip=True) if lastmod_node else "",
+            "summary": "",
+            "tags": [],
+        })
+    entries.sort(key=lambda e: _parse_ts(e.get("date") or ""), reverse=True)
+    return entries[:20]
+
+
 async def _fetch_feed(
     client: httpx.AsyncClient,
     url: str,
@@ -63,6 +97,11 @@ async def _fetch_feed(
     except (httpx.HTTPError, asyncio.TimeoutError) as e:
         log.warning("feed %s failed: %s", url, e)
         return [], None, str(e)
+    spec = FEED_SPEC_BY_URL.get(url, {})
+    if spec.get("format") == "sitemap":
+        entries = _parse_sitemap_entries(r.content, spec.get("include_paths") or [])
+        return entries, spec.get("name") or url, None
+
     feed = feedparser.parse(r.content)
     entries: list[dict] = []
     source = feed.feed.get("title") if feed.feed else url
@@ -88,16 +127,61 @@ async def _fetch_feed(
     return entries, source, None
 
 
-def _decide_relevance(entry: dict, tier: str) -> tuple[bool, str]:
-    """Accept everything: every feed is now a hand-picked AI source, so the
-    keyword pre-filter is disabled. We still tag whether an AI keyword fired
-    (a weak UI signal), but it never rejects an article."""
+def _decide_relevance(entry: dict, tier: str, category: str | None = None) -> tuple[bool, str]:
+    """Apply stricter gating as source trust decreases.
+
+    First-party/editorial AI feeds and AI paper categories are curated enough
+    to accept directly. Discovery streams (media/community/X/Trending) must
+    mention an AI concept, preventing generic popular projects and chatter from
+    entering the enrichment queue.
+    """
     hit = _is_ai_relevant_keywords(entry.get("title") or "", entry.get("summary") or "")
-    return True, ("keyword" if hit else "curated")
+    if tier == "high" or category == "paper":
+        return True, ("keyword" if hit else "curated")
+    return hit, ("keyword" if hit else "rejected")
+
+
+def _select_candidates(candidates: list[tuple], global_cap: int = _DAILY_FETCH_CAP) -> list[tuple]:
+    """Select a diverse, category-balanced batch under a true global ceiling.
+
+    Every feed gets a first pass before extra entries from high-volume feeds.
+    Category ceilings are hard limits, especially for X and GitHub Trending.
+    """
+    by_feed: dict[str, list[tuple]] = {}
+    for cand in candidates:
+        by_feed.setdefault(cand[4], []).append(cand)
+
+    first_pass: list[tuple] = []
+    overflow: list[tuple] = []
+    feed_lists = list(by_feed.values())
+    for cands in feed_lists:
+        cands.sort(key=lambda t: (t[0], t[1]))
+        overflow.extend(cands[_PER_FEED_CAP:])
+
+    # Layered rounds matter when feeds * per-feed cap exceeds the global cap:
+    # take one item from every source before considering a source's second item.
+    for depth in range(_PER_FEED_CAP):
+        round_items = [cands[depth] for cands in feed_lists if len(cands) > depth]
+        round_items.sort(key=lambda t: (t[0], t[1]))
+        first_pass.extend(round_items)
+
+    overflow.sort(key=lambda t: (t[0], t[1]))
+    selected: list[tuple] = []
+    category_counts: dict[str, int] = {}
+    for cand in first_pass + overflow:
+        if len(selected) >= global_cap:
+            break
+        category = cand[2].get("category") or "community"
+        cap = _CATEGORY_FETCH_CAPS.get(category, global_cap)
+        if category_counts.get(category, 0) >= cap:
+            continue
+        selected.append(cand)
+        category_counts[category] = category_counts.get(category, 0) + 1
+    return selected
 
 
 async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
-    """Pull all feeds → relevance-filter → keep top-N globally (tier × freshness).
+    """Pull all feeds → relevance-filter → balance by source/category → persist.
 
     Per-feed counters in ``sources.json`` reflect what made the cut, so a feed
     can have eligible=10 but added=2 if the daily cap pushed it out. Duplicates
@@ -145,7 +229,7 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
         eligible_count = 0
         filtered_count = 0
         for entry in entries:
-            accept, reason = _decide_relevance(entry, tier)
+            accept, reason = _decide_relevance(entry, tier, category)
             if not accept:
                 filtered_count += 1
                 continue
@@ -162,25 +246,7 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
         m["eligible"] = eligible_count
         m["last_filtered"] = filtered_count
 
-    # Per-feed quota + global backfill, instead of a single global time-sorted
-    # cap. A pure global cap let high-frequency vendor feeds (newest timestamps)
-    # crowd out slower-but-valuable sources — e.g. Twitter accounts whose latest
-    # post is a few days old never made the top-N and silently never appeared.
-    # We now guarantee each feed up to _PER_FEED_CAP of its freshest items, then
-    # fill any remaining global budget by recency.
-    by_feed: dict[str, list] = {}
-    for cand in candidates:
-        by_feed.setdefault(cand[4], []).append(cand)
-    selected = []
-    leftover = []
-    for url, cands in by_feed.items():
-        cands.sort(key=lambda t: t[1])  # newest first within the feed
-        selected.extend(cands[:_PER_FEED_CAP])
-        leftover.extend(cands[_PER_FEED_CAP:])
-    # Global backfill up to the overall ceiling, newest first.
-    leftover.sort(key=lambda t: t[1])
-    room = max(0, _DAILY_FETCH_CAP - len(selected))
-    selected.extend(leftover[:room])
+    selected = _select_candidates(candidates)
 
     added_total = 0
     for _, _, entry, m, _url in selected:

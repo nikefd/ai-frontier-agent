@@ -1,6 +1,6 @@
 # AI Frontier Agent — 文档索引
 
-个人 AI 前沿信息站：FastAPI 单应用，定时从 ~79 个精选 RSS 源抓取 AI 资讯，自动中英翻译 + 每日速报 + 按需深度解读，外加一个 ReAct agent。文件型主存储、Vite 构建前端、单进程一体化。
+个人 AI 前沿信息站：FastAPI 单应用，定时从 76 个分层 RSS/官方 sitemap 源抓取 AI 资讯，经相关性过滤、分类配额和质量排序后生成双语文章流与每日速报，外加按需深度解读和 ReAct agent。文件型主存储、Vite 构建前端、单进程一体化。
 
 ---
 
@@ -14,7 +14,8 @@
 | 部署到生产（Coolify + 自建 rsshub） | [部署指南](guides/how-to-deploy.md) |
 | 理解整个后端的进程模型 / 启动流程 / 模块依赖 | [后端架构](architecture/backend-architecture.md) |
 | 理解「一篇文章从 RSS 到入库到翻译」怎么发生 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md) |
-| 为什么用「每源配额 + 全局回填」而不是全局 top-N | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.5 节） |
+| 理解信源分层、分类硬配额、每源轮次和 150 条全局上限 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.2-2.5 节） |
+| 理解今日速报为什么不会被 Trending/X 淹没 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 4 节）＋ [API 参考](reference/api-reference.md)（第 4 节） |
 | 理解对话 agent（sparrow ReAct）怎么工作 / 加工具 | [Agent 架构](architecture/agent-architecture.md) |
 | agent 能调哪些工具 | [Agent 架构](architecture/agent-architecture.md)（第 3 节） |
 | 改前端 / 理解 ES module 结构 / 视图切换 / Vite 构建 | [前端架构](architecture/frontend-architecture.md) |

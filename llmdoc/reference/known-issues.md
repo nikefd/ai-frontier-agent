@@ -20,13 +20,13 @@
 
 翻译 worker 把失败的文章标 `translation_status="failed"`，**之后不再自动翻**（防死循环）。要重译得 `POST /articles/{aid}/retranslate` 把状态重置回 `pending`。这是设计取舍，但用户可能困惑「为什么这篇一直没中文」。
 
-## 4. 自建 RSSHub 是抓取链路的硬依赖
+## 4. X 来源仍依赖自建 RSSHub
 
-79 个 feed 里很多走 `rsshub.app`，而公共实例对 Twitter 路由 404、GitHub/Anthropic 路由 403。**不配自建 rsshub（`AIF_RSSHUB_BASE`）的话这些源大面积失败**。Twitter 路由（24 个 x-ai 源）还额外需要 `TWITTER_AUTH_TOKEN`。详见 [部署指南](../guides/how-to-deploy.md)。
+76 个源里仍有大量 X 路由走 RSSHub；公共实例可能 404/限流，24 个 x-ai 源还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS 与 Anthropic/Cohere 官方 sitemap 仍可工作。详见 [部署指南](../guides/how-to-deploy.md)。
 
-## 5. tier 过滤已失效（设计演进残留）
+## 5. tier 与分类配额已恢复生效
 
-`DEFAULT_FEED_SPECS` 里所有源 tier 都是 `high`，`_decide_relevance()` 永远返回接受。关键词表 `AI_KEYWORDS` 和 tier 分级逻辑保留着但不再用于拒绝文章——只用于打 `ai_relevance` 标签。读代码时别被「关键词过滤」的注释误导，它现在是 no-op 过滤。
+> ✅ 已修复。来源启动时按 category 归一化为 high/med/low；med/low 必须命中 `AI_KEYWORDS`（paper 例外），并受 `_CATEGORY_FETCH_CAPS` 限制。Trending 从 5 路重叠源减为 1 路，每轮最多 6 条；速报候选再限制为最多 2 条。调整 tier、关键词或配额时需运行 `tests/test_news_quality.py`，避免发现源重新淹没一手信息。
 
 ## 6. 种子 sources.json 是空的
 
@@ -53,7 +53,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 pytest/pytest-asyncio。当前测试覆盖排序、SRS、admin 护栏、邮箱/密码 token、复盘、学习路径、额度，以及 `test_security.py` 的 SSRF、HTML 清洗、安全头、全局权限和并发 JSON 更新。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前 52 项测试覆盖内容质量配额/官方 sitemap、ISO/RFC 822 时间解析、排序、SRS、admin 护栏、邮箱/密码 token、复盘、学习路径、额度，以及 `test_security.py` 的 SSRF、HTML 清洗、安全头、全局权限和并发 JSON 更新。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 

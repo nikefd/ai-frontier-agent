@@ -15,6 +15,7 @@ import hashlib
 import logging
 import secrets
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Literal
 
@@ -81,9 +82,33 @@ def reflection_file(uid: str) -> Path:
 def learning_paths_dir(uid: str) -> Path:
     return user_dir(uid) / "learning-paths"
 
-_ARTICLE_LIMIT = 400    # rolling history cap (raised: ~83 feeds now)
-_DAILY_FETCH_CAP = 150  # per-fetch global ceiling (per-feed quota fills first)
-_PER_FEED_CAP = 4       # max items kept per feed per fetch (ensures source diversity)
+_ARTICLE_LIMIT = 400    # rolling history cap (pinned articles are protected)
+_DAILY_FETCH_CAP = 150  # hard per-fetch global ceiling
+_PER_FEED_CAP = 4       # first-pass max per feed (ensures source diversity)
+
+# Hard ceilings keep discovery channels from overwhelming first-party news and
+# substantive analysis.  The values intentionally add up to the global cap.
+_CATEGORY_FETCH_CAPS: dict[str, int] = {
+    "vendor": 38,
+    "media": 20,
+    "blog": 16,
+    "paper": 22,
+    "community": 18,
+    "expert": 18,
+    "x-ai": 12,
+    "trending": 6,
+}
+
+_DEFAULT_TIER_BY_CATEGORY = {
+    "vendor": "high",
+    "blog": "high",
+    "expert": "high",
+    "media": "med",
+    "paper": "med",
+    "community": "med",
+    "x-ai": "low",
+    "trending": "low",
+}
 
 
 # ── Defaults seed ───────────────────────────────────────────────────
@@ -109,27 +134,28 @@ DEFAULT_TRACKS: list[dict] = [
 ]
 
 # ── RSS feed registry ─────────────────────────────────────────────
-# Source categories (category field drives UI grouping; tier=high means the
-# fetcher accepts everything from the feed — keyword filtering is disabled now
-# that every feed is a hand-picked AI source):
+# Source categories drive both UI grouping and ingestion quotas. Tiers are
+# normalized by category below: first-party/editorial sources rank ahead of
+# discovery sources, while X and Trending must also pass keyword relevance.
 #   vendor / media / blog / paper / community / expert / x-ai / trending
 DEFAULT_FEED_SPECS: list[dict] = [
     # ── vendor: 官方实验室/厂商
-    {"url": "https://rsshub.app/anthropic/research", "name": "Anthropic Research", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
-    {"url": "https://rsshub.app/claude/blog", "name": "Claude Blog", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
+    {"url": "https://www.anthropic.com/sitemap.xml", "name": "Anthropic News & Research", "tier": "high", "category": "vendor", "format": "sitemap", "include_paths": ["/news/", "/research/"], "description": "Anthropic 官方新闻与研究 · 模型、产品、研究与安全发布"},
     {"url": "https://rsshub.app/github/file/anthropics/claude-code/main/CHANGELOG.md", "name": "Claude Code CHANGELOG", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
     {"url": "https://api.xgo.ing/rss/user/01f60d63a61b44d692cc35c7feb0b4a4", "name": "Claude(@claudeai)", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
     {"url": "https://rsshub.app/deepseek/news", "name": "DeepSeek 新闻", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
     {"url": "https://github.blog/changelog/feed/", "name": "GitHub Changelog", "tier": "high", "category": "vendor", "description": "GitHub 产品 changelog · Copilot/Actions 新功能上线公告"},
-    {"url": "https://www.deepmind.com/blog/rss.xml", "name": "Google DeepMind", "tier": "high", "category": "vendor", "description": "DeepMind 博客 · AlphaFold、Gemini、强化学习、AI 安全等前沿研究"},
+    {"url": "https://deepmind.google/blog/rss.xml", "name": "Google DeepMind", "tier": "high", "category": "vendor", "description": "DeepMind 博客 · AlphaFold、Gemini、强化学习、AI 安全等前沿研究"},
     {"url": "https://blog.research.google/feeds/posts/default?alt=rss", "name": "Google Research", "tier": "high", "category": "vendor", "description": "Google Research 博客 · Gemini 之外的基础研究和长文"},
     {"url": "https://huggingface.co/blog/feed.xml", "name": "Hugging Face Blog", "tier": "high", "category": "vendor", "description": "HF 官方博客 · 开源模型、Transformers/Diffusers 库、社区工程实践"},
     {"url": "https://www.microsoft.com/en-us/research/feed/", "name": "Microsoft Research", "tier": "high", "category": "vendor", "description": "微软研究院 · Phi 系列、Azure AI、系统级研究"},
     {"url": "https://blogs.nvidia.com/feed/", "name": "NVIDIA Blog", "tier": "high", "category": "vendor", "description": "英伟达企业博客 · GPU、CUDA、AI 行业动态"},
     {"url": "https://developer.nvidia.com/blog/feed", "name": "NVIDIA Developer", "tier": "high", "category": "vendor", "description": "NVIDIA 开发者博客 · 推理优化、TensorRT、CUDA kernel 等工程实战"},
     {"url": "https://api.xgo.ing/rss/user/971dc1fc90da449bac23e5fad8a33d55", "name": "OpenAI Developers(@OpenAIDevs)", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
-    {"url": "https://openai.com/blog/rss.xml", "name": "OpenAI News", "tier": "high", "category": "vendor", "description": "OpenAI 官方博客 · GPT 系列、API、新产品发布的第一手信息"},
     {"url": "https://openai.com/news/rss.xml", "name": "OpenAI News", "tier": "high", "category": "vendor", "description": "AI 官方源 · 实验室/厂商第一手发布"},
+    {"url": "https://machinelearning.apple.com/rss.xml", "name": "Apple Machine Learning Research", "tier": "high", "category": "vendor", "description": "Apple 机器学习研究 · Foundation Models、端侧 AI 与隐私研究"},
+    {"url": "https://aws.amazon.com/blogs/machine-learning/feed/", "name": "AWS Machine Learning Blog", "tier": "high", "category": "vendor", "description": "AWS 官方机器学习博客 · 模型、Agent、云端推理与工程实践"},
+    {"url": "https://cohere.com/sitemap.xml", "name": "Cohere Blog", "tier": "high", "category": "vendor", "format": "sitemap", "include_paths": ["/blog/"], "description": "Cohere 官方博客 · 企业模型、检索、Agent 与研究发布"},
     # ── media: AI 媒体
     {"url": "https://arstechnica.com/ai/feed/", "name": "Ars Technica AI", "tier": "high", "category": "media", "description": "Ars Technica AI · 技术深度评测，重视一手数据和复盘"},
     {"url": "https://www.technologyreview.com/topic/artificial-intelligence/feed", "name": "MIT Tech Review AI", "tier": "high", "category": "media", "description": "MIT Tech Review · 长篇深度报道与影响分析"},
@@ -197,11 +223,12 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://rsshub.app/twitter/user/lxfater", "name": "铁锤人", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
     # ── trending: GitHub 风向
     {"url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml", "name": "GH Trending · All", "tier": "high", "category": "trending", "description": "GitHub 每日热门仓库 · 全语言榜，社区在用什么的风向标"},
-    {"url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/javascript.xml", "name": "GH Trending · JS", "tier": "high", "category": "trending", "description": "GitHub JavaScript 每日热门 · AI 前端 / agent UI / 工具链"},
-    {"url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/python.xml", "name": "GH Trending · Python", "tier": "high", "category": "trending", "description": "GitHub Python 每日热门 · AI/ML 项目集中地"},
-    {"url": "https://mshibanami.github.io/GitHubTrendingRSS/weekly/all.xml", "name": "GitHub All Languages Weekly Trending", "tier": "high", "category": "trending", "description": "风向标 · GitHub 热门与社区信号"},
-    {"url": "https://rsshub.app/github/trending/daily/any", "name": "trending", "tier": "high", "category": "trending", "description": "风向标 · GitHub 热门与社区信号"},
 ]
+
+# Keep the registry readable while ensuring category policy cannot silently
+# drift because a newly added entry copied an old tier value.
+for _spec in DEFAULT_FEED_SPECS:
+    _spec["tier"] = _DEFAULT_TIER_BY_CATEGORY.get(_spec.get("category"), "med")
 
 # Rewrite the public rsshub.app host to the configured (possibly self-hosted)
 # instance. Done once here so DEFAULT_FEEDS, FEED_SPEC_BY_URL and everything
@@ -393,7 +420,13 @@ def _parse_ts(ts: str) -> float:
     try:
         return datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
     except ValueError:
-        return 0.0
+        try:
+            parsed = parsedate_to_datetime(ts)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            return parsed.timestamp()
+        except (TypeError, ValueError, OverflowError):
+            return 0.0
 
 
 @router.post("/articles", dependencies=[Depends(require_admin)])
@@ -663,18 +696,94 @@ def _today_iso_date() -> str:
     return datetime.now(timezone.utc).astimezone().date().isoformat()
 
 
+_SUMMARY_CATEGORY_CAPS: dict[str, int] = {
+    "vendor": 8,
+    "media": 5,
+    "blog": 4,
+    "paper": 5,
+    "community": 4,
+    "expert": 4,
+    "x-ai": 3,
+    "trending": 2,
+}
+
+
+def _article_category(article: dict) -> str:
+    if article.get("category"):
+        return str(article["category"])
+    by_name = {s.get("name"): s.get("category") for s in DEFAULT_FEED_SPECS}
+    return str(by_name.get(article.get("source")) or "community")
+
+
+def _summary_rank(article: dict) -> tuple[int, int, int, float]:
+    """Editorial rank: model importance, source class, tier, then freshness."""
+    importance = article.get("importance")
+    if not isinstance(importance, int):
+        importance = 5
+    category_quality = {
+        "vendor": 4, "blog": 3, "expert": 3, "paper": 2,
+        "media": 2, "community": 1, "x-ai": 0, "trending": 0,
+    }
+    tier_quality = {"high": 2, "med": 1, "low": 0}
+    return (
+        importance,
+        category_quality.get(_article_category(article), 1),
+        tier_quality.get(article.get("tier") or "med", 1),
+        _parse_ts(article.get("date") or ""),
+    )
+
+
+def _select_summary_cohort(articles: list[dict], limit: int) -> list[dict]:
+    """Build a quality-ranked, source-diverse briefing cohort."""
+    ranked = sorted(articles, key=_summary_rank, reverse=True)
+    selected: list[dict] = []
+    selected_ids: set[str] = set()
+    category_counts: dict[str, int] = {}
+    source_counts: dict[str, int] = {}
+
+    def take(article: dict, *, enforce_source_cap: bool, allow_discovery_overflow: bool) -> bool:
+        identity = str(article.get("id") or article.get("url") or id(article))
+        if identity in selected_ids:
+            return False
+        category = _article_category(article)
+        source = str(article.get("source") or "")
+        cap = _SUMMARY_CATEGORY_CAPS.get(category, limit)
+        if category_counts.get(category, 0) >= cap:
+            if not allow_discovery_overflow or category in {"x-ai", "trending"}:
+                return False
+        if enforce_source_cap and source_counts.get(source, 0) >= 2:
+            return False
+        selected.append(article)
+        selected_ids.add(identity)
+        category_counts[category] = category_counts.get(category, 0) + 1
+        source_counts[source] = source_counts.get(source, 0) + 1
+        return True
+
+    # First pass maximizes source diversity. A second pass can use more items
+    # from trusted/editorial sources, but never relaxes X/Trending ceilings.
+    for article in ranked:
+        take(article, enforce_source_cap=True, allow_discovery_overflow=False)
+        if len(selected) >= limit:
+            return selected
+    for article in ranked:
+        take(article, enforce_source_cap=False, allow_discovery_overflow=True)
+        if len(selected) >= limit:
+            break
+    return selected
+
+
 def _articles_for_today(limit: int = 25) -> list[dict]:
-    """Articles whose `date` falls within the last 30 hours, newest first."""
+    """Quality-ranked, balanced articles from the last 30 hours."""
     from datetime import timedelta
     now = datetime.now(timezone.utc)
     cutoff = (now - timedelta(hours=30)).timestamp()
     arts = _load_articles()
     fresh = [a for a in arts if _parse_ts(a.get("date") or "") >= cutoff]
-    fresh.sort(key=lambda a: -_parse_ts(a.get("date") or ""))
     # Fall back to the latest N if nothing dated recently
     if len(fresh) < 5:
-        fresh = arts[: max(8, limit)]
-    return fresh[:limit]
+        fresh = sorted(arts, key=lambda a: _parse_ts(a.get("date") or ""), reverse=True)
+        fresh = fresh[: max(8, limit * 3)]
+    return _select_summary_cohort(fresh, limit)
 
 
 @router.get("/summary/today")
@@ -711,7 +820,12 @@ async def build_today_summary() -> dict | None:
     lines = []
     for i, a in enumerate(cohort, 1):
         snippet = (a.get("summary") or "")[:240]
-        lines.append(f"[{i}] {a.get('title')}\n    source={a.get('source')}\n    url={a.get('url')}\n    excerpt={snippet}")
+        lines.append(
+            f"[{i}] {a.get('title')}\n"
+            f"    source={a.get('source')} category={_article_category(a)} "
+            f"importance={a.get('importance')}\n"
+            f"    url={a.get('url')}\n    excerpt={snippet}"
+        )
     article_block = "\n\n".join(lines)
 
     messages = [
@@ -723,12 +837,14 @@ async def build_today_summary() -> dict | None:
                 "- 标题层级：## 一句话总结 / ## 今日重点 (3-5 条) / ## 值得动手 / ## 更多动态\n"
                 "- 每条 1-2 句，必须包含来源名 + 用 [n] 标注引用片段编号\n"
                 "- 不要复述营销词；过滤掉与 AI/ML/Agent/Infra 无关的项\n"
+                "- 官方发布、关键研究、重大产品/政策事件优先；GitHub Trending 和社交观点只能作为补充信号\n"
+                "- 不要因为多个热门仓库讨论同一趋势就挤掉更重要的一手消息\n"
                 "- 如果同一主题有多源，合并为一条并列出 [n][m] 引用"
             ),
         },
         {
             "role": "user",
-            "content": f"今日候选 (按时间倒序，共 {len(cohort)} 条)：\n\n{article_block}",
+            "content": f"今日候选（已按质量、来源可信度和多样性预筛，共 {len(cohort)} 条）：\n\n{article_block}",
         },
     ]
     body = await chat_complete(messages, max_tokens=1400)

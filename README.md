@@ -1,6 +1,6 @@
 # AI Frontier Agent — 个人 AI 前沿信息站
 
-每天自动抓取 ~79 个精选 AI 源（官方实验室 / 科技媒体 / 专家博客 / X 大 V / arXiv / 社区周刊 / GitHub 风向）→ 中英双语翻译 → 每日速报 → 按需单篇深度解读 → 对话式追踪助手。从 `zhangyangbin-agents` 抽取为独立项目，LLM 改用 DeepSeek（自包含）。
+每天自动抓取 76 个分层 AI 源（官方实验室 / 科技媒体 / 专家博客 / X 大 V / arXiv / 社区周刊 / GitHub 风向）→ 相关性过滤与分类配额 → 中英双语翻译 → 质量与多样性排序的每日速报 → 按需单篇深度解读 → 对话式追踪助手。从 `zhangyangbin-agents` 抽取为独立项目，LLM 改用 DeepSeek（自包含）。
 
 ## 组成
 
@@ -38,7 +38,7 @@ docker compose up -d --build
 
 ## 部署
 
-用 [Coolify](https://coolify.io/)（Traefik 反代 + 命名卷持久化）。很多 RSS 源走 rsshub，公共实例对 Twitter/GitHub/Anthropic 路由限流/403/404，所以 compose 自带私有 RSSHub；Twitter 路由还需 `TWITTER_AUTH_TOKEN`。详见 [llmdoc/guides/how-to-deploy.md](llmdoc/guides/how-to-deploy.md)。
+用 [Coolify](https://coolify.io/)（Traefik 反代 + 命名卷持久化）。部分 X/GitHub 源走 RSSHub，所以 compose 自带私有实例；Twitter 路由还需 `TWITTER_AUTH_TOKEN`。Anthropic/Cohere 等无稳定 RSS 的官方源直接读取其 sitemap。详见 [llmdoc/guides/how-to-deploy.md](llmdoc/guides/how-to-deploy.md)。
 
 ## 文档导航（llmdoc）
 

@@ -62,9 +62,9 @@
 | `date` | str | ISO 时间（发布或入库时间） |
 | `summary` | str | 去标签后截断的英文摘要 |
 | `tags` | list | 受控词表标签（富化 worker 从 `TAG_VOCAB` 选，最多 3 个） |
-| `tier` | str | high/med/low（源 tier，当前全 high） |
+| `tier` | str | high/med/low；按来源 category 在启动时归一化，影响抓取相关性门槛和速报排序 |
 | `category` | str | vendor/media/expert/x-ai/community/paper/blog/trending |
-| `ai_relevance` | str | keyword/curated/unknown/rejected（打标，不用于拒绝） |
+| `ai_relevance` | str | keyword/curated/unknown；med/low 未命中关键词的 rejected 候选不会入库，只累计在来源 `last_filtered` |
 | `title_zh` / `summary_zh` | str | 中文翻译（翻译 worker 写） |
 | `translation_status` | str | pending/ok/failed/skipped |
 | `importance` | int? | 富化 worker 评的重要性 0-10（用于文章流 `sort=important`）；老文章/未富化为 null |
@@ -100,7 +100,7 @@
 
 ### 3.5 summary_today.json
 
-`{generated_at, date, model, cohort_size, body, cohort[]}`。`body` 是 Markdown 速报，`cohort` 是参与生成的文章列表。
+`{generated_at, date, model, cohort_size, body, cohort[]}`。`body` 是 Markdown 速报，`cohort` 是参与生成的文章列表。候选来自最近 30 小时，并按 importance、来源类别、tier、时效与来源多样性预筛；Trending 最多 2 条、X 最多 3 条。旧缓存不会因算法升级自动重写，需等定时任务或管理员重新生成。
 
 ### 3.6 ui.db（SQLite，每用户一个）
 
