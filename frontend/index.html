@@ -74,7 +74,7 @@
         <div class="feed-cards">
           <div id="suggestions-bar"></div>
           <div class="feed-toolbar feed-toolbar-top compact-toolbar">
-            <input id="search" placeholder="搜索标题或摘要" />
+            <input id="search" type="search" placeholder="搜索标题或摘要" />
             <div class="seg" id="sort-seg">
               <button class="on" data-sort="newest">最新</button>
               <button data-sort="important">重要</button>
@@ -107,6 +107,7 @@
               </div>
             </details>
           </div>
+          <div id="active-filters" class="active-filters hidden" aria-live="polite"></div>
           <div id="article-list" class="article-cards">
             <div class="muted-card">加载中…</div>
           </div>

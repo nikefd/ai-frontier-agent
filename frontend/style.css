@@ -1800,8 +1800,9 @@ body:not(.is-authed) .sp-dock { display: none !important; }
 
 /* ── Admin user management ─────────────────────────────────────────── */
 /* Nav entry only visible to admins (body.is-admin set by auth.js). */
-.admin-only { display: none; }
-body.is-admin .admin-only { display: flex; }
+.admin-only,
+body:not(.is-admin) .admin-only { display: none !important; }
+body.is-admin .admin-only { display: flex !important; }
 .admin-table {
   width: 100%;
   border-collapse: collapse;
@@ -2154,6 +2155,23 @@ body.is-admin .more-sheet-grid button.admin-only { display: flex; }
 
 .compact-toolbar { position: relative; }
 .compact-toolbar > input { flex: 1 1 260px; min-width: 180px; }
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: -7px 0 12px;
+}
+.active-filters.hidden { display: none; }
+.active-filters button {
+  padding: 4px 9px;
+  border-color: transparent;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 12px;
+}
+.active-filters button:hover { border-color: var(--accent); background: var(--accent-soft); }
 .filter-menu { position: relative; }
 .filter-menu > summary,
 .card-more > summary {

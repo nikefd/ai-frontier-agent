@@ -7,6 +7,7 @@ import { jumpToDive } from './dives.js';
 import { isAuthed, openAuthModal } from './auth.js';
 
 export async function refreshList() {
+  renderActiveFilters();
   const params = new URLSearchParams();
   params.set('offset', String(state.offset));
   params.set('limit', String(state.limit));
@@ -33,6 +34,41 @@ export async function refreshList() {
   } catch (e) {
     listEl.innerHTML = '<div class="muted-card">❌ 加载失败：' + escapeHtml(e.message) + '</div>';
   }
+}
+
+const CAT_LABELS = {
+  vendor: '官方', expert: '专家', 'x-ai': '大V', community: '社区',
+  media: '媒体', paper: '论文', trending: '风向',
+};
+
+function renderActiveFilters() {
+  const el = $('#active-filters');
+  if (!el) return;
+  const filters = [];
+  if (state.cat) filters.push(['cat', `来源：${CAT_LABELS[state.cat] || state.cat}`]);
+  if (state.filter === 'pinned') filters.push(['filter', '只看收藏']);
+  if (state.filter === 'translated') filters.push(['filter', '只看已翻译']);
+  if (state.tag) filters.push(['tag', `标签：${state.tag}`]);
+
+  el.classList.toggle('hidden', filters.length === 0);
+  el.innerHTML = filters.map(([kind, label]) =>
+    `<button type="button" data-clear-filter="${kind}" title="清除该筛选">${escapeHtml(label)} <span aria-hidden="true">×</span></button>`
+  ).join('');
+
+  el.querySelectorAll('[data-clear-filter]').forEach(button => button.addEventListener('click', () => {
+    const kind = button.dataset.clearFilter;
+    if (kind === 'cat') {
+      state.cat = '';
+      document.querySelectorAll('#cat-seg button').forEach(x => x.classList.toggle('on', x.dataset.cat === ''));
+    }
+    if (kind === 'filter') {
+      state.filter = 'all';
+      document.querySelectorAll('.seg button[data-filter]').forEach(x => x.classList.toggle('on', x.dataset.filter === 'all'));
+    }
+    if (kind === 'tag') state.tag = '';
+    state.offset = 0;
+    refreshList();
+  }));
 }
 
 function articleCardHtml(a) {

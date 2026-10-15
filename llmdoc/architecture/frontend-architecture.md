@@ -49,12 +49,12 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 
 | 模块 | 职责 |
 |---|---|
-| `main.js` | **入口**：事件绑定（nav/分类/筛选/搜索/分页/工具栏按钮），启动时 `refreshList()`。视图切换委托给 `nav.js` |
+| `main.js` | **入口**：事件绑定（nav/分类/筛选/搜索/分页/工具栏按钮），补充筛选/卡片 `<details>` 的点击外部和 Esc 收起行为，启动时 `refreshList()`。视图切换委托给 `nav.js` |
 | `nav.js` | `switchView(v)`：side-nav 切换 + 按视图触发对应 loader。抽出来打破 `feed.js`/`dives.js` 想切视图却要 import `main.js` 的循环依赖 |
 | `state.js` | 共享可变状态单例 `state`（view/cat/filter/q/offset/limit/total/items/selectedId） |
 | `api.js` | `api(method, path, body)` fetch 封装 + `renderMermaidInside()`（把 ```` ```mermaid ```` 代码块转成图） |
 | `markdown.js` | `marked` 解析后统一经 DOMPurify 白名单清洗；所有 LLM Markdown 和聊天最终答案都走这里 |
-| `feed.js` | 文章流：列表渲染、卡片 HTML、收藏 `togglePin`、分页 `renderPageNav`。深度解读按钮只**触发跳转**（`jumpToDive`），不再卡片内展开 |
+| `feed.js` | 文章流：列表渲染、活动筛选标签、卡片 HTML、收藏 `togglePin`、分页 `renderPageNav`。深度解读按钮只**触发跳转**（`jumpToDive`），不再卡片内展开 |
 | `dives.js` | **深度解读库**（独立视图）：`loadDives`（拉 `/deep-dives` 渲染列表）、点击展开阅读、删除、重新生成、`manualNewDive`（手动输入主题新建）、`jumpToDive`（从文章流跳来并打开/触发某篇） |
 | `views.js` | 次要视图：今日速报 `loadSummary/regenSummary`、数据源健康 `loadSources` |
 | `auth.js` | **登录态 + 鉴权 UI**：启动 `GET /api/auth/me`、顶栏登录态、登录/注册弹窗、登出。`api.js` 的 401 经 `setUnauthorizedHandler` 弹登录。登录/登出派发 `aif:auth-changed` 让 `main.js` 重载 |
@@ -75,7 +75,7 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 | 深度解读 | `#view-dives` | `GET /api/ai-news/deep-dives`（独立内容库，直接扫 `deep-dives/*.json`） |
 | 数据源 | `#view-sources` | `GET /api/ai-news/sources` |
 
-`state.js` 的单例对象在模块间共享。文章流的筛选（分类 `cat` / all-pinned-translated 的 `filter` / 搜索 `q`）改变 `state` 后调 `refreshList()` 重新拉数据；分页改 `state.offset`。`translated` 筛选是**前端二次过滤**（后端不支持该参数），所以它只过滤当前页。
+`state.js` 的单例对象在模块间共享。文章流默认每页 10 篇；筛选（分类 `cat` / all-pinned-translated 的 `filter` / 搜索 `q` / 标签 `tag`）改变 `state` 后调 `refreshList()` 重新拉数据，分页改 `state.offset`。`translated` 筛选是**前端二次过滤**（后端不支持该参数），所以它只过滤当前页。
 
 落地首页 `#view-home` 不走 side-nav，而是用 `<body>` 上的 `landing-active` 类控制（隐藏应用主体、只显首页）。路由层据 URL 决定：路径 `/` 时 `showLanding()` 加该类；首页的 `data-enter-view` 按钮可分别进入 `summary` 或 `feed`，进入视图时移除该类。点顶栏标题 brand → `showLanding()` 回 `/`。详见 §1.1 路由。
 
@@ -83,7 +83,8 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 
 - **深度解读（与文章流解耦）**：文章流卡片按钮跳到独立解读视图；正文先走 `renderMarkdown` 清洗，再交 `renderMermaidInside`。
 - **文章卡片降噪**：优先显示中文标题、来源、时间、摘要和最多两个标签；成功翻译不再重复显示状态，失败/待翻译仍保留提示。原文和深度解读保持直接可见，其余动作收进原生 `<details>` 菜单。
-- **筛选收纳**：搜索与最新/重要排序始终可见；收藏/已翻译范围和来源分类放进筛选面板，仍由 `main.js` 更新同一份 `state` 并调用 `refreshList()`。
+- **筛选收纳与反馈**：搜索与最新/重要排序始终可见；收藏/已翻译范围和来源分类放进筛选面板，仍由 `main.js` 更新同一份 `state` 并调用 `refreshList()`。已启用的来源、范围和标签会显示为可单独清除的活动标签，避免面板收起后看不出筛选条件。
+- **轻量弹层行为**：筛选和卡片「更多」使用原生 `<details>`；选择筛选后自动收起，并由 `main.js` 补充点击外部与 Esc 收起。侧栏「更多」属于持久导航，不参与这套自动关闭逻辑。
 - **安全 Markdown / mermaid**：LLM/RSS 可控文本不能直接进 `innerHTML`。`markdown.js` 禁止 script/style/iframe/form/svg/img 和事件/样式属性；mermaid 使用 `securityLevel: 'strict'`。普通外链再经 `safeExternalUrl` 限定为 http(s)。
 - **立即抓取 / 批量翻译 / 重生成速报**：仅 admin 看得到按钮，后端也用 `require_admin` 强制校验，不能靠改 DOM 绕过。
 
@@ -98,7 +99,7 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 
 - 不允许新增直接的 `marked.parse(...) → innerHTML`；必须复用 `renderMarkdown`。
 - 不可信 URL 在进入 `href`、`data-url` 或 `window.open` 前必须过 `safeExternalUrl`。
-- `admin-only` CSS 只是界面提示；任何全局写操作必须同时有后端 `require_admin`。
+- `admin-only` CSS 使用 `body.is-admin` 显示、`body:not(.is-admin)` 强制隐藏，避免被按钮或移动端布局规则覆盖；它仍只是界面提示，任何全局写操作必须同时有后端 `require_admin`。
 - 依赖变更后提交 `package-lock.json`，并运行 `npm audit` 与生产构建。
 
 详见 [known-issues](../reference/known-issues.md)。

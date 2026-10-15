@@ -8,7 +8,7 @@ export const state = {
   tag: '',           // active tag filter (controlled vocab)
   q: '',
   offset: 0,
-  limit: 20,
+  limit: 10,
   total: 0,
   items: [],
   selectedId: null,

@@ -71,6 +71,7 @@ $$('#cat-seg button').forEach(b => b.addEventListener('click', () => {
   b.classList.add('on');
   state.cat = b.dataset.cat;
   state.offset = 0;
+  b.closest('details')?.removeAttribute('open');
   refreshList();
 }));
 
@@ -79,6 +80,7 @@ $$('.seg button[data-filter]').forEach(b => b.addEventListener('click', () => {
   b.classList.add('on');
   state.filter = b.dataset.filter;
   state.offset = 0;
+  b.closest('details')?.removeAttribute('open');
   refreshList();
 }));
 
@@ -95,6 +97,18 @@ $('#search').addEventListener('input', (e) => {
   state.offset = 0;
   clearTimeout(window.__searchTimer);
   window.__searchTimer = setTimeout(refreshList, 250);
+});
+
+// Native details keep menus lightweight; add the two expected popover
+// behaviours they do not provide by themselves: click-away and Escape.
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('.filter-menu[open], .card-more[open]').forEach(menu => {
+    if (!menu.contains(e.target) || e.target.closest('.card-more-menu button')) menu.open = false;
+  });
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  document.querySelectorAll('.filter-menu[open], .card-more[open]').forEach(menu => { menu.open = false; });
 });
 
 // ── Pagination ───────────────────────────────────────────────────────
