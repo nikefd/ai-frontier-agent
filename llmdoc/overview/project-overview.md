@@ -69,7 +69,7 @@
 
 - **抓取入库:** 81 个 RSS、官方 sitemap/API 异步并发拉取 → sitemap 最新 6 页补全真实标题/摘要/发布时间 → category 归一化 high/med/low → med/low 必须命中 AI 关键词（paper 除外）→ 跨源 URL 去重 → 每源分轮取候选 → 分类硬配额（Trending 6、X 12 等）→ `_DAILY_FETCH_CAP=150` 真正封顶 → 滚动历史 `_ARTICLE_LIMIT=400`（pinned 不淘汰）。
 - **速报选材:** 最近 30 小时文章先按规范化标题合并重复报道，再按 importance、来源类别、tier、时效综合排序；首轮限制同源最多 2 条，Trending 最多 2 条、X 最多 3 条，官方发布/关键研究优先。
-- **双语翻译:** 翻译 worker每批 8 篇，LLM 一次返回翻译/评分/标签，按 id 原子合并；失败不自动重试，管理员可重置。
+- **双语与实践富化:** worker 每批 8 篇，LLM 一次返回翻译/评分/标签和可选的最小实践建议，按 id 原子合并；政策、融资、纯观点或信息不足时不硬凑实践。文章流可只看“可实践”，并一键让 AI 基于原文拆成 15 分钟实验。失败不自动重试，管理员可重置。
 - **LLM 产物:** 单篇解读、全局每日速报、主题指南、画像、复盘和学习路径；手动主题解读只进用户库，不插入全局文章流。
 - **对话 agent:** sparrow `Harness` ReAct 循环 + 6 个工具（5 读 1 写组）+ 对话记忆（`ui.db`），SSE 推送 `tool_call`/`tool_result`/`final`/`title` 事件，每条工具结果带 `source` 供引用。
 - **安全边界:** 全局内容变更仅 admin；LLM Markdown 清洗后显示；阅读器逐跳阻断 SSRF 并只返回惰性 HTML；CSP 等响应头兜底。

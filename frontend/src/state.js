@@ -3,7 +3,7 @@
 export const state = {
   view: 'feed',
   cat: '',
-  filter: 'all',     // all / pinned / translated
+  filter: 'all',     // all / pinned / translated / hands-on
   sort: 'newest',    // newest / important
   tag: '',           // active tag filter (controlled vocab)
   q: '',

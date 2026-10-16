@@ -17,6 +17,7 @@
 | 理解信源分层、分类硬配额、每源轮次和 150 条全局上限 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.2-2.5 节） |
 | 理解官方 sitemap/API、页面元数据补全、跨源 URL 去重与速报标题去重 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.2/2.5/2.7/4 节） |
 | 理解今日速报为什么不会被 Trending/X 淹没 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 4 节）＋ [API 参考](reference/api-reference.md)（第 4 节） |
+| 找出可实践内容 / 理解实践建议怎么生成 / “带我做”如何接 AI | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 3/4 节）＋ [前端架构](architecture/frontend-architecture.md)（第 3/4 节）＋ [数据存储参考](reference/data-storage.md)（3.1） |
 | 理解对话 agent（sparrow ReAct）怎么工作 / 加工具 | [Agent 架构](architecture/agent-architecture.md) |
 | agent 能调哪些工具 | [Agent 架构](architecture/agent-architecture.md)（第 3 节） |
 | 改前端 / 理解 ES module 结构 / 视图切换 / Vite 构建 | [前端架构](architecture/frontend-architecture.md) |

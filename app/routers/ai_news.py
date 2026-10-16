@@ -358,6 +358,8 @@ def _overlay_user_state(articles: list[dict], uid: str | None) -> None:
 def list_articles(
     q: str | None = None,
     pinned_only: bool = False,
+    translated_only: bool = False,
+    hands_on_only: bool = False,
     tier: str | None = None,
     category: str | None = None,
     tag: str | None = None,
@@ -379,6 +381,10 @@ def list_articles(
     _overlay_user_state(articles, uid)
     if pinned_only:
         articles = [a for a in articles if a.get("pinned")]
+    if translated_only:
+        articles = [a for a in articles if a.get("translation_status") == "ok"]
+    if hands_on_only:
+        articles = [a for a in articles if str(a.get("hands_on") or "").strip()]
     if q:
         ql = q.lower()
         articles = [
@@ -868,7 +874,8 @@ async def build_today_summary() -> dict | None:
             f"[{i}] {a.get('title')}\n"
             f"    source={a.get('source')} category={_article_category(a)} "
             f"importance={a.get('importance')}\n"
-            f"    url={a.get('url')}\n    excerpt={snippet}"
+            f"    url={a.get('url')}\n    excerpt={snippet}\n"
+            f"    practice={a.get('hands_on') or ''}"
         )
     article_block = "\n\n".join(lines)
 
@@ -880,6 +887,7 @@ async def build_today_summary() -> dict | None:
                 "请你筛选并整理一个高密度的中文每日速报：\n"
                 "- 标题层级：## 一句话总结 / ## 今日重点 (3-5 条) / ## 值得动手 / ## 接下来关注 / ## 更多动态\n"
                 "- 今日重点每条 1-2 句，先说发生了什么，再说为什么重要或影响谁；必须包含来源名 + 用 [n] 标注引用片段编号\n"
+                "- 值得动手只选 practice 非空且确实可操作的条目，压缩成当天能完成的小实验；不得编造输入中没有的命令/API\n"
                 "- 接下来关注列 2-3 个未来几天值得验证的具体信号（如权重/API/评测/开源时间），不得无依据预测\n"
                 "- 不要复述营销词；过滤掉与 AI/ML/Agent/Infra 无关的项\n"
                 "- 官方发布、关键研究、重大产品/政策事件优先；GitHub Trending 和社交观点只能作为补充信号\n"
@@ -1084,6 +1092,7 @@ def retranslate_article(aid: str) -> dict:
             if article.get("id") == aid:
                 article["title_zh"] = None
                 article["summary_zh"] = None
+                article["hands_on"] = None
                 article["translation_status"] = "pending"
                 return articles
         raise HTTPException(404, "article not found")

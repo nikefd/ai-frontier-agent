@@ -19,6 +19,7 @@ from app.workers.ai_news_fetcher import (
     _parse_sitemap_entries,
     _select_candidates,
 )
+from app.storage import write_json_atomic
 
 
 def _candidate(i: int, category: str, tier_rank: int = 0, feed: str | None = None) -> tuple:
@@ -214,3 +215,35 @@ def test_summary_cohort_never_relaxes_discovery_ceiling() -> None:
 
     selected = _select_summary_cohort(articles, limit=10)
     assert len(selected) == 2
+
+
+def test_article_actionable_and_translated_filters_apply_before_pagination(
+    tmp_path, monkeypatch,
+) -> None:
+    import app.routers.ai_news as news
+
+    articles = [
+        {"id": "a1", "title": "Actionable", "url": "https://example.com/1",
+         "source": "test", "translation_status": "ok", "hands_on": "运行最小样例。"},
+        {"id": "a2", "title": "Opinion", "url": "https://example.com/2",
+         "source": "test", "translation_status": "ok", "hands_on": ""},
+        {"id": "a3", "title": "Pending", "url": "https://example.com/3",
+         "source": "test", "translation_status": "pending", "hands_on": None},
+    ]
+    articles_file = tmp_path / "articles.json"
+    write_json_atomic(articles_file, articles)
+    monkeypatch.setattr(news, "ARTICLES_FILE", articles_file)
+
+    common = dict(q=None, pinned_only=False, tier=None, category=None, tag=None,
+                  sort="newest", offset=0, limit=1, user=None)
+    actionable = news.list_articles(
+        translated_only=False, hands_on_only=True, **common,
+    )
+    translated = news.list_articles(
+        translated_only=True, hands_on_only=False, **common,
+    )
+
+    assert actionable["total"] == 1
+    assert [a["id"] for a in actionable["items"]] == ["a1"]
+    assert translated["total"] == 2
+    assert len(translated["items"]) == 1

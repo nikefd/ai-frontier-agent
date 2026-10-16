@@ -104,13 +104,14 @@ flowchart TD
 - `_parse_ts()` 同时支持 ISO 8601 和 RSS 常见 RFC 822 日期；未知格式回退为 0。抓取候选排序、文章流排序和最近 30 小时速报窗口共用这一实现。
 - `fetch_once` 有进程内异步锁，避免定时任务和管理员手动触发重叠。
 
-## 3. 富化（`translate_once`，翻译 + 评分 + 打标签）
+## 3. 富化（`translate_once`，翻译 + 评分 + 打标签 + 实践建议）
 
-worker 名义上叫翻译，实际**一次批量 LLM 调用同时做三件事**：中英翻译、重要性评分(0-10)、受控标签。这是「质量层」的核心——让文章流能从「全」筛出「好」。
+worker 名义上叫翻译，实际**一次批量 LLM 调用同时做四件事**：中英翻译、重要性评分(0-10)、受控标签、可选的最小实践建议。这是「质量层」的核心——让文章流能从「全」筛出「好且能动手」。
 
 - **触发**：`scheduler.py` 每 2 分钟一个 `IntervalTrigger`；admin 也可 `POST /translate/run` 手动跑一批。worker 自身还有异步锁，防两种入口重叠。
-- **选批**：挑 `translation_status` 不在 `{ok, failed, skipped}` 且没有 `title_zh`/`summary_zh` 的文章，一次 `BATCH_SIZE=8` 篇。
-- **单次调用**：8 篇拼成一个 prompt，要求 LLM 返回**单个 JSON 数组**，每项 `{id, title_zh, summary_zh, importance, tags}`——翻译/评分/打标签合一，**不拆成多次调用**。prompt 会传 source/category，并明确“官方一手发布和扎实研究优先，GitHub Trending、社区热度、单条社交观点本身不等于重要”。`importance` 0-10 整数（`_clean_importance` 钳位）；`tags` 从**受控词表** `TAG_VOCAB`（发布/论文/工具/开源/教程/观点/融资/安全/评测/应用）里选，`_clean_tags` 丢弃词表外的词、最多 3 个。
+- **选批**：优先挑 `translation_status` 不在 `{ok, failed, skipped}` 且没有 `title_zh`/`summary_zh` 的文章，一次 `BATCH_SIZE=8` 篇。上线实践字段后，最近 40 条已翻译但 `hands_on=null` 的旧文章也会被一次性渐进回填；模型判断不可实践时写空字符串，后续不再重复消耗。
+- **单次调用**：8 篇拼成一个 prompt，要求 LLM 返回**单个 JSON 数组**，每项 `{id, title_zh, summary_zh, importance, tags, hands_on}`，不拆成多次调用。prompt 会传 source/category，并明确“官方一手发布和扎实研究优先，GitHub Trending、社区热度、单条社交观点本身不等于重要”。`importance` 0-10 整数（`_clean_importance` 钳位）；`tags` 从**受控词表** `TAG_VOCAB`（发布/论文/工具/开源/教程/观点/融资/安全/评测/应用）里选，最多 3 个。
+- **实践护栏**：`hands_on` 只用于可试用模型/API/工具/开源项目/教程或小型复现实验，要求 20-80 字、动词开头、说明观察结果；政策、融资、纯观点或信息不足时必须为空。prompt 禁止编造命令、参数、URL、型号、版本和能力，服务端再压平空白并限制 120 字。
 - **写回**：LLM 返回后通过 `update_json_atomic` 重新读取最新文章列表并按 id 合并，避免等待模型期间覆盖新抓取文章。内容全局共享，一篇只富化一次。
 - **失败处理**：整批失败、或某篇在响应里缺失 → 标 `failed`。**`failed` 不会自动重试**，要重来得 `POST /articles/{aid}/retranslate` 重置回 `pending`。
 - 纯函数 `_clean_importance`/`_clean_tags`/`_parse_response` 有单测 `tests/test_enrich.py`。
@@ -135,6 +136,6 @@ worker 名义上叫翻译，实际**一次批量 LLM 调用同时做三件事**�
 - 首轮同一来源最多 2 条，避免单一厂商/媒体包场。
 - 分类候选上限为 vendor 8、media 5、blog 4、paper 5、community 4、expert 4、x-ai 3、trending 2。
 - 候选不足时可以放宽可信/编辑类来源的分类和同源上限，但 **x-ai=3、trending=2 永不放宽**。
-- 生成 prompt 再强调官方发布、关键研究、重大产品/政策事件优先，并要求合并同主题的多源引用；输出除「一句话总结 / 今日重点 / 值得动手 / 更多动态」外，增加「接下来关注」，只列 2-3 个可验证信号（如权重、API、评测或开源日期），不做无依据预测。
+- 生成 prompt 再强调官方发布、关键研究、重大产品/政策事件优先，并要求合并同主题的多源引用；“值得动手”只从 `hands_on` 非空条目生成当天可完成的小实验，不得另行编造命令/API；“接下来关注”只列 2-3 个可验证信号（如权重、API、评测或开源日期），不做无依据预测。
 
 `GET /for-you`、学习路径近期素材等复用 `_articles_for_today()`，因此也会继承这套更平衡的候选集。已有 `summary_today.json` 不会自动迁移；部署后需等下一次 06:00 定时任务或管理员手动重新生成。

@@ -1561,6 +1561,38 @@ body[data-agent="ai-news"] .article-item.is-active {
   overflow: hidden;
 }
 
+.hands-on-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 2px 0 10px;
+  padding: 9px 10px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--text-soft);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.hands-on-label {
+  display: inline-block;
+  margin-right: 7px;
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.hands-on-start {
+  flex: none;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: var(--bg-elev-1);
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.hands-on-start:hover { box-shadow: var(--shadow-sm); }
+
 /* Tags row (already styled by .chip-tag — just spacing) */
 .article-card .article-tags {
   margin: 0 0 12px;
@@ -2323,6 +2355,7 @@ body.is-admin .more-sheet-grid button.admin-only { display: flex; }
     width: min(360px, calc(100vw - 28px));
   }
   .article-card { padding: 13px; }
+  .hands-on-box { align-items: flex-start; }
   .card-preview { -webkit-line-clamp: 2; }
   .hero-simple { padding: 48px 8px 12px; }
   .hero-simple .hero-badge { margin-bottom: 18px; }

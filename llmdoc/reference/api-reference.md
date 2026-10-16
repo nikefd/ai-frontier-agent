@@ -46,12 +46,12 @@
 
 | 方法 | 路径 | 🔒 | 说明 |
 |---|---|---|---|
-| GET | `/articles` | 读* | 分页列表。query：`q` / `pinned_only` / `tier` / `category`（逗号分隔多值）/ `tag`（逗号分隔，受控词表）/ `sort`（`newest` 默认 / `important` 按重要性降序，未评分沉底）/ `offset` / `limit`（1–100）。返回 `{total, offset, limit, items}`。**收藏不再置顶**（按 sort 正常排，仅带 ★ 标识；收藏夹用 `pinned_only` 看）。每项的 `pinned`/`deep_dive_status` 按当前用户叠加；`importance`(0-10)/`tags` 由富化 worker 写在全局文章上 |
+| GET | `/articles` | 读* | 分页列表。query：`q` / `pinned_only` / `translated_only` / `hands_on_only` / `tier` / `category`（逗号分隔多值）/ `tag`（逗号分隔，受控词表）/ `sort`（`newest` 默认 / `important` 按重要性降序，未评分沉底）/ `offset` / `limit`（1–100）。所有筛选均在分页前执行，返回 `{total, offset, limit, items}`。**收藏不再置顶**（按 sort 正常排，仅带 ★ 标识；收藏夹用 `pinned_only` 看）。每项的 `pinned`/`deep_dive_status` 按当前用户叠加；`importance`/`tags`/`hands_on` 由富化 worker写在全局文章上 |
 | POST | `/articles` | admin | 手动新增一篇全局文章；按 id/url 去重；超 400 滚动淘汰。fetcher 在进程内直接复用该函数 |
 | DELETE | `/articles/{aid}` | admin | 删除一篇全局文章 |
 | POST | `/articles/{aid}/pin` | 写 | 收藏/取消收藏（toggle）。pin 存当前用户的 `pins.json`，不写全局文章对象 |
 | GET | `/reader/{aid}` | — | 安全阅读副本：只抓公共 http(s)，逐跳防 SSRF，限 HTML/2MB，清洗后缓存返回；不安全 URL 400、上游失败 502 |
-| POST | `/articles/{aid}/retranslate` | admin | 把全局文章翻译状态重置回 `pending` |
+| POST | `/articles/{aid}/retranslate` | admin | 清空翻译与实践建议，把全局文章状态重置回 `pending` |
 
 ## 3. 深度解读（prefix `/api/ai-news`）
 
@@ -81,7 +81,7 @@
 | 方法 | 路径 | 🔒 | 说明 |
 |---|---|---|---|
 | GET | `/summary/today` | — | 返回缓存速报 + 今日候选元数据（`cohort_size` / `cohort_preview` / `today`）。全局共享 |
-| POST | `/summary/today` | admin | **LLM** 基于最近 30h 的质量平衡候选生成全局中文速报：先按规范化标题精确去重，再按 importance、来源类别、tier、时效和来源多样性预筛，Trending 最多 2 条、X 最多 3 条；结构为「一句话总结 / 今日重点 / 值得动手 / 接下来关注 / 更多动态」。定时任务直接调用同一实现 |
+| POST | `/summary/today` | admin | **LLM** 基于最近 30h 的质量平衡候选生成全局中文速报：先按规范化标题精确去重，再按 importance、来源类别、tier、时效和来源多样性预筛，Trending 最多 2 条、X 最多 3 条；结构为「一句话总结 / 今日重点 / 值得动手 / 接下来关注 / 更多动态」。“值得动手”只使用候选中已审核为可实践的 `hands_on`，不凭空造步骤。定时任务直接调用同一实现 |
 | GET | `/for-you` | 读* | **个性化排序**：把今日候选（同速报 cohort）按当前用户画像信号（pin 分类分布 / 高频标签 / track 关键词）加权重排，返回 `{personalized, today_count, items}`，每项带 `_score`/`_reasons`。**纯代码打分，0 LLM 调用**。匿名或无信号时 `personalized:false`、退化为按时间排序 |
 
 > 速报前端会把新标题「更多动态」以及旧缓存里的「边角料」统一渲染为默认收起、带条数的渐进展开区；引用 `[n]` 仍按缓存中的 cohort 链接到原文。`/for-you` 实现在独立模块 `app/routers/feed_personal.py`，打分纯函数 `score_articles()` 有单测（`tests/test_feed_personal.py`）。复用 ai_news 的 `_articles_for_today()` cohort 与 profile 的信号聚合。

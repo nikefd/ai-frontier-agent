@@ -1,8 +1,9 @@
 """Async enrichment worker for AI-news articles.
 
 Picks up un-enriched articles in small batches and asks the LLM, in ONE batched
-call per batch, for: Chinese title + summary, an importance score (0-10), and
-controlled tags. Writes everything back to the GLOBAL articles.json atomically —
+call per batch, for: Chinese title + summary, an importance score (0-10),
+controlled tags, and an optional hands-on next step. Writes everything back to
+the GLOBAL articles.json atomically —
 so enrichment is computed once and shared across all users (content is global;
 only pins/profiles are per-user).
 
@@ -30,6 +31,7 @@ from ..storage import update_json_atomic
 log = logging.getLogger("aif.translator")
 
 BATCH_SIZE = 8
+PRACTICE_BACKFILL_LIMIT = 40
 _TRANSLATE_LOCK = asyncio.Lock()
 
 # Controlled tag vocabulary — the LLM must pick from this list, nothing else.
@@ -38,7 +40,7 @@ TAG_VOCAB = ["发布", "论文", "工具", "开源", "教程", "观点", "融资
 
 SYSTEM = (
     "你是一名 AI/技术新闻编辑。我会给你一组 RSS 抓取的英文（或中文）文章条目，"
-    "请对每条做三件事：翻译、评重要性、打标签。\n\n"
+    "请对每条做四件事：翻译、评重要性、打标签、判断是否值得动手实践。\n\n"
     "1) 翻译：把 title 和 summary 翻成自然、专业、紧凑的中文。\n"
     "   - 保留专有名词（OpenAI / GPT-4 / vLLM / RLHF 等）不翻译\n"
     "   - 不要营销词、不要感叹号；summary 控制在 150 字内，可改写为信息密度更高的中文\n"
@@ -50,17 +52,32 @@ SYSTEM = (
     "   - 0-2：噪音、闲聊、无实质信息、纯营销\n"
     "   - 结合 source/category 判断证据层级：官方一手发布和扎实研究优先；"
     "GitHub Trending、社区热度、单条社交观点本身不等于重要\n"
-    f"3) tags：从这个固定清单里选 1-3 个最贴切的（**只能用清单里的词**）：{TAG_VOCAB}\n\n"
+    f"3) tags：从这个固定清单里选 1-3 个最贴切的（**只能用清单里的词**）：{TAG_VOCAB}\n"
+    "4) hands_on：仅当内容是可试用的模型/API/工具/开源项目/教程，或能做小型复现实验时，"
+    "给一个 20-80 字的中文最小实践步骤；政策、融资、纯观点、信息不足时返回空字符串。\n"
+    "   - 只能依据输入内容，不得编造命令、参数、URL、模型名、版本号或不存在的能力\n"
+    "   - 用动词开头，说明先做什么、观察什么结果；不要写泛泛的“阅读原文/持续关注”\n\n"
     "输出必须是单个合法 JSON 数组，每项形如："
-    '{"id":"...","title_zh":"...","summary_zh":"...","importance":7,"tags":["发布","工具"]}\n'
+    '{"id":"...","title_zh":"...","summary_zh":"...","importance":7,'
+    '"tags":["发布","工具"],"hands_on":"用一个最小样例试跑该工具，并记录延迟与输出质量。"}\n'
     "不要带 markdown 代码块标记。"
 )
 
 
 def _pick_pending(articles: list[dict], n: int) -> list[dict]:
     out: list[dict] = []
-    for a in articles:
+    for index, a in enumerate(articles):
         if a.get("title_zh") and a.get("summary_zh"):
+            # One-time bounded backfill for recent articles enriched before
+            # hands_on existed. Empty string is a processed, non-actionable row.
+            if (
+                index < PRACTICE_BACKFILL_LIMIT
+                and a.get("translation_status") == "ok"
+                and a.get("hands_on") is None
+            ):
+                out.append(a)
+                if len(out) >= n:
+                    break
             continue
         st = a.get("translation_status")
         if st in ("ok", "failed", "skipped"):
@@ -120,6 +137,14 @@ def _clean_tags(v: Any) -> list[str]:
     return [t for t in v if t in TAG_VOCAB][:3]
 
 
+def _clean_hands_on(v: Any) -> str:
+    """Keep a compact single-step hint; empty means not genuinely actionable."""
+    if not isinstance(v, str):
+        return ""
+    text = re.sub(r"\s+", " ", v).strip()
+    return text[:120]
+
+
 async def _translate_once() -> int:
     """Enrich one batch (translate + score + tag). Returns number processed."""
     if not llm_configured():
@@ -134,7 +159,7 @@ async def _translate_once() -> int:
         {"role": "user", "content": _build_user_msg(batch)},
     ]
     try:
-        body = await chat_complete(messages, temperature=0.2, max_tokens=2200)
+        body = await chat_complete(messages, temperature=0.2, max_tokens=3000)
         parsed = _parse_response(body)
     except (LLMUnavailable, ValueError, json.JSONDecodeError) as e:
         log.warning("enrich batch failed: %s", e)
@@ -172,6 +197,7 @@ async def _translate_once() -> int:
                 tags = _clean_tags(p.get("tags"))
                 if tags:
                     a["tags"] = tags
+                a["hands_on"] = _clean_hands_on(p.get("hands_on"))
                 a["translation_status"] = "ok" if title_zh else "failed"
                 written += 1
             elif a.get("id") in missing:

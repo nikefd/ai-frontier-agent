@@ -14,6 +14,8 @@ export async function refreshList() {
   if (state.cat) params.set('category', state.cat);
   if (state.q) params.set('q', state.q);
   if (state.filter === 'pinned') params.set('pinned_only', 'true');
+  if (state.filter === 'translated') params.set('translated_only', 'true');
+  if (state.filter === 'hands-on') params.set('hands_on_only', 'true');
   if (state.sort) params.set('sort', state.sort);
   if (state.tag) params.set('tag', state.tag);
 
@@ -21,10 +23,7 @@ export async function refreshList() {
   listEl.innerHTML = '<div class="muted-card">加载中…</div>';
   try {
     const r = await api('GET', '/api/ai-news/articles?' + params.toString());
-    let items = r.items || [];
-    if (state.filter === 'translated') {
-      items = items.filter(a => a.translation_status === 'ok');
-    }
+    const items = r.items || [];
     state.items = items;
     state.total = r.total || 0;
     $('#article-count').textContent = state.total + ' 篇';
@@ -37,7 +36,7 @@ export async function refreshList() {
 }
 
 const CAT_LABELS = {
-  vendor: '官方', expert: '专家', 'x-ai': '大V', community: '社区',
+  vendor: '官方', blog: '博客', expert: '专家', 'x-ai': '大V', community: '社区',
   media: '媒体', paper: '论文', trending: '风向',
 };
 
@@ -48,6 +47,7 @@ function renderActiveFilters() {
   if (state.cat) filters.push(['cat', `来源：${CAT_LABELS[state.cat] || state.cat}`]);
   if (state.filter === 'pinned') filters.push(['filter', '只看收藏']);
   if (state.filter === 'translated') filters.push(['filter', '只看已翻译']);
+  if (state.filter === 'hands-on') filters.push(['filter', '只看可实践']);
   if (state.tag) filters.push(['tag', `标签：${state.tag}`]);
 
   el.classList.toggle('hidden', filters.length === 0);
@@ -104,6 +104,12 @@ function articleCardHtml(a) {
   const originBtn = safeUrl
     ? `<a class="btn-card primary" href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener">原文 ↗</a>` : '';
   const copyBtn = safeUrl ? `<button class="btn-card ghost" data-action="copy">复制链接</button>` : '';
+  const handsOn = String(a.hands_on || '').trim();
+  const handsOnHtml = handsOn
+    ? `<div class="hands-on-box">
+        <div><span class="hands-on-label">实践</span>${escapeHtml(handsOn)}</div>
+        <button class="hands-on-start" data-action="practice">带我做</button>
+      </div>` : '';
   return `
     <article class="article-card ${pinClass}" data-aid="${escapeHtml(a.id)}">
       <header class="card-head">
@@ -121,6 +127,7 @@ function articleCardHtml(a) {
         ${transBadge}
       </div>
       ${preview ? `<div class="card-preview">${escapeHtml(preview)}</div>` : ''}
+      ${handsOnHtml}
       ${tagsHtml}
       <div class="card-actions">
         ${originBtn}
@@ -167,6 +174,10 @@ export function renderList() {
     el.querySelector('[data-action="ask"]')?.addEventListener('click', () => {
       const a = state.items.find(x => x.id === aid);
       askAboutArticle(a);
+    });
+    el.querySelector('[data-action="practice"]')?.addEventListener('click', () => {
+      const a = state.items.find(x => x.id === aid);
+      practiceArticle(a);
     });
     el.querySelector('[data-action="srs"]')?.addEventListener('click', async (e) => {
       const btn = e.currentTarget, orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ 加入中…';
@@ -217,6 +228,20 @@ function askAboutArticle(a) {
   chat.input.value = prompt;
   chat.input.focus();
   // Move caret to end so the user just continues typing their question.
+  const len = chat.input.value.length;
+  try { chat.input.setSelectionRange(len, len); } catch (e) { /* ignore */ }
+}
+
+function practiceArticle(a) {
+  if (!a) return;
+  if (!isAuthed()) { openAuthModal('登录后即可让 AI 助手带你实践'); return; }
+  const chat = window.__sparrowChat;
+  if (!chat) { alert('AI 助手未就绪'); return; }
+  const title = a.title_zh || a.title || '(无标题)';
+  const step = String(a.hands_on || '').trim();
+  chat.toggle(true);
+  chat.input.value = `我想实践这篇文章：《${title}》${a.url ? `（${a.url}）` : ''}\n建议起点：${step}\n请先核对原文，再给我一个 15 分钟内能完成的最小实践方案；明确前置条件、步骤和验证结果，不要编造命令或 API。`;
+  chat.input.focus();
   const len = chat.input.value.length;
   try { chat.input.setSelectionRange(len, len); } catch (e) { /* ignore */ }
 }

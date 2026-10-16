@@ -68,6 +68,7 @@
 | `title_zh` / `summary_zh` | str | 中文翻译（翻译 worker 写） |
 | `translation_status` | str | pending/ok/failed/skipped |
 | `importance` | int? | 富化 worker 评的重要性 0-10（用于文章流 `sort=important`）；老文章/未富化为 null |
+| `hands_on` | str? | 富化 worker 生成的最小实践建议；仅可操作内容非空，政策/融资/纯观点/信息不足为空。前端“可实践”筛选和“带我做”入口使用 |
 
 > **多用户后**：`pinned` / `deep_dive_status` / `deep_dive_id` **不再持久化到全局 `articles.json`**。`pinned` 现按用户存于 `users/<uid>/pins.json`；`deep_dive_status` 由「该用户的 `deep-dives/{aid}.json` 是否存在」推导。`GET /articles` 在响应里**按当前用户叠加**这三个字段（匿名全为未 pin/无解读）。`manual` 合成文章也不再进全局流（手动解读只进用户深度解读库）。
 

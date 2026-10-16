@@ -64,6 +64,7 @@
 | 常量 | 值 | 含义 |
 |---|---|---|
 | `BATCH_SIZE` | 8 | 每次富化（翻译+评分+打标签）批量大小 |
+| `PRACTICE_BACKFILL_LIMIT` | 40 | 实践字段上线时，自动回填的最近已翻译文章上限；空字符串也视为已处理 |
 
 在 `app/workers/ai_news_fetcher.py`：
 
