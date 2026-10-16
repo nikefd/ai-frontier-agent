@@ -40,7 +40,7 @@
 |---|---|---|
 | DeepSeek API | 翻译 / 速报 / 深度解读 / 深度指南 / 对话 agent，全部共用一个 key | 未配置 key 时，所有 LLM 端点返回 503，但 RSS 浏览仍可用 |
 | RSSHub | 部分 X 大 V / GitHub 路由的 RSS 源 | 公共 `rsshub.app` 容易限流/403/404，需自建私有实例（compose 内置）；Twitter 路由还需 `TWITTER_AUTH_TOKEN` |
-| 各资讯源 | 81 个分层源（官方/媒体/博客/论文/社区/专家/X 大 V/GitHub 风向）；Anthropic/Cohere/Mistral/xAI 读官方 sitemap，Qwen 读官方文章 API | 清单硬编码在 `app/routers/ai_news.py` 的 `DEFAULT_FEED_SPECS` |
+| 各资讯源 | 81 个分层源（官方/媒体/博客/论文/社区/专家/X 大 V/GitHub 风向）；Anthropic/Cohere/Mistral/xAI 读官方 sitemap，Qwen 读官方文章 API，Ai2 读官方 RSS | 清单硬编码在 `app/routers/ai_news.py` 的 `DEFAULT_FEED_SPECS` |
 
 ## 5. 目录结构
 
@@ -67,7 +67,7 @@
 
 ## 6. 核心机制速览
 
-- **抓取入库:** 81 个 RSS、官方 sitemap/API 异步并发拉取 → category 归一化 high/med/low → med/low 必须命中 AI 关键词（paper 除外）→ 跨源 URL 去重 → 每源分轮取候选 → 分类硬配额（Trending 6、X 12 等）→ `_DAILY_FETCH_CAP=150` 真正封顶 → 滚动历史 `_ARTICLE_LIMIT=400`（pinned 不淘汰）。
+- **抓取入库:** 81 个 RSS、官方 sitemap/API 异步并发拉取 → sitemap 最新 6 页补全真实标题/摘要/发布时间 → category 归一化 high/med/low → med/low 必须命中 AI 关键词（paper 除外）→ 跨源 URL 去重 → 每源分轮取候选 → 分类硬配额（Trending 6、X 12 等）→ `_DAILY_FETCH_CAP=150` 真正封顶 → 滚动历史 `_ARTICLE_LIMIT=400`（pinned 不淘汰）。
 - **速报选材:** 最近 30 小时文章先按规范化标题合并重复报道，再按 importance、来源类别、tier、时效综合排序；首轮限制同源最多 2 条，Trending 最多 2 条、X 最多 3 条，官方发布/关键研究优先。
 - **双语翻译:** 翻译 worker每批 8 篇，LLM 一次返回翻译/评分/标签，按 id 原子合并；失败不自动重试，管理员可重置。
 - **LLM 产物:** 单篇解读、全局每日速报、主题指南、画像、复盘和学习路径；手动主题解读只进用户库，不插入全局文章流。

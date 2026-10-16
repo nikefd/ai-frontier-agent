@@ -38,7 +38,7 @@ docker compose up -d --build
 
 ## 部署
 
-用 [Coolify](https://coolify.io/)（Traefik 反代 + 命名卷持久化）。部分 X/GitHub 源走 RSSHub，所以 compose 自带私有实例；Twitter 路由还需 `TWITTER_AUTH_TOKEN`。Anthropic/Cohere/Mistral/xAI 等无稳定 RSS 的官方源直接读取 sitemap，Qwen 读取官方文章 API。详见 [llmdoc/guides/how-to-deploy.md](llmdoc/guides/how-to-deploy.md)。
+用 [Coolify](https://coolify.io/)（Traefik 反代 + 命名卷持久化）。部分 X/GitHub 源走 RSSHub，所以 compose 自带私有实例；Twitter 路由还需 `TWITTER_AUTH_TOKEN`。Anthropic/Cohere/Mistral/xAI 等无稳定 RSS 的官方源读取 sitemap 并补全页面元数据，Qwen 读取官方文章 API；开放研究补充 Ai2 官方 RSS。详见 [llmdoc/guides/how-to-deploy.md](llmdoc/guides/how-to-deploy.md)。
 
 ## 文档导航（llmdoc）
 

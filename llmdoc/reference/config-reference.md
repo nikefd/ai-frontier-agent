@@ -65,6 +65,12 @@
 |---|---|---|
 | `BATCH_SIZE` | 8 | 每次富化（翻译+评分+打标签）批量大小 |
 
+在 `app/workers/ai_news_fetcher.py`：
+
+| 常量 | 值 | 含义 |
+|---|---|---|
+| `_SITEMAP_METADATA_LIMIT` | 6 | 每个 sitemap 源最多补全的最新文章页数；读取 Open Graph/meta/JSON-LD，失败保留 sitemap 降级数据 |
+
 ## 修改约定
 
 - 新增/改环境变量：改 `app/settings.py` 的 `Settings` 字段 → 同步更新 `.env.example` → 回这张表补一行。

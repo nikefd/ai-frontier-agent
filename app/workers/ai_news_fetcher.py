@@ -20,7 +20,10 @@ Best-effort guarantees retained:
 from __future__ import annotations
 
 import asyncio
+import html
+import json
 import logging
+import re
 from datetime import datetime, timezone
 from typing import Iterable
 from urllib.parse import unquote, urlparse
@@ -48,6 +51,7 @@ log = logging.getLogger("aif.fetcher")
 
 USER_AGENT = "ai-frontier-agent/0.2 (RSS fetcher)"
 _FETCH_LOCK = asyncio.Lock()
+_SITEMAP_METADATA_LIMIT = 6
 
 
 def _now_iso() -> str:
@@ -99,6 +103,90 @@ def _parse_sitemap_index(content: bytes) -> list[str]:
     return urls
 
 
+def _clean_metadata_text(value: object) -> str:
+    text = html.unescape(str(value or ""))
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _parse_page_metadata(content: bytes) -> dict[str, str]:
+    """Extract useful editorial fields from an official article page."""
+    soup = BeautifulSoup(content, "lxml")
+
+    def meta(*, prop: str | None = None, name: str | None = None) -> str:
+        attrs = {"property": prop} if prop else {"name": name}
+        node = soup.find("meta", attrs=attrs)
+        return _clean_metadata_text(node.get("content")) if node else ""
+
+    result = {
+        "title": meta(prop="og:title") or meta(name="twitter:title"),
+        "summary": meta(prop="og:description") or meta(name="description"),
+        "date": meta(prop="article:published_time"),
+    }
+
+    # Many vendor blogs expose the canonical publication date only in JSON-LD.
+    for script in soup.find_all("script", attrs={"type": "application/ld+json"}):
+        try:
+            payload = json.loads(script.string or script.get_text() or "")
+        except (json.JSONDecodeError, TypeError):
+            continue
+        stack = payload if isinstance(payload, list) else [payload]
+        while stack:
+            item = stack.pop()
+            if not isinstance(item, dict):
+                continue
+            graph = item.get("@graph")
+            if isinstance(graph, list):
+                stack.extend(graph)
+            result["title"] = result["title"] or _clean_metadata_text(item.get("headline"))
+            result["summary"] = result["summary"] or _clean_metadata_text(item.get("description"))
+            result["date"] = result["date"] or _clean_metadata_text(item.get("datePublished"))
+            if all(result.values()):
+                break
+        if all(result.values()):
+            break
+
+    if not result["title"] and soup.title:
+        result["title"] = _clean_metadata_text(soup.title.get_text(" ", strip=True))
+    if len(result["summary"]) > 280:
+        result["summary"] = result["summary"][:280] + "…"
+    return result
+
+
+async def _hydrate_sitemap_entries(
+    client: httpx.AsyncClient,
+    root_url: str,
+    entries: list[dict],
+) -> list[dict]:
+    """Hydrate the newest sitemap links without making a source mandatory."""
+    root_host = urlparse(root_url).hostname
+
+    async def hydrate(entry: dict) -> dict:
+        link = str(entry.get("url") or "")
+        parsed = urlparse(link)
+        if parsed.scheme not in {"http", "https"} or parsed.hostname != root_host:
+            return entry
+        try:
+            response = await client.get(
+                link,
+                timeout=10.0,
+                headers={"User-Agent": USER_AGENT, "Accept": "text/html"},
+            )
+            response.raise_for_status()
+            metadata = _parse_page_metadata(response.content)
+        except (httpx.HTTPError, asyncio.TimeoutError, ValueError):
+            log.warning("sitemap page metadata %s failed", link)
+            return entry
+        enriched = dict(entry)
+        for field in ("title", "summary", "date"):
+            if metadata.get(field):
+                enriched[field] = metadata[field]
+        return enriched
+
+    limit = min(len(entries), _SITEMAP_METADATA_LIMIT)
+    hydrated = await asyncio.gather(*(hydrate(entry) for entry in entries[:limit]))
+    return [*hydrated, *entries[limit:]]
+
+
 def _parse_qwen_api_entries(payload: dict) -> list[dict]:
     """Convert Qwen's first-party article API into feed-like entries."""
     articles = ((payload.get("data") or {}).get("articles") or [])
@@ -133,7 +221,8 @@ async def _entries_from_sitemap(
     """Parse a urlset or one level of same-host sitemap-index children."""
     child_urls = _parse_sitemap_index(content)
     if not child_urls:
-        return _parse_sitemap_entries(content, include_paths)
+        entries = _parse_sitemap_entries(content, include_paths)
+        return await _hydrate_sitemap_entries(client, root_url, entries)
 
     root_host = urlparse(root_url).hostname
     child_urls = [u for u in child_urls if urlparse(u).hostname == root_host][:12]
@@ -158,7 +247,7 @@ async def _entries_from_sitemap(
             by_url[entry["url"]] = entry
     entries = list(by_url.values())
     entries.sort(key=lambda e: _parse_ts(e.get("date") or ""), reverse=True)
-    return entries[:20]
+    return await _hydrate_sitemap_entries(client, root_url, entries[:20])
 
 
 async def _fetch_feed(

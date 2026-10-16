@@ -161,6 +161,7 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://mistral.ai/sitemap.xml", "name": "Mistral News", "tier": "high", "category": "vendor", "format": "sitemap", "include_paths": ["/news/"], "description": "Mistral 官方新闻 · 开源模型、Le Chat、Agent 与工程发布"},
     {"url": "https://x.ai/sitemap.xml", "name": "xAI News", "tier": "high", "category": "vendor", "format": "sitemap", "include_paths": ["/news/"], "description": "xAI 官方新闻 · Grok 模型、API、研究与安全发布"},
     {"url": "https://qwen.ai/api/v2/article/retrieval?type=qwen_ai&language=en-US", "name": "Qwen Blog", "tier": "high", "category": "vendor", "format": "qwen_api", "description": "Qwen 官方博客 · 通义千问模型、开源权重与多模态发布"},
+    {"url": "https://allenai.org/rss.xml", "name": "Ai2 Research", "tier": "high", "category": "vendor", "description": "Ai2 官方研究 · OLMo、开放模型、科学智能与可信评测"},
     # ── media: AI 媒体
     {"url": "https://arstechnica.com/ai/feed/", "name": "Ars Technica AI", "tier": "high", "category": "media", "description": "Ars Technica AI · 技术深度评测，重视一手数据和复盘"},
     {"url": "https://www.technologyreview.com/topic/artificial-intelligence/feed", "name": "MIT Tech Review AI", "tier": "high", "category": "media", "description": "MIT Tech Review · 长篇深度报道与影响分析"},
@@ -202,7 +203,6 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://www.wheresyoured.at/rss/", "name": "wheresyoured.at", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
     {"url": "https://worksonmymachine.ai/feed", "name": "worksonmymachine.substack.com", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
     {"url": "https://s.baoyu.io/feed.xml", "name": "宝玉的分享", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
-    {"url": "https://hai.stanford.edu/sitemap.xml", "name": "Stanford HAI", "tier": "high", "category": "expert", "format": "sitemap", "include_paths": ["/news/"], "description": "Stanford HAI 官方资讯 · 前沿研究、AI 政策与社会影响"},
     # ── x-ai: X 上的 AI 大V
     {"url": "https://api.xgo.ing/rss/user/341f7b9f8d9b477e8bb200caa7f32c6e", "name": "AK(@_akhaliq)", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
     {"url": "https://rsshub.app/twitter/user/aaditsh", "name": "Aadit Sheth", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},

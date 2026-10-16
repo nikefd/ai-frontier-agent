@@ -30,7 +30,7 @@ flowchart LR
 - 对 **Twitter 路由 404**
 - 对部分 **GitHub 路由 403/限流**
 
-应用启动时会把所有 `rsshub.app` 前缀的 URL 改写到 `AIF_RSSHUB_BASE`（compose 内默认 `http://rsshub:1200`，即自建实例）。这样这些源才抓得到。Anthropic/Cohere/Mistral/xAI 直接读取官方 sitemap，Qwen 读取官方文章 API，均不依赖 RSSHub；其中 sitemap index 最多展开同站 12 个子 sitemap，单源失败会隔离记录。
+应用启动时会把所有 `rsshub.app` 前缀的 URL 改写到 `AIF_RSSHUB_BASE`（compose 内默认 `http://rsshub:1200`，即自建实例）。这样这些源才抓得到。Anthropic/Cohere/Mistral/xAI 直接读取官方 sitemap，Qwen 读取官方文章 API，Ai2 读取官方 RSS，均不依赖 RSSHub；其中 sitemap index 最多展开同站 12 个子 sitemap，并对最新 6 页补全标题、摘要和发布时间。单源或单页失败都会隔离记录/降级，不阻塞其它来源。
 
 **Twitter 路由额外需要登录态**：在 rsshub 容器配 `TWITTER_AUTH_TOKEN`（x.com 的 `auth_token` cookie）。留空则 Twitter 路由（24 个 x-ai 源）抓不到，其余源正常。这个 token 是登录凭证，**绝不写进代码/git**，在 Coolify 环境变量里手填。
 

@@ -15,7 +15,7 @@
 | 理解整个后端的进程模型 / 启动流程 / 模块依赖 | [后端架构](architecture/backend-architecture.md) |
 | 理解「一篇文章从 RSS 到入库到翻译」怎么发生 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md) |
 | 理解信源分层、分类硬配额、每源轮次和 150 条全局上限 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.2-2.5 节） |
-| 理解官方 sitemap/API、跨源 URL 去重与速报标题去重 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.2/2.5/4 节） |
+| 理解官方 sitemap/API、页面元数据补全、跨源 URL 去重与速报标题去重 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.2/2.5/2.7/4 节） |
 | 理解今日速报为什么不会被 Trending/X 淹没 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 4 节）＋ [API 参考](reference/api-reference.md)（第 4 节） |
 | 理解对话 agent（sparrow ReAct）怎么工作 / 加工具 | [Agent 架构](architecture/agent-architecture.md) |
 | agent 能调哪些工具 | [Agent 架构](architecture/agent-architecture.md)（第 3 节） |

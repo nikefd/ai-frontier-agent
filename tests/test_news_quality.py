@@ -1,6 +1,9 @@
 """Regression tests for source gating and editorial cohort selection."""
 from __future__ import annotations
 
+import httpx
+import pytest
+
 from app.routers.ai_news import (
     _CATEGORY_FETCH_CAPS,
     _dedupe_summary_articles,
@@ -9,6 +12,8 @@ from app.routers.ai_news import (
 )
 from app.workers.ai_news_fetcher import (
     _decide_relevance,
+    _entries_from_sitemap,
+    _parse_page_metadata,
     _parse_qwen_api_entries,
     _parse_sitemap_index,
     _parse_sitemap_entries,
@@ -35,6 +40,14 @@ def test_discovery_streams_require_ai_keyword() -> None:
     assert _decide_relevance(ai_item, "low", "trending") == (True, "keyword")
 
 
+def test_source_registry_uses_ai2_instead_of_unreliable_stanford_sitemap() -> None:
+    from app.routers.ai_news import DEFAULT_FEED_SPECS
+
+    urls = {spec["url"] for spec in DEFAULT_FEED_SPECS}
+    assert "https://allenai.org/rss.xml" in urls
+    assert "https://hai.stanford.edu/sitemap.xml" not in urls
+
+
 def test_official_sitemap_adapter_filters_and_sorts_paths() -> None:
     xml = b"""<?xml version="1.0"?><urlset>
       <url><loc>https://lab.test/careers</loc><lastmod>2026-10-15</lastmod></url>
@@ -55,6 +68,49 @@ def test_sitemap_index_extracts_child_sitemaps() -> None:
         "https://lab.test/news-sitemap.xml",
         "https://lab.test/research-sitemap.xml",
     ]
+
+
+def test_official_page_metadata_prefers_editorial_fields_and_jsonld_date() -> None:
+    page = b'''<html><head>
+      <meta property="og:title" content="Model X &amp; Safety">
+      <meta property="og:description" content="  A safer   frontier model. ">
+      <script type="application/ld+json">
+        {"@type":"NewsArticle","datePublished":"2026-10-16T08:00:00Z"}
+      </script>
+    </head></html>'''
+    assert _parse_page_metadata(page) == {
+        "title": "Model X & Safety",
+        "summary": "A safer frontier model.",
+        "date": "2026-10-16T08:00:00Z",
+    }
+
+
+@pytest.mark.asyncio
+async def test_sitemap_entries_are_hydrated_from_official_pages() -> None:
+    sitemap = b'''<urlset><url>
+      <loc>https://lab.test/news/model-x</loc><lastmod>2026-10-16</lastmod>
+    </url></urlset>'''
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert str(request.url) == "https://lab.test/news/model-x"
+        return httpx.Response(200, content=b'''<html><head>
+          <meta property="og:title" content="Introducing Model X">
+          <meta name="description" content="First-party release details.">
+          <meta property="article:published_time" content="2026-10-15T09:30:00Z">
+        </head></html>''')
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        entries = await _entries_from_sitemap(
+            client, "https://lab.test/sitemap.xml", sitemap, ["/news/"],
+        )
+
+    assert entries == [{
+        "title": "Introducing Model X",
+        "url": "https://lab.test/news/model-x",
+        "date": "2026-10-15T09:30:00Z",
+        "summary": "First-party release details.",
+        "tags": [],
+    }]
 
 
 def test_qwen_api_adapter_cleans_sorts_and_limits_entries() -> None:

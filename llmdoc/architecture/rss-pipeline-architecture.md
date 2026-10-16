@@ -39,16 +39,16 @@ flowchart TD
 
 ### 2.2 feed 清单与分类
 
-81 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；无稳定 RSS 的官方站可设置 `{format:"sitemap", include_paths:[...]}`，官方 JSON 接口可设置专用 format。当前 Anthropic、Cohere、Mistral、xAI 直接读取官方 sitemap，Qwen 读取官方文章 API，避免依赖第三方镜像。
+81 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；无稳定 RSS 的官方站可设置 `{format:"sitemap", include_paths:[...]}`，官方 JSON 接口可设置专用 format。当前 Anthropic、Cohere、Mistral、xAI 直接读取官方 sitemap，Qwen 读取官方文章 API；开放研究侧使用 Ai2 官方 RSS，替换了会把旧文章 `lastmod` 标成当天、造成假鲜度的 Stanford HAI sitemap。
 
 `category` 同时驱动前端分组、tier 归一化与抓取配额，共 8 类：
 
 | category | 含义 | 数量 |
 |---|---|---|
-| `vendor` | 官方实验室 / 厂商第一手发布 | 19 |
+| `vendor` | 官方实验室 / 厂商第一手发布 | 20 |
 | `x-ai` | X(Twitter) 上的 AI 大 V | 24 |
 | `community` | 社区 / 周刊（含中文资讯） | 12 |
-| `expert` | 专家个人博客 | 10 |
+| `expert` | 专家个人博客 | 9 |
 | `blog` | AI 博客（原始一批） | 6 |
 | `media` | 科技媒体 | 5 |
 | `trending` | GitHub 热门风向 | 1 |
@@ -98,7 +98,9 @@ flowchart TD
 ### 2.7 容错
 
 - 单 feed 失败（HTTP 错误/超时/解析异常）只记进该源的 `last_error`，**绝不阻塞其它源**（`asyncio.gather(..., return_exceptions=True)`）。
-- 每个 RSS/Atom 只取前 20 个 entry；官方 sitemap 支持单层同站 sitemap index（最多展开 12 个子 sitemap），按 `lastmod` 排序、路径过滤后取前 20 个 URL。sitemap 标题由 URL slug 生成，后续交给富化 worker 整理；摘要为空属于预期。Qwen 的 `qwen_api` 适配器读取官方 JSON、清理简介 HTML、按时间取最新 20 条。
+- 每个 RSS/Atom 只取前 20 个 entry；官方 sitemap 支持单层同站 sitemap index（最多展开 12 个子 sitemap），按 `lastmod` 排序、路径过滤后取前 20 个 URL。
+- sitemap 最新 6 条会并发读取同站文章页，从 Open Graph、HTML meta 或 JSON-LD 补全真实标题、摘要和 `datePublished`；页面失败时保留 slug/lastmod 降级结果，不影响该源其余条目。限制为 6 页是为了覆盖 `_PER_FEED_CAP=4` 的正常候选并控制额外请求量。
+- Qwen 的 `qwen_api` 适配器读取官方 JSON、清理简介 HTML、按时间取最新 20 条。
 - `_parse_ts()` 同时支持 ISO 8601 和 RSS 常见 RFC 822 日期；未知格式回退为 0。抓取候选排序、文章流排序和最近 30 小时速报窗口共用这一实现。
 - `fetch_once` 有进程内异步锁，避免定时任务和管理员手动触发重叠。
 
