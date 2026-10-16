@@ -47,6 +47,7 @@ flowchart LR
 | `AIF_COOKIE_SECURE` | **是（HTTPS）** | Coolify 域名走 HTTPS 时设 `1` |
 | `AIF_ADMIN_EMAIL` | 建议 | 指定继承旧数据的管理员邮箱 |
 | `AIF_DAILY_LLM_LIMIT` | 否 | 普通用户每日个人 LLM 调用额度，默认 50 |
+| `AIF_AI_NEWS_INTERVAL_HOURS` / `AIF_SUMMARY_INTERVAL_HOURS` | 否 | 抓取与速报刷新间隔，默认均为 4 小时；compose 已透传 |
 | `AIF_CORS_ORIGINS` | 否 | 内置同源 UI 留空；跨域时填明确 origin，不能 `*` |
 | `AIF_SMTP_*` / `AIF_PUBLIC_BASE_URL` | 建议 | 非 admin 用户验证邮箱与找回密码所需 |
 
@@ -67,7 +68,7 @@ flowchart LR
 3. 配置域名（Coolify 会自动签 TLS 并经 Traefik 反代到容器 `:9702`）。
 4. 部署。首次会构建镜像、起三服务、灌种子数据。
 5. 访问域名验证；`GET /api/health` 应返回 `{ok:true, llm_configured:true}`。
-6. 注册首个账号（自动成为 admin），等次日 05:00 自动抓取，或用管理员可见的「立即抓取」拉第一批真实数据；06:00 自动生成速报。
+6. 注册首个账号（自动成为 admin），用管理员可见的「立即抓取」拉第一批真实数据；之后默认在 01/05/09/13/17/21 点抓取，晚一小时按候选变化刷新速报。
 
 ## 6. 健康检查
 

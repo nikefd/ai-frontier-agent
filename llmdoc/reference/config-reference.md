@@ -3,7 +3,7 @@
 > 全部配置项。定义在 `app/settings.py`（pydantic-settings），环境变量前缀 **`AIF_`**，
 > 也读项目根 `.env`（模板见 `.env.example`）。模块级单例 `settings`。
 
-`docker-compose.yml` 已显式透传认证、防滥用、CORS、SMTP 和 Public URL 配置；在 Coolify 设置同名变量即可进入应用容器。生产至少设置随机 `AIF_SECRET_KEY`，HTTPS 域名设置 `AIF_COOKIE_SECURE=1`。
+`docker-compose.yml` 已显式透传调度、认证、防滥用、CORS、SMTP 和 Public URL 配置；在 Coolify 设置同名变量即可进入应用容器。生产至少设置随机 `AIF_SECRET_KEY`，HTTPS 域名设置 `AIF_COOKIE_SECURE=1`。
 
 ## 配置项一览
 
@@ -17,10 +17,12 @@
 | `AIF_LLM_MODEL` | `llm_model` | `deepseek-chat` | 模型名 |
 | `AIF_LLM_API_KEY` | `llm_api_key` | `None` | LLM key。**为空时回退读 `DEEPSEEK_API_KEY` 环境变量** |
 | `AIF_SCHEDULER_ENABLED` | `scheduler_enabled` | `True` | 是否启用后台抓取/翻译任务 |
-| `AIF_AI_NEWS_CRON_HOUR` | `ai_news_cron_hour` | `5` | 每日抓取小时（Asia/Shanghai，早于速报） |
-| `AIF_AI_NEWS_CRON_MINUTE` | `ai_news_cron_minute` | `0` | 每日抓取分钟 |
-| `AIF_SUMMARY_CRON_HOUR` | `summary_cron_hour` | `6` | 每日速报生成小时（在抓取+翻译之后，用户早起即见） |
-| `AIF_SUMMARY_CRON_MINUTE` | `summary_cron_minute` | `0` | 每日速报生成分钟 |
+| `AIF_AI_NEWS_CRON_HOUR` | `ai_news_cron_hour` | `5` | 分时抓取的锚点小时（Asia/Shanghai） |
+| `AIF_AI_NEWS_CRON_MINUTE` | `ai_news_cron_minute` | `0` | 分时抓取分钟 |
+| `AIF_AI_NEWS_INTERVAL_HOURS` | `ai_news_interval_hours` | `4` | 抓取间隔；支持 1/2/3/4/6/8/12/24，其它值安全回退为 4 |
+| `AIF_SUMMARY_CRON_HOUR` | `summary_cron_hour` | `6` | 分时速报的锚点小时，默认比抓取晚一小时 |
+| `AIF_SUMMARY_CRON_MINUTE` | `summary_cron_minute` | `0` | 分时速报分钟 |
+| `AIF_SUMMARY_INTERVAL_HOURS` | `summary_interval_hours` | `4` | 速报刷新间隔；候选指纹不变时不调用 LLM，支持值同上 |
 | `AIF_LOG_LEVEL` | `log_level` | `INFO` | 日志级别 |
 | `AIF_SECRET_KEY` | `secret_key` | `None` | 会话 cookie 的签名密钥（itsdangerous）。**为空时自动生成并落 `<data_dir>/auth/secret.key`**；生产建议显式配，否则连卷重建/多副本会让会话失效（全员登出） |
 | `AIF_SESSION_MAX_AGE_DAYS` | `session_max_age_days` | `30` | 会话有效期（天）；签名 cookie 超时即失效 |

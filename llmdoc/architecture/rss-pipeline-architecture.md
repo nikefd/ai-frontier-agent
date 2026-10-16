@@ -9,7 +9,7 @@
 
 ```mermaid
 flowchart TD
-  cron[APScheduler 每日 05:00] --> fetch
+  cron[APScheduler 每 4 小时<br/>05:00 为锚点] --> fetch
   manual[管理员点「立即抓取」 POST /fetch] --> fetch
   fetch[fetch_once：异步并发拉 81 个 RSS/sitemap/API 源]
   fetch --> parse[feedparser 解析 RSS/Atom<br/>BS4 解析官方 sitemap<br/>适配官方 JSON API]
@@ -32,10 +32,10 @@ flowchart TD
 
 ### 2.1 触发方式
 
-- **定时**：`scheduler.py` 注册 `CronTrigger(hour=5, minute=0)`（可经 `AIF_AI_NEWS_CRON_*` 配），时区 Asia/Shanghai。
+- **定时**：`scheduler.py` 默认在 01/05/09/13/17/21 点抓取（`AIF_AI_NEWS_CRON_*` 设锚点，`AIF_AI_NEWS_INTERVAL_HOURS` 设间隔），时区 Asia/Shanghai。
 - **手动**：admin-only 的 `POST /api/ai-news/fetch` 即时跑一轮（普通用户看不到按钮，直接调用返回 403）。
 
-抓取是 token-thrifty 的——每天只自动跑一次，临时要新内容靠手动触发。
+抓取本身不调用 LLM，默认每 4 小时跑一轮；`fetch_once` 的进程内锁、文章 URL 去重和 RSSHub 缓存共同避免重叠与重复入库。临时要新内容仍可手动触发。
 
 ### 2.2 feed 清单与分类
 
@@ -123,13 +123,13 @@ worker 名义上叫翻译，实际**一次批量 LLM 调用同时做四件事**�
 | 产物 | 端点 | 存储 |
 |---|---|---|
 | 单篇深度解读（含 mermaid 图） | `POST /articles/{aid}/deep-dive` | `deep-dives/{aid}.json` |
-| 每日速报（聚合最近 30h） | admin `POST /summary/today` + **每日 06:00 定时** | `summary_today.json` |
+| 今日速报（聚合最近 30h） | admin `POST /summary/today` + **每 4 小时分时刷新** | `summary_today.json` |
 | 主题深度指南 | `POST /guides/generate` | `guides/guide_*.json` |
 | 手动输入主题 → 深度解读 | `POST /manual-dive` | 仅写当前用户 `deep-dives/{aid}.json`，不进全局文章流 |
 
 这些产物的存储结构见 [数据存储参考](../reference/data-storage.md)。
 
-> **每日速报是唯一有定时的 LLM 产物**：`scheduler.py` 在每天 06:00（`AIF_SUMMARY_CRON_*`，在 05:00 抓取 + 翻译之后）调 `build_today_summary()` 自动生成，用户早起即见当天速报。该函数被手动端点 `POST /summary/today` 和定时 job 共用（单一实现）；无新内容或 LLM 未配置时跳过。其余 LLM 产物（解读/指南/画像/复盘/学习路径）都是按需触发，无定时。
+> **今日速报是唯一有定时的 LLM 产物**：`scheduler.py` 默认在 02/06/10/14/18/22 点刷新（`AIF_SUMMARY_CRON_*` + `AIF_SUMMARY_INTERVAL_HOURS`），比每轮抓取晚一小时，为翻译留出窗口。`build_today_summary()` 对影响输出的候选字段生成 SHA-256 指纹；当天指纹与缓存一致时直接跳过，不调用 LLM。管理员 `POST /summary/today` 明确要求重生成，因此会忽略指纹强制执行。其余 LLM 产物（解读/指南/画像/复盘/学习路径）都是按需触发，无定时。
 
 速报不再直接取“最新 25 条”。`_articles_for_today()` 先取最近 30 小时文章（不足 5 条时回退到近期库存），再由 `_select_summary_cohort()` 先以 NFKC/casefold/去标点后的精确标题键合并重复报道（重复时优先官方与高质量类别），再按 importance → 来源类别质量 → tier → 时效排序：
 
@@ -138,4 +138,4 @@ worker 名义上叫翻译，实际**一次批量 LLM 调用同时做四件事**�
 - 候选不足时可以放宽可信/编辑类来源的分类和同源上限，但 **x-ai=3、trending=2 永不放宽**。
 - 生成 prompt 再强调官方发布、关键研究、重大产品/政策事件优先，并要求合并同主题的多源引用；“值得动手”只从 `hands_on` 非空条目生成当天可完成的小实验，不得另行编造命令/API；“接下来关注”只列 2-3 个可验证信号（如权重、API、评测或开源日期），不做无依据预测。
 
-`GET /for-you`、学习路径近期素材等复用 `_articles_for_today()`，因此也会继承这套更平衡的候选集。已有 `summary_today.json` 不会自动迁移；部署后需等下一次 06:00 定时任务或管理员手动重新生成。
+`GET /for-you`、学习路径近期素材等复用 `_articles_for_today()`，因此也会继承这套更平衡的候选集。旧 `summary_today.json` 没有指纹，部署后下一次分时任务会自动生成一次新缓存。

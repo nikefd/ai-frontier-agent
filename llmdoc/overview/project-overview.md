@@ -14,7 +14,7 @@
 
 三条主要数据流：
 
-1. **抓取管线** — APScheduler 每天 05:00（可配）拉全部 feed；管理员也能即时触发。详见 [RSS 抓取管线架构](../architecture/rss-pipeline-architecture.md)。
+1. **抓取管线** — APScheduler 默认每 4 小时拉全部 feed（05:00 为锚点，可配）；管理员也能即时触发。详见 [RSS 抓取管线架构](../architecture/rss-pipeline-architecture.md)。
 2. **翻译 / LLM 加工** — 每 2 分钟一个翻译 tick 把 `pending` 文章批量译成中文；用户可对单篇生成「深度解读」（带 mermaid 图）、对一组生成「今日速报」、对任意主题生成「深度指南」。
 3. **对话 agent** — `/api/agent/chat` 是 sparrow `Harness` 跑的 ReAct agent，带读写工具（查文章/源/track、建 track、收藏），对话历史持久化在 `ui.db`。详见 [Agent 架构](../architecture/agent-architecture.md)。
 
@@ -52,7 +52,7 @@
 | `app/storage.py` | 原子覆盖写 + 锁住完整 JSON 读改写事务 + 只读 SQLite |
 | `app/safe_fetch.py` | 阅读器 SSRF 校验、限流式抓取和惰性 HTML 清洗 |
 | `app/llm_client.py` | DeepSeek（OpenAI 兼容）薄封装：`chat_complete` / `chat_stream` |
-| `app/scheduler.py` | APScheduler：每日抓取 job + 每 2 分钟翻译 tick |
+| `app/scheduler.py` | APScheduler：分时抓取 + 每 2 分钟翻译 + 分时速报刷新 |
 | `app/routers/ai_news.py` | **核心路由**：articles/tracks/guides/sources/summary/deep-dive/manual-dive，以及 feed 清单与关键词表 |
 | `app/agent_chat.py` | sparrow ReAct agent 的 `/api/agent/chat` SSE 端点 + 对话管理 |
 | `app/agent_tools.py` | agent 的 `@tool`：query_articles/tracks/sources/guides、read_article、create_track、pin_article |

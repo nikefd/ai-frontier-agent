@@ -12,6 +12,7 @@ the same atomic JSON helpers we use here, so concurrency is safe.
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import re
 import secrets
@@ -856,15 +857,43 @@ def get_today_summary() -> dict:
     }
 
 
-async def build_today_summary() -> dict | None:
+def _summary_fingerprint(cohort: list[dict]) -> str:
+    """Hash only fields that can affect the generated briefing."""
+    inputs = [
+        {
+            "id": article.get("id"),
+            "title": article.get("title"),
+            "summary": article.get("summary"),
+            "source": article.get("source"),
+            "category": _article_category(article),
+            "importance": article.get("importance"),
+            "hands_on": article.get("hands_on"),
+            "url": article.get("url"),
+        }
+        for article in cohort
+    ]
+    raw = json.dumps(inputs, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+async def build_today_summary(*, force: bool = False) -> dict | None:
     """Generate today's briefing from the recent cohort and persist it.
 
-    Returns the payload, or None if there's nothing recent to summarize. Shared
-    by the manual endpoint and the daily scheduler job (single source of truth).
+    Returns the payload, or None if there is nothing recent or the scheduled
+    cohort is unchanged. Shared by the manual endpoint and scheduler.
     Raises LLMUnavailable if the LLM call fails (caller decides how to surface it).
     """
     cohort = _articles_for_today(limit=25)
     if not cohort:
+        return None
+    cohort_fingerprint = _summary_fingerprint(cohort)
+    cached = read_json(SUMMARY_FILE, None)
+    if (
+        not force
+        and isinstance(cached, dict)
+        and cached.get("date") == _today_iso_date()
+        and cached.get("cohort_fingerprint") == cohort_fingerprint
+    ):
         return None
 
     lines = []
@@ -907,6 +936,7 @@ async def build_today_summary() -> dict | None:
         "date": _today_iso_date(),
         "model": settings.llm_model,
         "cohort_size": len(cohort),
+        "cohort_fingerprint": cohort_fingerprint,
         "body": body,
         "cohort": [
             {"id": a.get("id"), "title": a.get("title"), "source": a.get("source"), "url": a.get("url")}
@@ -922,7 +952,7 @@ async def regenerate_today_summary() -> dict:
     if not llm_configured():
         raise HTTPException(503, "LLM not configured")
     try:
-        payload = await build_today_summary()
+        payload = await build_today_summary(force=True)
     except LLMUnavailable as e:
         raise HTTPException(503, str(e))
     if payload is None:

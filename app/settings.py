@@ -40,14 +40,15 @@ class Settings(BaseSettings):
     llm_api_key: str | None = None
 
     scheduler_enabled: bool = True
-    # Daily fetch at 05:00 (Asia/Shanghai) — early so the morning briefing has
-    # fresh content to summarize before users wake up.
+    # Fetch every N hours, anchored at 05:00 (Asia/Shanghai).
     ai_news_cron_hour: int = 5
     ai_news_cron_minute: int = 0
-    # Daily briefing generated at 06:00 — after fetch (05:00) + translation
-    # have populated/enriched the day's cohort. Users see it first thing.
+    ai_news_interval_hours: int = 4
+    # Refresh the briefing one hour after each fetch. An unchanged cohort is a
+    # no-op, so this cadence does not create redundant LLM calls.
     summary_cron_hour: int = 6
     summary_cron_minute: int = 0
+    summary_interval_hours: int = 4
 
     log_level: str = "INFO"
 

@@ -9,6 +9,7 @@ from app.routers.ai_news import (
     _dedupe_summary_articles,
     _parse_ts,
     _select_summary_cohort,
+    _summary_fingerprint,
 )
 from app.workers.ai_news_fetcher import (
     _decide_relevance,
@@ -215,6 +216,45 @@ def test_summary_cohort_never_relaxes_discovery_ceiling() -> None:
 
     selected = _select_summary_cohort(articles, limit=10)
     assert len(selected) == 2
+
+
+def test_summary_fingerprint_is_stable_and_tracks_material_changes() -> None:
+    article = {
+        "id": "a1", "title": "Model X", "summary": "Released today",
+        "source": "Lab", "category": "vendor", "importance": 9,
+        "hands_on": "Try the playground", "url": "https://lab.test/x",
+    }
+    original = _summary_fingerprint([article])
+    assert original == _summary_fingerprint([dict(article)])
+    assert original != _summary_fingerprint([{**article, "hands_on": "Run the quickstart"}])
+
+
+@pytest.mark.asyncio
+async def test_scheduled_summary_skips_unchanged_cohort_but_manual_force_runs(
+    tmp_path, monkeypatch,
+) -> None:
+    import app.routers.ai_news as news
+
+    article = {
+        "id": "a1", "title": "Model X", "summary": "Released today",
+        "source": "Lab", "category": "vendor", "importance": 9,
+        "hands_on": "Try the playground", "url": "https://lab.test/x",
+    }
+    calls = 0
+
+    async def fake_chat(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return "briefing"
+
+    monkeypatch.setattr(news, "SUMMARY_FILE", tmp_path / "summary_today.json")
+    monkeypatch.setattr(news, "_articles_for_today", lambda limit=25: [article])
+    monkeypatch.setattr(news, "chat_complete", fake_chat)
+
+    assert await news.build_today_summary() is not None
+    assert await news.build_today_summary() is None
+    assert await news.build_today_summary(force=True) is not None
+    assert calls == 2
 
 
 def test_article_actionable_and_translated_filters_apply_before_pagination(
