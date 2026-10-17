@@ -1,6 +1,6 @@
 # AI Frontier Agent — 个人 AI 前沿信息站
 
-全天每 4 小时自动抓取 81 个分层 AI 源（官方实验室 / 科技媒体 / 专家博客 / X 大 V / arXiv / 社区周刊 / GitHub 风向）→ 相关性过滤、同事件聚类与分类配额 → 中英双语翻译与可实践性判断 → 质量与多样性排序的动态今日速报 → 一键让 AI 带着做最小实验 → 按需单篇深度解读。同一事件的不同标题会合并并保留多源佐证，数据源页会识别连续失败和全局调度过期；候选未变化时跳过速报 LLM 调用。
+全天每 4 小时自动抓取 88 个分层 AI 源（官方实验室 / 科技媒体 / 专家博客 / X 大 V / arXiv / 社区周刊 / GitHub 风向）→ 相关性过滤、同事件聚类与分类配额 → 中英双语翻译与可实践性判断 → 质量与多样性排序的动态今日速报 → 一键让 AI 带着做最小实验 → 按需单篇深度解读。同一事件的不同标题会合并并保留多源佐证，数据源页会识别连续失败和全局调度过期；候选未变化时跳过速报 LLM 调用。
 
 ## 组成
 
@@ -38,7 +38,7 @@ docker compose up -d --build
 
 ## 部署
 
-用 [Coolify](https://coolify.io/)（Traefik 反代 + 命名卷持久化）。部分 X/GitHub 源走 RSSHub，所以 compose 自带私有实例；Twitter 路由还需 `TWITTER_AUTH_TOKEN`。Anthropic/Cohere/Mistral/xAI 等无稳定 RSS 的官方源读取 sitemap 并补全页面元数据，Qwen 读取官方文章 API；开放研究补充 Ai2 官方 RSS。详见 [llmdoc/guides/how-to-deploy.md](llmdoc/guides/how-to-deploy.md)。
+用 [Coolify](https://coolify.io/)（Traefik 反代 + 命名卷持久化）。部分 X/GitHub 源走 RSSHub，所以 compose 自带私有实例；Twitter 路由还需 `TWITTER_AUTH_TOKEN`。Anthropic/Cohere/Mistral/xAI 等无稳定 RSS 的官方源读取 sitemap 并补全页面元数据，Qwen 读取官方文章 API；开放研究和工程实践另覆盖 Ai2、Meta Engineering、PyTorch、Google Cloud AI、Cloudflare AI、Together AI 与 Ollama 官方源。详见 [llmdoc/guides/how-to-deploy.md](llmdoc/guides/how-to-deploy.md)。
 
 ## 文档导航（llmdoc）
 

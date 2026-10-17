@@ -11,7 +11,7 @@
 flowchart TD
   cron[APScheduler 每 4 小时<br/>05:00 为锚点] --> fetch
   manual[管理员点「立即抓取」 POST /fetch] --> fetch
-  fetch[fetch_once：异步并发拉 81 个 RSS/sitemap/API 源]
+  fetch[fetch_once：异步并发拉 88 个 RSS/sitemap/API 源]
   fetch --> parse[feedparser 解析 RSS/Atom<br/>BS4 解析官方 sitemap<br/>适配官方 JSON API]
   parse --> gate[tier/category 相关性门槛<br/>high/paper 接受，med/low 需关键词]
   gate --> rounds[每源分 4 轮取候选<br/>先各源 1 条，再各源第 2 条]
@@ -39,13 +39,13 @@ flowchart TD
 
 ### 2.2 feed 清单与分类
 
-81 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；无稳定 RSS 的官方站可设置 `{format:"sitemap", include_paths:[...]}`，官方 JSON 接口可设置专用 format。当前 Anthropic、Cohere、Mistral、xAI 直接读取官方 sitemap，Qwen 读取官方文章 API；开放研究侧使用 Ai2 官方 RSS，替换了会把旧文章 `lastmod` 标成当天、造成假鲜度的 Stanford HAI sitemap。
+88 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；无稳定 RSS 的官方站可设置 `{format:"sitemap", include_paths:[...]}`，官方 JSON 接口可设置专用 format。当前 Anthropic、Cohere、Mistral、xAI 直接读取官方 sitemap，Qwen 读取官方文章 API；开放研究侧使用 Ai2 官方 RSS，并补充 Meta Engineering、PyTorch、Google Cloud AI、Cloudflare AI、Together AI 与 Ollama 的官方 RSS。Stanford HAI sitemap 会把旧文章 `lastmod` 标成当天、造成假鲜度，因此没有继续使用。
 
 `category` 同时驱动前端分组、tier 归一化与抓取配额，共 8 类：
 
 | category | 含义 | 数量 |
 |---|---|---|
-| `vendor` | 官方实验室 / 厂商第一手发布 | 20 |
+| `vendor` | 官方实验室 / 厂商第一手发布 | 27 |
 | `x-ai` | X(Twitter) 上的 AI 大 V | 24 |
 | `community` | 社区 / 周刊（含中文资讯） | 12 |
 | `expert` | 专家个人博客 | 9 |

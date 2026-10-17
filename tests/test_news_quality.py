@@ -50,6 +50,23 @@ def test_source_registry_uses_ai2_instead_of_unreliable_stanford_sitemap() -> No
     assert "https://hai.stanford.edu/sitemap.xml" not in urls
 
 
+def test_source_registry_includes_verified_official_ai_feeds() -> None:
+    from app.routers.ai_news import DEFAULT_FEED_SPECS
+
+    urls = {spec["url"] for spec in DEFAULT_FEED_SPECS}
+    assert len(DEFAULT_FEED_SPECS) == 88
+    assert len(urls) == len(DEFAULT_FEED_SPECS)
+    assert {
+        "https://engineering.fb.com/category/ai-research/feed/",
+        "https://engineering.fb.com/category/ml-applications/feed/",
+        "https://pytorch.org/blog/feed/",
+        "https://cloudblog.withgoogle.com/products/ai-machine-learning/rss/",
+        "https://blog.cloudflare.com/tag/ai/rss/",
+        "https://www.together.ai/blog/rss.xml",
+        "https://ollama.com/blog/rss.xml",
+    } <= urls
+
+
 def test_official_sitemap_adapter_filters_and_sorts_paths() -> None:
     xml = b"""<?xml version="1.0"?><urlset>
       <url><loc>https://lab.test/careers</loc><lastmod>2026-10-15</lastmod></url>

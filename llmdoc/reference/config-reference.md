@@ -57,7 +57,7 @@
 | `_CATEGORY_FETCH_CAPS` | 共 150 | 单轮分类硬上限：vendor 38 / media 20 / blog 16 / paper 22 / community 18 / expert 18 / x-ai 12 / trending 6 |
 | `_DEFAULT_TIER_BY_CATEGORY` | 8 类映射 | 运行时按 category 归一化 tier：vendor/blog=high，media/paper/community/expert=med，x-ai/trending=low |
 | `_SUMMARY_CATEGORY_CAPS` | 8 类映射 | 速报候选上限；其中 trending=2、x-ai=3，且这两类永不放宽 |
-| `DEFAULT_FEED_SPECS` | 81 条 | RSS/Atom/官方 sitemap/API 清单；基础字段 url/name/tier/category/description，特殊源另带 format/include_paths |
+| `DEFAULT_FEED_SPECS` | 88 条 | RSS/Atom/官方 sitemap/API 清单；基础字段 url/name/tier/category/description，特殊源另带 format/include_paths |
 | `AI_KEYWORDS` | 一组中英词 | med/low 相关性过滤；high 与 paper 未命中时仍可按 curated 接受 |
 | `DEFAULT_TRACKS` | 3 条 | tracks.json 为空时的默认追踪主题 |
 

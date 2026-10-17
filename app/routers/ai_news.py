@@ -163,6 +163,13 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://x.ai/sitemap.xml", "name": "xAI News", "tier": "high", "category": "vendor", "format": "sitemap", "include_paths": ["/news/"], "description": "xAI 官方新闻 · Grok 模型、API、研究与安全发布"},
     {"url": "https://qwen.ai/api/v2/article/retrieval?type=qwen_ai&language=en-US", "name": "Qwen Blog", "tier": "high", "category": "vendor", "format": "qwen_api", "description": "Qwen 官方博客 · 通义千问模型、开源权重与多模态发布"},
     {"url": "https://allenai.org/rss.xml", "name": "Ai2 Research", "tier": "high", "category": "vendor", "description": "Ai2 官方研究 · OLMo、开放模型、科学智能与可信评测"},
+    {"url": "https://engineering.fb.com/category/ai-research/feed/", "name": "Meta Engineering · AI Research", "tier": "high", "category": "vendor", "description": "Meta 工程官方 AI 研究 · 大模型训练、推荐系统、基础设施与研究工程"},
+    {"url": "https://engineering.fb.com/category/ml-applications/feed/", "name": "Meta Engineering · ML Applications", "tier": "high", "category": "vendor", "description": "Meta 工程官方 ML 应用 · 生成式 AI、产品落地与规模化系统"},
+    {"url": "https://pytorch.org/blog/feed/", "name": "PyTorch Blog", "tier": "high", "category": "vendor", "description": "PyTorch 官方博客 · 框架发布、训练/推理、ExecuTorch 与生态实践"},
+    {"url": "https://cloudblog.withgoogle.com/products/ai-machine-learning/rss/", "name": "Google Cloud AI & ML", "tier": "high", "category": "vendor", "description": "Google Cloud 官方 AI/ML · Gemini、Vertex AI、Agent 与企业工程"},
+    {"url": "https://blog.cloudflare.com/tag/ai/rss/", "name": "Cloudflare AI", "tier": "high", "category": "vendor", "description": "Cloudflare 官方 AI 专题 · Workers AI、AI Gateway、推理与网络基础设施"},
+    {"url": "https://www.together.ai/blog/rss.xml", "name": "Together AI Blog", "tier": "high", "category": "vendor", "description": "Together AI 官方博客 · 开源模型、训练、推理平台与工程发布"},
+    {"url": "https://ollama.com/blog/rss.xml", "name": "Ollama Blog", "tier": "high", "category": "vendor", "description": "Ollama 官方博客 · 本地模型、Agent、运行时与开发者实践"},
     # ── media: AI 媒体
     {"url": "https://arstechnica.com/ai/feed/", "name": "Ars Technica AI", "tier": "high", "category": "media", "description": "Ars Technica AI · 技术深度评测，重视一手数据和复盘"},
     {"url": "https://www.technologyreview.com/topic/artificial-intelligence/feed", "name": "MIT Tech Review AI", "tier": "high", "category": "media", "description": "MIT Tech Review · 长篇深度报道与影响分析"},
