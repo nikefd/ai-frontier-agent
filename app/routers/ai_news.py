@@ -655,6 +655,57 @@ def _save_sources_meta(meta: dict[str, dict]) -> None:
     write_json_atomic(SOURCES_FILE, meta)
 
 
+def _source_health(
+    meta: dict,
+    *,
+    now: datetime | None = None,
+    interval_hours: int | None = None,
+) -> dict:
+    """Classify transport health without treating a quiet feed as broken."""
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    interval = interval_hours or settings.ai_news_interval_hours
+    if interval not in {1, 2, 3, 4, 6, 8, 12, 24}:
+        interval = 4
+    stale_after = max(6, interval * 3)
+    failures = int(meta.get("consecutive_failures") or 0)
+    last_fetch = meta.get("last_fetch")
+
+    if meta.get("last_error"):
+        age = None if not last_fetch else round(
+            max(0.0, current.timestamp() - _parse_ts(last_fetch)) / 3600, 1
+        )
+        return {
+            "health_status": "error",
+            "health_reason": f"最近抓取失败{f'，已连续 {failures} 次' if failures else ''}",
+            "fetch_age_hours": age,
+            "stale_after_hours": stale_after,
+        }
+    if not last_fetch:
+        return {
+            "health_status": "never",
+            "health_reason": "尚未完成首次抓取",
+            "fetch_age_hours": None,
+            "stale_after_hours": stale_after,
+        }
+
+    age_hours = max(0.0, current.timestamp() - _parse_ts(last_fetch)) / 3600
+    if age_hours > stale_after:
+        return {
+            "health_status": "stale",
+            "health_reason": f"调度状态已过期，{age_hours:.1f} 小时未抓取",
+            "fetch_age_hours": round(age_hours, 1),
+            "stale_after_hours": stale_after,
+        }
+    return {
+        "health_status": "healthy",
+        "health_reason": "最近一轮抓取成功",
+        "fetch_age_hours": round(age_hours, 1),
+        "stale_after_hours": stale_after,
+    }
+
+
 @router.get("/sources")
 def list_sources() -> list[dict]:
     """List configured RSS feeds with their last-fetch state.
@@ -669,8 +720,14 @@ def list_sources() -> list[dict]:
     articles = _load_articles()
     # count articles per source (group by canonical source title from articles)
     counts: dict[str, int] = {}
+    newest: dict[str, tuple[float, str]] = {}
     for a in articles:
-        counts[a.get("source", "?")] = counts.get(a.get("source", "?"), 0) + 1
+        source = a.get("source", "?")
+        counts[source] = counts.get(source, 0) + 1
+        raw_date = str(a.get("date") or "")
+        timestamp = _parse_ts(raw_date)
+        if timestamp and timestamp > newest.get(source, (0.0, ""))[0]:
+            newest[source] = (timestamp, raw_date)
 
     out = []
     for spec in DEFAULT_FEED_SPECS:
@@ -687,9 +744,14 @@ def list_sources() -> list[dict]:
             "last_fetch": m.get("last_fetch"),
             "last_ok": m.get("last_ok"),
             "last_error": m.get("last_error"),
+            "last_error_at": m.get("last_error_at"),
+            "last_recovered_at": m.get("last_recovered_at"),
+            "consecutive_failures": int(m.get("consecutive_failures") or 0),
             "last_added": m.get("last_added", 0),
             "last_filtered": m.get("last_filtered", 0),
             "article_count": counts.get(name, 0),
+            "newest_article_at": newest.get(name, (0.0, None))[1],
+            **_source_health(m),
         })
     # Also surface "orphan" sources — articles present without a tracked URL
     tracked_names = {s["name"] for s in out}
@@ -699,7 +761,13 @@ def list_sources() -> list[dict]:
                 "url": "", "name": name, "enabled": False,
                 "tier": None, "category": None,
                 "last_fetch": None, "last_ok": None, "last_error": None,
+                "last_error_at": None, "last_recovered_at": None,
+                "consecutive_failures": 0,
                 "last_added": 0, "last_filtered": 0, "article_count": c,
+                "newest_article_at": newest.get(name, (0.0, None))[1],
+                "health_status": "orphan",
+                "health_reason": "历史文章来源，当前未配置订阅",
+                "fetch_age_hours": None, "stale_after_hours": None,
                 "orphan": True,
             })
     return out

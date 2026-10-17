@@ -48,6 +48,7 @@
 | 数据存哪 / 各 JSON 文件结构 / Article 字段 | [数据存储参考](reference/data-storage.md) |
 | 为什么没有数据库 / 原子读改写怎么避免丢更新 | [数据存储参考](reference/data-storage.md)（第 4 节）＋ [后端架构](architecture/backend-architecture.md)（第 4 节） |
 | 大量数据源抓取失败怎么排查 | [部署指南](guides/how-to-deploy.md)（第 7 节）＋ [已知问题](reference/known-issues.md)（第 4 条） |
+| 理解单源连续失败 / 调度过期 / 来源最新内容状态 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.5/2.7 节）＋ [数据存储参考](reference/data-storage.md)（3.2） |
 | 所有 LLM 功能报 503 | [运行指南](guides/how-to-run.md)（排障）＋ [配置参考](reference/config-reference.md) |
 | 代码里的 zyb / zhangyangbin 残留是什么 | [已知问题](reference/known-issues.md)（第 7 条） |
 | 坑 / 历史遗留 / 安全注意面 | [已知问题](reference/known-issues.md) |

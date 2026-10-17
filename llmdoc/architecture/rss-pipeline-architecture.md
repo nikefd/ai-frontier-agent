@@ -85,7 +85,9 @@ flowchart TD
 
 旧实现会先给每个来源直接放入 4 条，79 个来源时 `selected` 本身就可能超过 150，所谓全局上限实际失效；同时 5 路高度重叠 Trending 会重复占位。新实现把 Trending 收敛为 1 路，并在来源轮次之后再执行分类与全局硬限制。
 
-每源抓取结果写入 `sources.json`（按 url 为 key）：`last_fetch` / `last_ok` / `last_error` / `eligible` / `last_added` / `last_filtered` / `name` / `tier` / `category`。前端「数据源」页读这个展示健康度。
+每源抓取结果写入 `sources.json`（按 url 为 key）：`last_fetch` / `last_ok` / `last_error` / `last_error_at` / `last_recovered_at` / `consecutive_failures` / `eligible` / `last_added` / `last_filtered` / `name` / `tier` / `category`。成功时连续失败归零；从失败恢复时记录恢复时间。
+
+`GET /sources` 不把“很久没发文章”误判为源故障，而是只判断**抓取运输层**：最近一轮报错为 `error`，从未跑过为 `never`，超过 `3 × AIF_AI_NEWS_INTERVAL_HOURS`（默认 12 小时，最少 6 小时）没有任何抓取记录为 `stale`，否则为 `healthy`。响应还动态计算当前滚动库内每源最新文章时间。前端把 error/stale 自动排到分类前面，并在顶部集中列出需关注来源。
 
 ### 2.6 入库与去重（`add_article`）
 
@@ -97,7 +99,7 @@ flowchart TD
 
 ### 2.7 容错
 
-- 单 feed 失败（HTTP 错误/超时/解析异常）只记进该源的 `last_error`，**绝不阻塞其它源**（`asyncio.gather(..., return_exceptions=True)`）。
+- 单 feed 失败（HTTP 错误/超时/解析异常）只记进该源的 `last_error` 并累加 `consecutive_failures`，**绝不阻塞其它源**（`asyncio.gather(..., return_exceptions=True)`）。下一次成功会归零并记录 `last_recovered_at`。
 - 每个 RSS/Atom 只取前 20 个 entry；官方 sitemap 支持单层同站 sitemap index（最多展开 12 个子 sitemap），按 `lastmod` 排序、路径过滤后取前 20 个 URL。
 - sitemap 最新 6 条会并发读取同站文章页，从 Open Graph、HTML meta 或 JSON-LD 补全真实标题、摘要和 `datePublished`；页面失败时保留 slug/lastmod 降级结果，不影响该源其余条目。限制为 6 页是为了覆盖 `_PER_FEED_CAP=4` 的正常候选并控制额外请求量。
 - Qwen 的 `qwen_api` 适配器读取官方 JSON、清理简介 HTML、按时间取最新 20 条。

@@ -394,15 +394,22 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
         m["last_filtered"] = 0
         if isinstance(result, Exception):
             m["last_error"] = str(result)
+            m["last_error_at"] = m["last_fetch"]
+            m["consecutive_failures"] = int(m.get("consecutive_failures") or 0) + 1
             log.warning("feed %s raised: %s", url, result)
             continue
         entries, source_title, err = result  # type: ignore[misc]
         m["name"] = configured_name or source_title or url
         if err:
             m["last_error"] = err
+            m["last_error_at"] = m["last_fetch"]
+            m["consecutive_failures"] = int(m.get("consecutive_failures") or 0) + 1
             continue
+        if m.get("consecutive_failures"):
+            m["last_recovered_at"] = m["last_fetch"]
         m["last_error"] = None
         m["last_ok"] = _now_iso()
+        m["consecutive_failures"] = 0
 
         eligible_count = 0
         filtered_count = 0

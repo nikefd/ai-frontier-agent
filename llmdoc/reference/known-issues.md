@@ -48,12 +48,12 @@
 
 ## 9. 前端小问题
 
-- `frontend/src/views.js` 的数据源页 `SRC_CAT_LABELS` / `SRC_ORDER` 已覆盖全部 8 类（含 `expert` / `x-ai`）。
+- `frontend/src/views.js` 的数据源页 `SRC_CAT_LABELS` / `SRC_ORDER` 已覆盖全部 8 类（含 `expert` / `x-ai`）；单源失败、连续失败和调度过期会分开显示并在分类内置顶。来源很久没发文章本身不算故障。
 - `frontend/public/sparrow-chat.js` 是仓库内源码（原 sparrow 组件，agent 运行时内联后纳入）。可直接改，但改完要 `npm run build` 才生效。
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 pytest/pytest-asyncio。当前 68 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、Qwen API、URL/标题去重、实践建议清洗/持久化/旧数据回填、分时调度与速报指纹去重、文章服务端筛选/分页、ISO/RFC 822 时间解析、排序、SRS、admin 护栏、邮箱/密码 token、复盘、学习路径、额度，以及 `test_security.py` 的 SSRF、HTML 清洗、安全头、全局权限和并发 JSON 更新。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前 71 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、Qwen API、URL/标题去重、实践建议清洗/持久化/旧数据回填、分时调度、速报指纹去重、来源健康分类、文章服务端筛选/分页、ISO/RFC 822 时间解析、排序、SRS、admin 护栏、邮箱/密码 token、复盘、学习路径、额度，以及 `test_security.py` 的 SSRF、HTML 清洗、安全头、全局权限和并发 JSON 更新。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 

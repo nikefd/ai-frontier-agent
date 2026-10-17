@@ -160,7 +160,7 @@ agent 主动提议（B2）：基于用户行为信号给「下一步」建议。
 
 | 方法 | 路径 | 🔒 | 说明 |
 |---|---|---|---|
-| GET | `/sources` | — | 列 feed 及健康度（合并 `DEFAULT_FEED_SPECS` 与 `sources.json` 元数据 + 每源文章计数）。全局共享 |
+| GET | `/sources` | — | 列 feed 及健康度（合并配置、抓取元数据、当前库文章数/最新内容时间）。每项带 `health_status=healthy/error/stale/never/orphan`、`health_reason`、抓取年龄、连续失败、最近成功/恢复；默认超过 3 个调度间隔未抓取即 `stale`。全局共享 |
 | POST | `/fetch` | admin | 立即跑一轮全局抓取：相关性过滤 → 每源分轮 → 分类硬配额 → 全局 150 条上限，返回 `{ok, added}` |
 | POST | `/translate/run` | admin | 手动跑一批全局翻译，返回 `{ok, translated}` |
 

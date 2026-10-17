@@ -14,7 +14,7 @@
 
 三条主要数据流：
 
-1. **抓取管线** — APScheduler 默认每 4 小时拉全部 feed（05:00 为锚点，可配）；管理员也能即时触发。详见 [RSS 抓取管线架构](../architecture/rss-pipeline-architecture.md)。
+1. **抓取管线** — APScheduler 默认每 4 小时拉全部 feed（05:00 为锚点，可配）；管理员也能即时触发。每源记录连续失败/恢复，API 再识别超过三轮间隔未抓取的全局调度过期。详见 [RSS 抓取管线架构](../architecture/rss-pipeline-architecture.md)。
 2. **翻译 / LLM 加工** — 每 2 分钟一个翻译 tick 把 `pending` 文章批量译成中文；用户可对单篇生成「深度解读」（带 mermaid 图）、对一组生成「今日速报」、对任意主题生成「深度指南」。
 3. **对话 agent** — `/api/agent/chat` 是 sparrow `Harness` 跑的 ReAct agent，带读写工具（查文章/源/track、建 track、收藏），对话历史持久化在 `ui.db`。详见 [Agent 架构](../architecture/agent-architecture.md)。
 

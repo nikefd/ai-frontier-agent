@@ -210,20 +210,28 @@ export async function loadSources() {
     const groups = {};
     for (const s of r) (groups[s.category || 'other'] = groups[s.category || 'other'] || []).push(s);
 
-    const okN = r.filter(s => !s.last_error && s.last_ok).length;
-    const errN = r.filter(s => s.last_error).length;
-    const neverN = r.filter(s => !s.last_fetch).length;
+    const okN = r.filter(s => s.health_status === 'healthy').length;
+    const errN = r.filter(s => s.health_status === 'error').length;
+    const staleN = r.filter(s => s.health_status === 'stale').length;
+    const neverN = r.filter(s => s.health_status === 'never').length;
+    const attention = r.filter(s => ['error', 'stale'].includes(s.health_status));
     const totalArticles = r.reduce((a, s) => a + (s.article_count || 0), 0);
     const healthBar = `
       <div class="src-health">
         <div class="src-health-stats">
           <span class="hs-ok">✓ ${okN} 正常</span>
-          ${errN ? `<span class="hs-err">⚠ ${errN} 异常</span>` : ''}
+          ${errN ? `<span class="hs-err">⚠ ${errN} 抓取失败</span>` : ''}
+          ${staleN ? `<span class="hs-warn">◷ ${staleN} 调度过期</span>` : ''}
           ${neverN ? `<span class="hs-neutral">⊝ ${neverN} 未抓取</span>` : ''}
-          <span class="hs-neutral">· 共 ${r.length} 源 · 累计入库 ${totalArticles} 篇</span>
+          <span class="hs-neutral">· 共 ${r.length} 源 · 当前库 ${totalArticles} 篇</span>
         </div>
+        ${attention.length ? `<div class="src-attention"><strong>需关注：</strong>${attention.slice(0, 8).map(s => `${escapeHtml(s.name)}（${escapeHtml(s.health_reason || '异常')}）`).join('、')}${attention.length > 8 ? ` 等 ${attention.length} 个源` : ''}</div>` : ''}
       </div>`;
 
+    const healthRank = { error: 0, stale: 1, never: 2, healthy: 3, orphan: 4 };
+    Object.values(groups).forEach(items => items.sort((a, b) =>
+      (healthRank[a.health_status] ?? 9) - (healthRank[b.health_status] ?? 9)
+      || String(a.name || '').localeCompare(String(b.name || ''))));
     const cats = SRC_ORDER.concat(Object.keys(groups).filter(k => !SRC_ORDER.includes(k)));
     const html = healthBar + cats.map(cat => {
       const items = groups[cat];
@@ -242,13 +250,17 @@ export async function loadSources() {
 
 function sourceCard(s) {
   let status, statusClass;
-  if (s.last_error) { status = '⚠️ 抓取失败'; statusClass = 'st-err'; }
-  else if (s.last_ok) { status = '✓ 正常'; statusClass = 'st-ok'; }
+  if (s.health_status === 'error') { status = '⚠️ 抓取失败'; statusClass = 'st-err'; }
+  else if (s.health_status === 'stale') { status = '◷ 调度过期'; statusClass = 'st-stale'; }
+  else if (s.health_status === 'healthy') { status = '✓ 正常'; statusClass = 'st-ok'; }
+  else if (s.health_status === 'orphan') { status = '历史来源'; statusClass = 'st-neutral'; }
   else { status = '⊝ 尚未抓取'; statusClass = 'st-neutral'; }
-  const errDetail = s.last_error
-    ? `<div class="src-err" title="${escapeHtml(s.last_error)}">${escapeHtml(s.last_error.length > 80 ? s.last_error.slice(0, 77) + '…' : s.last_error)}</div>`
+  const healthDetail = ['error', 'stale'].includes(s.health_status)
+    ? `<div class="src-err ${s.health_status === 'stale' ? 'is-stale' : ''}" title="${escapeHtml(s.last_error || s.health_reason || '')}">${escapeHtml(s.last_error ? (s.last_error.length > 80 ? s.last_error.slice(0, 77) + '…' : s.last_error) : s.health_reason || '')}</div>`
     : '';
   const lastFetch = s.last_fetch ? fmtDate(s.last_fetch) : '—';
+  const lastOk = s.last_ok ? fmtDate(s.last_ok) : '—';
+  const newestArticle = s.newest_article_at ? fmtDate(s.newest_article_at) : '—';
   const desc = s.description ? escapeHtml(s.description) : '<span class="text-faint">（无简介）</span>';
   const host = s.url ? (s.url.replace(/^https?:\/\//, '').split('/')[0] || '') : '';
   const safeUrl = safeExternalUrl(s.url);
@@ -263,14 +275,16 @@ function sourceCard(s) {
         <span class="src-status ${statusClass}">${status}</span>
       </div>
       <div class="src-desc">${desc}</div>
-      ${errDetail}
+      ${healthDetail}
       <div class="src-stats">
         <span title="本次入库 / 被过滤"><span class="hs-ok">+${s.last_added ?? 0}</span> <span class="text-faint">/ ${s.last_filtered ?? 0} 过滤</span></span>
         <span class="dot-sep">·</span>
-        <span title="累计入库">📚 ${s.article_count || 0} 篇</span>
+        <span title="当前滚动文章库中的数量">📚 ${s.article_count || 0} 篇</span>
         <span class="dot-sep">·</span>
         <span title="最近抓取">⏱ ${lastFetch}</span>
+        ${s.consecutive_failures ? `<span class="dot-sep">·</span><span class="hs-err">连续失败 ${s.consecutive_failures} 次</span>` : ''}
       </div>
+      <div class="src-stats text-faint"><span title="最近成功抓取">成功 ${lastOk}</span><span class="dot-sep">·</span><span title="当前库中该来源最新文章">最新内容 ${newestArticle}</span></div>
       <div class="src-foot">${linkRow}</div>
     </div>`;
 }
