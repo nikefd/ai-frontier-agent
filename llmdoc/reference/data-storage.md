@@ -69,6 +69,7 @@
 | `translation_status` | str | pending/ok/failed/skipped |
 | `importance` | int? | 富化 worker 评的重要性 0-10（用于文章流 `sort=important`）；老文章/未富化为 null |
 | `hands_on` | str? | 富化 worker 生成的最小实践建议；仅可操作内容非空，政策/融资/纯观点/信息不足为空。前端“可实践”筛选和“带我做”入口使用 |
+| `event_key` | str? | 富化 worker 生成的保守同事件键，英文小写“核心实体-动作-对象”；空字符串表示已判断但不适合聚类。仅用于速报候选去重，不隐藏文章流原始报道 |
 
 > **多用户后**：`pinned` / `deep_dive_status` / `deep_dive_id` **不再持久化到全局 `articles.json`**。`pinned` 现按用户存于 `users/<uid>/pins.json`；`deep_dive_status` 由「该用户的 `deep-dives/{aid}.json` 是否存在」推导。`GET /articles` 在响应里**按当前用户叠加**这三个字段（匿名全为未 pin/无解读）。`manual` 合成文章也不再进全局流（手动解读只进用户深度解读库）。
 
@@ -101,7 +102,7 @@
 
 ### 3.5 summary_today.json
 
-`{generated_at, date, model, cohort_size, cohort_fingerprint, body, cohort[]}`。`body` 是 Markdown 速报，`cohort` 是参与生成的文章列表；`cohort_fingerprint` 是影响输出字段的 SHA-256，用于让分时任务在候选未变化时跳过 LLM。候选来自最近 30 小时，先按规范化标题精确去重（重复报道优先保留官方/高质量来源），再按 importance、来源类别、tier、时效与来源多样性预筛；Trending 最多 2 条、X 最多 3 条。旧缓存没有指纹，下一次分时任务会自动重写一次。
+`{generated_at, date, model, cohort_size, cohort_fingerprint, body, cohort[]}`。`body` 是 Markdown 速报，`cohort` 是参与生成的文章列表；每个 cohort 项可带 `event_key` 与 `related_articles[]`（同一事件被合并的其它报道）。`cohort_fingerprint` 覆盖这些字段，用于让分时任务在候选未变化时跳过 LLM。候选来自最近 30 小时，先按规范化标题兼容去重，再按事件键合并不同标题并优先官方/高质量来源，然后按 importance、来源类别、tier、时效与来源多样性预筛；Trending 最多 2 条、X 最多 3 条。
 
 ### 3.6 ui.db（SQLite，每用户一个）
 

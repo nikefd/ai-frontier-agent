@@ -53,7 +53,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 pytest/pytest-asyncio。当前 71 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、Qwen API、URL/标题去重、实践建议清洗/持久化/旧数据回填、分时调度、速报指纹去重、来源健康分类、文章服务端筛选/分页、ISO/RFC 822 时间解析、排序、SRS、admin 护栏、邮箱/密码 token、复盘、学习路径、额度，以及 `test_security.py` 的 SSRF、HTML 清洗、安全头、全局权限和并发 JSON 更新。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前 74 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、Qwen API、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 

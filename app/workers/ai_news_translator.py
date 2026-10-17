@@ -2,7 +2,7 @@
 
 Picks up un-enriched articles in small batches and asks the LLM, in ONE batched
 call per batch, for: Chinese title + summary, an importance score (0-10),
-controlled tags, and an optional hands-on next step. Writes everything back to
+controlled tags, an event-cluster key, and an optional hands-on next step. Writes everything back to
 the GLOBAL articles.json atomically —
 so enrichment is computed once and shared across all users (content is global;
 only pins/profiles are per-user).
@@ -31,7 +31,7 @@ from ..storage import update_json_atomic
 log = logging.getLogger("aif.translator")
 
 BATCH_SIZE = 8
-PRACTICE_BACKFILL_LIMIT = 40
+ENRICHMENT_BACKFILL_LIMIT = 60
 _TRANSLATE_LOCK = asyncio.Lock()
 
 # Controlled tag vocabulary — the LLM must pick from this list, nothing else.
@@ -40,7 +40,7 @@ TAG_VOCAB = ["发布", "论文", "工具", "开源", "教程", "观点", "融资
 
 SYSTEM = (
     "你是一名 AI/技术新闻编辑。我会给你一组 RSS 抓取的英文（或中文）文章条目，"
-    "请对每条做四件事：翻译、评重要性、打标签、判断是否值得动手实践。\n\n"
+    "请对每条做五件事：翻译、评重要性、打标签、识别事件、判断是否值得动手实践。\n\n"
     "1) 翻译：把 title 和 summary 翻成自然、专业、紧凑的中文。\n"
     "   - 保留专有名词（OpenAI / GPT-4 / vLLM / RLHF 等）不翻译\n"
     "   - 不要营销词、不要感叹号；summary 控制在 150 字内，可改写为信息密度更高的中文\n"
@@ -53,13 +53,17 @@ SYSTEM = (
     "   - 结合 source/category 判断证据层级：官方一手发布和扎实研究优先；"
     "GitHub Trending、社区热度、单条社交观点本身不等于重要\n"
     f"3) tags：从这个固定清单里选 1-3 个最贴切的（**只能用清单里的词**）：{TAG_VOCAB}\n"
-    "4) hands_on：仅当内容是可试用的模型/API/工具/开源项目/教程，或能做小型复现实验时，"
+    "4) event_key：为明确、可复述的新闻事件生成稳定的英文小写键，格式为“核心实体-动作-对象”，"
+    "例如 openai-release-gpt-5。同一批里报道同一事件的条目必须给完全相同的键。"
+    "泛泛观点、教程合集、无明确事件或无法判断时返回空字符串。不得把来源名或营销措辞当事件。\n"
+    "5) hands_on：仅当内容是可试用的模型/API/工具/开源项目/教程，或能做小型复现实验时，"
     "给一个 20-80 字的中文最小实践步骤；政策、融资、纯观点、信息不足时返回空字符串。\n"
     "   - 只能依据输入内容，不得编造命令、参数、URL、模型名、版本号或不存在的能力\n"
     "   - 用动词开头，说明先做什么、观察什么结果；不要写泛泛的“阅读原文/持续关注”\n\n"
     "输出必须是单个合法 JSON 数组，每项形如："
     '{"id":"...","title_zh":"...","summary_zh":"...","importance":7,'
-    '"tags":["发布","工具"],"hands_on":"用一个最小样例试跑该工具，并记录延迟与输出质量。"}\n'
+    '"tags":["发布","工具"],"event_key":"acme-release-model-x",'
+    '"hands_on":"用一个最小样例试跑该工具，并记录延迟与输出质量。"}\n'
     "不要带 markdown 代码块标记。"
 )
 
@@ -69,11 +73,11 @@ def _pick_pending(articles: list[dict], n: int) -> list[dict]:
     for index, a in enumerate(articles):
         if a.get("title_zh") and a.get("summary_zh"):
             # One-time bounded backfill for recent articles enriched before
-            # hands_on existed. Empty string is a processed, non-actionable row.
+            # hands_on/event_key existed. Empty strings mean processed.
             if (
-                index < PRACTICE_BACKFILL_LIMIT
+                index < ENRICHMENT_BACKFILL_LIMIT
                 and a.get("translation_status") == "ok"
-                and a.get("hands_on") is None
+                and (a.get("hands_on") is None or a.get("event_key") is None)
             ):
                 out.append(a)
                 if len(out) >= n:
@@ -145,6 +149,20 @@ def _clean_hands_on(v: Any) -> str:
     return text[:120]
 
 
+def _clean_event_key(v: Any) -> str:
+    """Normalize a conservative LLM event key; empty means do not cluster."""
+    if not isinstance(v, str):
+        return ""
+    key = v.strip().casefold()
+    key = re.sub(r"[^a-z0-9]+", "-", key).strip("-")
+    if key in {"", "none", "unknown", "other", "n-a", "na"}:
+        return ""
+    parts = [part for part in key.split("-") if part][:8]
+    if len(parts) < 3:
+        return ""
+    return "-".join(parts)[:96]
+
+
 async def _translate_once() -> int:
     """Enrich one batch (translate + score + tag). Returns number processed."""
     if not llm_configured():
@@ -197,6 +215,7 @@ async def _translate_once() -> int:
                 tags = _clean_tags(p.get("tags"))
                 if tags:
                     a["tags"] = tags
+                a["event_key"] = _clean_event_key(p.get("event_key"))
                 a["hands_on"] = _clean_hands_on(p.get("hands_on"))
                 a["translation_status"] = "ok" if title_zh else "failed"
                 written += 1

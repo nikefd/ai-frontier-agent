@@ -31,6 +31,7 @@ class Article(BaseModel):
     date: str | None = None
     summary: str | None = None
     hands_on: str | None = None  # "动手试试" hint
+    event_key: str | None = None  # normalized same-event cluster key from enrichment
     tags: list[str] = Field(default_factory=list)
     pinned: bool = False
     # tier + relevance + translation (all optional / backwards-compat)

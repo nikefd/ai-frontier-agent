@@ -186,7 +186,44 @@ def test_summary_exact_headline_dedupe_prefers_official_source() -> None:
         "id": "official", "title": "Introducing Model X", "source": "Lab",
         "category": "vendor", "tier": "high", "importance": 8,
     }
-    assert _dedupe_summary_articles([media, official]) == [official]
+    result = _dedupe_summary_articles([media, official])
+    assert len(result) == 1
+    assert result[0]["id"] == "official"
+    assert result[0]["related_articles"][0]["source"] == "Media"
+
+
+def test_summary_event_dedupe_keeps_official_and_records_corroboration() -> None:
+    media = {
+        "id": "media", "title": "Model X changes the coding market", "source": "Media",
+        "category": "media", "tier": "med", "importance": 10,
+        "event_key": "lab-release-model-x", "url": "https://media.test/x",
+    }
+    official = {
+        "id": "official", "title": "Introducing Model X", "source": "Lab",
+        "category": "vendor", "tier": "high", "importance": 8,
+        "event_key": "lab-release-model-x", "url": "https://lab.test/x",
+    }
+    result = _dedupe_summary_articles([media, official])
+    assert len(result) == 1
+    assert result[0]["id"] == "official"
+    assert result[0]["related_articles"] == [{
+        "id": "media", "title": "Model X changes the coding market",
+        "source": "Media", "url": "https://media.test/x",
+    }]
+
+
+def test_exact_headline_dedupe_survives_partial_event_key_backfill() -> None:
+    legacy = {
+        "id": "legacy", "title": "Introducing Model X", "source": "Media",
+        "category": "media", "importance": 9,
+    }
+    enriched = {
+        "id": "official", "title": "Introducing Model X", "source": "Lab",
+        "category": "vendor", "importance": 8, "event_key": "lab-release-model-x",
+    }
+    result = _dedupe_summary_articles([legacy, enriched])
+    assert len(result) == 1
+    assert result[0]["id"] == "official"
 
 
 def test_summary_cohort_caps_trending_and_preserves_source_diversity() -> None:

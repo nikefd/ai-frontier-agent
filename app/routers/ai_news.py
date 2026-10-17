@@ -823,33 +823,55 @@ def _headline_key(article: dict) -> str:
 
 
 def _dedupe_summary_articles(articles: list[dict]) -> list[dict]:
-    """Collapse exact syndicated headlines, preferring the primary source."""
+    """Collapse same-event or exact-headline coverage, preferring primary sources."""
     category_quality = {
         "vendor": 4, "blog": 3, "expert": 3, "paper": 2,
         "media": 2, "community": 1, "x-ai": 0, "trending": 0,
     }
-    by_headline: dict[str, dict] = {}
-    without_title: list[dict] = []
-    for article in articles:
-        key = _headline_key(article)
-        if not key:
-            without_title.append(article)
-            continue
-        current = by_headline.get(key)
-        authority = (
+    def authority(article: dict) -> tuple:
+        return (
             category_quality.get(_article_category(article), 1),
             _summary_rank(article),
         )
-        if current is None:
-            by_headline[key] = article
-            continue
-        current_authority = (
-            category_quality.get(_article_category(current), 1),
-            _summary_rank(current),
-        )
-        if authority > current_authority:
-            by_headline[key] = article
-    return list(by_headline.values()) + without_title
+
+    def collapse(group: list[dict]) -> dict:
+        winner = max(group, key=authority)
+        if len(group) == 1:
+            return winner
+        related = list(winner.get("related_articles") or [])
+        for article in group:
+            if article is winner:
+                continue
+            related.append({
+                "id": article.get("id"), "title": article.get("title"),
+                "source": article.get("source"), "url": article.get("url"),
+            })
+            related.extend(article.get("related_articles") or [])
+        return {**winner, "related_articles": related}
+
+    # Stage one preserves the previous exact-headline behavior even while old
+    # articles are still being backfilled with event keys.
+    headline_groups: dict[str, list[dict]] = {}
+    untitled: list[dict] = []
+    for article in articles:
+        headline = _headline_key(article)
+        if headline:
+            headline_groups.setdefault(headline, []).append(article)
+        else:
+            untitled.append(article)
+    headline_winners = [collapse(group) for group in headline_groups.values()] + untitled
+
+    # Stage two merges differently worded coverage only when enrichment gave a
+    # conservative, non-empty event key. Rows without one remain independent.
+    event_groups: dict[str, list[dict]] = {}
+    independent: list[dict] = []
+    for article in headline_winners:
+        event_key = str(article.get("event_key") or "").strip()
+        if event_key:
+            event_groups.setdefault(event_key, []).append(article)
+        else:
+            independent.append(article)
+    return [collapse(group) for group in event_groups.values()] + independent
 
 
 def _select_summary_cohort(articles: list[dict], limit: int) -> list[dict]:
@@ -936,6 +958,8 @@ def _summary_fingerprint(cohort: list[dict]) -> str:
             "category": _article_category(article),
             "importance": article.get("importance"),
             "hands_on": article.get("hands_on"),
+            "event_key": article.get("event_key"),
+            "related_articles": article.get("related_articles") or [],
             "url": article.get("url"),
         }
         for article in cohort
@@ -967,12 +991,17 @@ async def build_today_summary(*, force: bool = False) -> dict | None:
     lines = []
     for i, a in enumerate(cohort, 1):
         snippet = (a.get("summary") or "")[:240]
+        related_sources = [
+            str(item.get("source")) for item in (a.get("related_articles") or [])
+            if item.get("source")
+        ]
         lines.append(
             f"[{i}] {a.get('title')}\n"
             f"    source={a.get('source')} category={_article_category(a)} "
             f"importance={a.get('importance')}\n"
             f"    url={a.get('url')}\n    excerpt={snippet}\n"
-            f"    practice={a.get('hands_on') or ''}"
+            f"    practice={a.get('hands_on') or ''}\n"
+            f"    corroborating_sources={', '.join(related_sources)}"
         )
     article_block = "\n\n".join(lines)
 
@@ -989,7 +1018,7 @@ async def build_today_summary(*, force: bool = False) -> dict | None:
                 "- 不要复述营销词；过滤掉与 AI/ML/Agent/Infra 无关的项\n"
                 "- 官方发布、关键研究、重大产品/政策事件优先；GitHub Trending 和社交观点只能作为补充信号\n"
                 "- 不要因为多个热门仓库讨论同一趋势就挤掉更重要的一手消息\n"
-                "- 如果同一主题有多源，合并为一条并列出 [n][m] 引用"
+                "- 候选已按 event_key 合并同一事件；若 corroborating_sources 非空，正文可简短写“多源佐证：来源名”，主引用仍使用该条 [n]"
             ),
         },
         {
@@ -1007,7 +1036,11 @@ async def build_today_summary(*, force: bool = False) -> dict | None:
         "cohort_fingerprint": cohort_fingerprint,
         "body": body,
         "cohort": [
-            {"id": a.get("id"), "title": a.get("title"), "source": a.get("source"), "url": a.get("url")}
+            {
+                "id": a.get("id"), "title": a.get("title"), "source": a.get("source"),
+                "url": a.get("url"), "event_key": a.get("event_key"),
+                "related_articles": a.get("related_articles") or [],
+            }
             for a in cohort
         ],
     }

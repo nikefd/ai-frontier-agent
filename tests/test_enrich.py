@@ -7,6 +7,7 @@ import app.workers.ai_news_translator as translator
 from app.storage import read_json, write_json_atomic
 from app.workers.ai_news_translator import (
     TAG_VOCAB,
+    _clean_event_key,
     _clean_hands_on,
     _clean_importance,
     _clean_tags,
@@ -44,12 +45,19 @@ def test_hands_on_is_single_line_bounded_and_optional():
     assert _clean_hands_on(None) == ""
 
 
+def test_event_key_is_normalized_and_rejects_placeholders():
+    assert _clean_event_key(" OpenAI / Release / GPT-5 ") == "openai-release-gpt-5"
+    assert _clean_event_key("unknown") == ""
+    assert _clean_event_key("generic-update") == ""
+    assert _clean_event_key(None) == ""
+
+
 def test_recent_legacy_articles_are_backfilled_once():
     legacy = {
         "id": "old", "title_zh": "标题", "summary_zh": "摘要",
-        "translation_status": "ok", "hands_on": None,
+        "translation_status": "ok", "hands_on": None, "event_key": None,
     }
-    processed = {**legacy, "id": "done", "hands_on": ""}
+    processed = {**legacy, "id": "done", "hands_on": "", "event_key": ""}
     assert _pick_pending([legacy, processed], 8) == [legacy]
 
 
@@ -74,13 +82,15 @@ async def test_enrichment_persists_actionable_step(tmp_path, monkeypatch):
     async def fake_chat(*_args, **_kwargs):
         return json.dumps([{
             "id": "a1", "title_zh": "工具发布", "summary_zh": "可运行最小样例。",
-            "importance": 7, "tags": ["工具"], "hands_on": "运行最小样例并记录输出。",
+            "importance": 7, "tags": ["工具"], "event_key": "lab-release-tool",
+            "hands_on": "运行最小样例并记录输出。",
         }], ensure_ascii=False)
 
     monkeypatch.setattr(translator, "chat_complete", fake_chat)
     assert await translator._translate_once() == 1
     saved = read_json(articles_file, [])[0]
     assert saved["hands_on"] == "运行最小样例并记录输出。"
+    assert saved["event_key"] == "lab-release-tool"
     assert saved["translation_status"] == "ok"
 
 
