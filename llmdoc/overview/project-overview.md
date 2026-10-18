@@ -53,6 +53,7 @@
 | `app/safe_fetch.py` | 阅读器 SSRF 校验、限流式抓取和惰性 HTML 清洗 |
 | `app/llm_client.py` | DeepSeek（OpenAI 兼容）薄封装：`chat_complete` / `chat_stream` |
 | `app/news_alerts.py` | 零 LLM 的重大事件判定：模型发布、API 变更、安全事件、重要开源；近 36 小时去重排序 |
+| `app/quality_report.py` / `routers/quality.py` | 零 LLM 覆盖质量体检：来源健康、高影响事件露出、富化积压、发现延迟 |
 | `app/scheduler.py` | APScheduler：分时抓取 + 每 2 分钟翻译 + 分时速报刷新 |
 | `app/routers/ai_news.py` | **核心路由**：articles/tracks/guides/sources/summary/deep-dive/manual-dive，以及 feed 清单与关键词表 |
 | `app/agent_chat.py` | sparrow ReAct agent 的 `/api/agent/chat` SSE 端点 + 对话管理 |
@@ -70,6 +71,7 @@
 
 - **抓取入库:** 93 个 RSS、官方 sitemap/API/changelog 按 fast/standard/slow 三层异步并发拉取 → sitemap 最新 6 页补全元数据，官方更新日志拆成独立发布项，HF Daily Papers 按日期、社区票数、代码与 stars 排序 → category 归一化 high/med/low → med/low 必须命中 AI 关键词（paper 除外）→ arXiv ID/URL 去重 → 每源分轮取候选 → 分类硬配额（论文 14、Trending 6、X 12 等）→ `_DAILY_FETCH_CAP=150` 真正封顶 → 滚动历史 `_ARTICLE_LIMIT=400`（pinned 不淘汰）。富化时另生成保守 `event_key`，让不同标题的同一事件在速报前合并并保留佐证来源。
 - **重大提醒:** `news_alerts.py` 对近 36 小时文章做高精度、零 LLM 分类；API 弃用和安全事件优先，其次是官方模型发布与重要开源，并按 `event_key` 去重。结果随 `GET /summary/today` 实时返回，不等待下一次 LLM 速报刷新。
+- **覆盖质量体检:** 数据源页按近 30 小时计算 fast 源健康率、高影响事件在速报/重大提醒中的露出率、待富化数量和发现延迟 P50/P90；同事件多篇报道只算一次，不调用 LLM。它衡量“已接入来源后的管线漏出”，不等同于对全网未知事件的绝对召回率。
 - **速报选材:** 最近 30 小时文章先按规范化标题合并重复报道，再按 importance、来源类别、tier、时效综合排序；首轮限制同源最多 2 条，Trending 最多 2 条、X 最多 3 条，官方发布/关键研究优先。
 - **双语与实践富化:** worker 每批 8 篇，LLM 一次返回翻译/评分/标签和可选的最小实践建议，按 id 原子合并；政策、融资、纯观点或信息不足时不硬凑实践。文章流可只看“可实践”，并一键让 AI 基于原文拆成 15 分钟实验。失败不自动重试，管理员可重置。
 - **LLM 产物:** 单篇解读、全局每日速报、主题指南、画像、复盘和学习路径；手动主题解读只进用户库，不插入全局文章流。

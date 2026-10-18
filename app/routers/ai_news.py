@@ -491,6 +491,7 @@ def add_article(article: Article) -> dict:
         payload = article.model_dump()
         payload["id"] = aid
         payload["date"] = payload.get("date") or _now_iso()
+        payload["ingested_at"] = payload.get("ingested_at") or _now_iso()
         for k in ("pinned", "deep_dive_status", "deep_dive_id"):
             payload.pop(k, None)
         articles.insert(0, payload)

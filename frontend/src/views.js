@@ -234,7 +234,11 @@ const SRC_ORDER = ['vendor', 'blog', 'expert', 'media', 'paper', 'x-ai', 'trendi
 
 export async function loadSources() {
   try {
-    const r = await api('GET', '/api/ai-news/sources');
+    const [r, quality] = await Promise.all([
+      api('GET', '/api/ai-news/sources'),
+      api('GET', '/api/ai-news/quality/report').catch(() => null),
+    ]);
+    renderQualityReport(quality);
     $('#cnt-sources').textContent = r.length;
     const groups = {};
     for (const s of r) (groups[s.category || 'other'] = groups[s.category || 'other'] || []).push(s);
@@ -273,8 +277,41 @@ export async function loadSources() {
     }).join('');
     $('#sources-list').innerHTML = html;
   } catch (e) {
+    renderQualityReport(null);
     $('#sources-list').innerHTML = '<div class="muted-card">❌ ' + escapeHtml(e.message) + '</div>';
   }
+}
+
+function pct(value) {
+  return value == null ? '—' : `${Math.round(value * 100)}%`;
+}
+
+function renderQualityReport(report) {
+  const root = $('#quality-report');
+  if (!root) return;
+  if (!report) {
+    root.innerHTML = '';
+    return;
+  }
+  const source = report.source_health || {};
+  const content = report.content_coverage || {};
+  const pipeline = report.pipeline || {};
+  const statusLabel = { healthy: '正常', watch: '需关注', critical: '有缺口' }[report.status] || '未知';
+  const latency = pipeline.latency_sample_size
+    ? `${pipeline.median_discovery_minutes ?? '—'} / ${pipeline.p90_discovery_minutes ?? '—'} 分钟`
+    : '等待新入库样本';
+  root.innerHTML = `<section class="quality-card is-${escapeHtml(report.status || 'unknown')}">
+    <div class="quality-head"><strong>覆盖质量体检</strong><span>${escapeHtml(statusLabel)} · 最近 ${report.window_hours || 30} 小时</span></div>
+    <div class="quality-metrics">
+      <div><b>${pct(source.fast_rate)}</b><span>高时效源健康</span></div>
+      <div><b>${pct(content.visible_rate)}</b><span>高影响事件露出</span></div>
+      <div><b>${pipeline.pending_enrichment ?? 0}</b><span>待翻译 / 评分</span></div>
+      <div><b>${escapeHtml(latency)}</b><span>发现延迟 P50 / P90</span></div>
+    </div>
+    <div class="quality-findings">${(report.findings || []).map(item =>
+      `<div class="qf-${escapeHtml(item.level || '')}"><b>${escapeHtml(item.title || '')}</b><span>${escapeHtml(item.detail || '')}</span></div>`
+    ).join('')}</div>
+  </section>`;
 }
 
 function sourceCard(s) {

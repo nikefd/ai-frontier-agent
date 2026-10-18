@@ -29,6 +29,7 @@ class Article(BaseModel):
     url: str
     source: str
     date: str | None = None
+    ingested_at: str | None = None  # first persisted by this service; enables latency audits
     summary: str | None = None
     hands_on: str | None = None  # "动手试试" hint
     event_key: str | None = None  # normalized same-event cluster key from enrichment

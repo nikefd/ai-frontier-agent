@@ -60,6 +60,7 @@
 | `id` | str | `a_` + url 的 sha1 前 12 位 |
 | `title` / `url` / `source` | str | 原始标题 / 链接 / 来源名 |
 | `date` | str | ISO 时间（发布或入库时间） |
+| `ingested_at` | str? | 首次写入 `articles.json` 的 UTC 时间；用于发现延迟评测。老文章无此字段，不回填也不纳入延迟样本 |
 | `summary` | str | 去标签后截断的英文摘要 |
 | `tags` | list | 受控词表标签（富化 worker 从 `TAG_VOCAB` 选，最多 3 个） |
 | `tier` | str | high/med/low；按来源 category 在启动时归一化，影响抓取相关性门槛和速报排序 |

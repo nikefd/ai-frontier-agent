@@ -120,6 +120,10 @@ app.include_router(learning.router)
 from .routers import suggestions
 app.include_router(suggestions.router)
 
+# Operational source/coverage/latency audit. Pure calculation, zero LLM.
+from .routers import quality
+app.include_router(quality.router)
+
 # Auth (register / login / logout / me + session dependencies).
 from .auth import router as auth_router
 app.include_router(auth_router)
