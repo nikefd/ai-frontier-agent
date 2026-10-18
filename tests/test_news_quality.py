@@ -14,6 +14,9 @@ from app.routers.ai_news import (
 from app.workers.ai_news_fetcher import (
     _decide_relevance,
     _entries_from_sitemap,
+    _fetch_feed,
+    _parse_gemini_changelog_entries,
+    _parse_openai_changelog_entries,
     _parse_page_metadata,
     _parse_qwen_api_entries,
     _parse_sitemap_index,
@@ -54,7 +57,7 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
     from app.routers.ai_news import DEFAULT_FEED_SPECS
 
     urls = {spec["url"] for spec in DEFAULT_FEED_SPECS}
-    assert len(DEFAULT_FEED_SPECS) == 88
+    assert len(DEFAULT_FEED_SPECS) == 92
     assert len(urls) == len(DEFAULT_FEED_SPECS)
     assert {
         "https://engineering.fb.com/category/ai-research/feed/",
@@ -64,7 +67,74 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "https://blog.cloudflare.com/tag/ai/rss/",
         "https://www.together.ai/blog/rss.xml",
         "https://ollama.com/blog/rss.xml",
+        "https://developers.openai.com/api/docs/changelog.md",
+        "https://platform.claude.com/docs/en/release-notes/feed.xml",
+        "https://ai.google.dev/gemini-api/docs/changelog",
+        "https://cursor.com/changelog/rss.xml",
     } <= urls
+
+
+def test_openai_changelog_adapter_keeps_individual_updates_and_dates() -> None:
+    changelog = b"""# Changelog
+## October, 2026
+### Oct 16
+Feature \xc2\xb7 Model: gpt-live-1
+
+Released [prompt-to-voice](/api/docs/guides/custom-voices) for all API customers.
+### Oct 15
+Update
+
+Added native [Decisions integration](/api/docs/guides/decisions-voice).
+### Oct 15
+Feature
+
+Updated the [same guide](/api/docs/guides/decisions-voice) with examples.
+"""
+    entries = _parse_openai_changelog_entries(changelog)
+
+    assert [entry["date"][:10] for entry in entries] == [
+        "2026-10-16", "2026-10-15", "2026-10-15",
+    ]
+    assert entries[0]["title"] == "Released prompt-to-voice for all API customers."
+    assert entries[0]["url"] == "https://developers.openai.com/api/docs/guides/custom-voices"
+    assert entries[2]["url"].startswith(
+        "https://developers.openai.com/api/docs/changelog#2026-10-15-",
+    )
+
+
+def test_gemini_changelog_adapter_splits_release_note_items() -> None:
+    page = b'''<div class="devsite-article-body">
+      <h2 id="10-13-2026">October 13, 2026</h2>
+      <ul>
+        <li><strong>Gemini 4 Argon generally available</strong>: Released
+          <a href="/gemini-api/docs/models/gemini-4-argon">Gemini 4 Argon</a>.</li>
+        <li><strong>Legacy model deprecation</strong>: Migrate before shutdown.</li>
+      </ul>
+    </div>'''
+    entries = _parse_gemini_changelog_entries(page)
+
+    assert [entry["title"] for entry in entries] == [
+        "Gemini 4 Argon generally available", "Legacy model deprecation",
+    ]
+    assert entries[0]["url"] == "https://ai.google.dev/gemini-api/docs/models/gemini-4-argon"
+    assert entries[1]["url"].endswith("#10-13-2026-2")
+    assert all(entry["date"].startswith("2026-10-13") for entry in entries)
+
+
+@pytest.mark.asyncio
+async def test_changelog_structure_break_is_reported_as_source_error() -> None:
+    url = "https://developers.openai.com/api/docs/changelog.md"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert str(request.url) == url
+        return httpx.Response(200, content=b"# Changelog\nUnexpected layout")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        entries, title, error = await _fetch_feed(client, url)
+
+    assert entries == []
+    assert title == "OpenAI API Changelog"
+    assert error == "OpenAI changelog contained no parseable updates"
 
 
 def test_official_sitemap_adapter_filters_and_sorts_paths() -> None:

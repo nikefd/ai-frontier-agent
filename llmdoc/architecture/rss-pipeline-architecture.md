@@ -11,8 +11,8 @@
 flowchart TD
   cron[APScheduler 每 4 小时<br/>05:00 为锚点] --> fetch
   manual[管理员点「立即抓取」 POST /fetch] --> fetch
-  fetch[fetch_once：异步并发拉 88 个 RSS/sitemap/API 源]
-  fetch --> parse[feedparser 解析 RSS/Atom<br/>BS4 解析官方 sitemap<br/>适配官方 JSON API]
+  fetch[fetch_once：异步并发拉 92 个 RSS/sitemap/API/changelog 源]
+  fetch --> parse[feedparser 解析 RSS/Atom<br/>BS4 解析官方 sitemap/changelog<br/>适配官方 JSON API]
   parse --> gate[tier/category 相关性门槛<br/>high/paper 接受，med/low 需关键词]
   gate --> rounds[每源分 4 轮取候选<br/>先各源 1 条，再各源第 2 条]
   rounds --> category[分类硬配额<br/>Trending 6 / X 12 / 其它分类]
@@ -39,13 +39,13 @@ flowchart TD
 
 ### 2.2 feed 清单与分类
 
-88 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；无稳定 RSS 的官方站可设置 `{format:"sitemap", include_paths:[...]}`，官方 JSON 接口可设置专用 format。当前 Anthropic、Cohere、Mistral、xAI 直接读取官方 sitemap，Qwen 读取官方文章 API；开放研究侧使用 Ai2 官方 RSS，并补充 Meta Engineering、PyTorch、Google Cloud AI、Cloudflare AI、Together AI 与 Ollama 的官方 RSS。Stanford HAI sitemap 会把旧文章 `lastmod` 标成当天、造成假鲜度，因此没有继续使用。
+92 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；无稳定 RSS 的官方站可设置专用 format。当前 Anthropic、Cohere、Mistral、xAI 读取官方 sitemap，Qwen 读取官方文章 API；OpenAI API 的 Markdown changelog 与 Gemini API 的 HTML release notes 会拆成带真实日期和官方落地链接的独立发布项，Claude Platform 与 Cursor 直接读取 changelog RSS。开放研究和工程侧还覆盖 Ai2、Meta Engineering、PyTorch、Google Cloud AI、Cloudflare AI、Together AI 与 Ollama。Stanford HAI sitemap 会把旧文章 `lastmod` 标成当天、造成假鲜度，因此没有继续使用。
 
 `category` 同时驱动前端分组、tier 归一化与抓取配额，共 8 类：
 
 | category | 含义 | 数量 |
 |---|---|---|
-| `vendor` | 官方实验室 / 厂商第一手发布 | 27 |
+| `vendor` | 官方实验室 / 厂商第一手发布 | 31 |
 | `x-ai` | X(Twitter) 上的 AI 大 V | 24 |
 | `community` | 社区 / 周刊（含中文资讯） | 12 |
 | `expert` | 专家个人博客 | 9 |
@@ -103,6 +103,7 @@ flowchart TD
 - 每个 RSS/Atom 只取前 20 个 entry；官方 sitemap 支持单层同站 sitemap index（最多展开 12 个子 sitemap），按 `lastmod` 排序、路径过滤后取前 20 个 URL。
 - sitemap 最新 6 条会并发读取同站文章页，从 Open Graph、HTML meta 或 JSON-LD 补全真实标题、摘要和 `datePublished`；页面失败时保留 slug/lastmod 降级结果，不影响该源其余条目。限制为 6 页是为了覆盖 `_PER_FEED_CAP=4` 的正常候选并控制额外请求量。
 - Qwen 的 `qwen_api` 适配器读取官方 JSON、清理简介 HTML、按时间取最新 20 条。
+- OpenAI 的 `openai_changelog` 适配器按 Markdown 月份/日期标题拆分最新 20 条 API 更新，优先链接到对应功能文档；Gemini 的 `gemini_changelog` 适配器按日期和顶层列表项拆分模型发布、弃用与迁移提醒。两者都使用页面声明的日期，不以抓取时间冒充发布时间。
 - `_parse_ts()` 同时支持 ISO 8601 和 RSS 常见 RFC 822 日期；未知格式回退为 0。抓取候选排序、文章流排序和最近 30 小时速报窗口共用这一实现。
 - `fetch_once` 有进程内异步锁，避免定时任务和管理员手动触发重叠。
 

@@ -26,7 +26,7 @@ import logging
 import re
 from datetime import datetime, timezone
 from typing import Iterable
-from urllib.parse import unquote, urlparse
+from urllib.parse import unquote, urljoin, urlparse
 
 import feedparser
 import httpx
@@ -212,6 +212,133 @@ def _parse_qwen_api_entries(payload: dict) -> list[dict]:
     return entries[:20]
 
 
+def _plain_markdown(value: str) -> str:
+    """Collapse the small Markdown subset used by official changelogs."""
+    text = re.sub(r"\[([^\]]+)\]\([^\s)]+(?:\s+[^)]*)?\)", r"\1", value)
+    text = re.sub(r"[`*_~]", "", text)
+    return _clean_metadata_text(text)
+
+
+def _parse_openai_changelog_entries(content: bytes) -> list[dict]:
+    """Turn OpenAI's official Markdown changelog into dated feed entries."""
+    base_url = "https://developers.openai.com/api/docs/changelog"
+    lines = content.decode("utf-8", errors="replace").splitlines()
+    year: int | None = None
+    current_date: datetime | None = None
+    current_lines: list[str] = []
+    blocks: list[tuple[datetime, list[str]]] = []
+
+    def flush() -> None:
+        if current_date and current_lines:
+            blocks.append((current_date, list(current_lines)))
+
+    for line in lines:
+        month_match = re.fullmatch(r"##\s+[A-Za-z]+,\s+(\d{4})\s*", line)
+        if month_match:
+            flush()
+            current_date = None
+            current_lines = []
+            year = int(month_match.group(1))
+            continue
+        day_match = re.fullmatch(r"###\s+([A-Za-z]{3})\s+(\d{1,2})\s*", line)
+        if day_match and year:
+            flush()
+            try:
+                current_date = datetime.strptime(
+                    f"{day_match.group(1)} {day_match.group(2)} {year}", "%b %d %Y",
+                ).replace(tzinfo=timezone.utc)
+            except ValueError:
+                current_date = None
+            current_lines = []
+            continue
+        if current_date:
+            current_lines.append(line)
+    flush()
+
+    entries: list[dict] = []
+    used_urls: set[str] = set()
+    for published, block_lines in blocks:
+        chunks = [_plain_markdown(line) for line in block_lines if line.strip()]
+        chunks = [chunk for chunk in chunks if chunk]
+        if not chunks:
+            continue
+        body = next((
+            chunk for chunk in chunks
+            if not re.match(r"^(Feature|Update|Fix|Deprecation|Announcement)\b", chunk)
+        ), chunks[0])
+        sentence = re.split(r"(?<=[.!?])\s+", body, maxsplit=1)[0]
+        title = sentence[:157] + "…" if len(sentence) > 160 else sentence
+        summary = " ".join(chunks)
+        if len(summary) > 280:
+            summary = summary[:280] + "…"
+        raw_links = re.findall(r"\[[^\]]+\]\(([^\s)]+)", "\n".join(block_lines))
+        link = urljoin(base_url, raw_links[0]) if raw_links else ""
+        if not link or link in used_urls:
+            suffix = sum(1 for entry in entries if entry["date"] == published.isoformat()) + 1
+            link = f"{base_url}#{published.date().isoformat()}-{suffix}"
+        used_urls.add(link)
+        entries.append({
+            "title": title,
+            "url": link,
+            "date": published.isoformat(),
+            "summary": summary,
+            "tags": [],
+        })
+        if len(entries) >= 20:
+            break
+    return entries
+
+
+def _parse_gemini_changelog_entries(content: bytes) -> list[dict]:
+    """Turn Gemini API release-note list items into feed-like entries."""
+    base_url = "https://ai.google.dev/gemini-api/docs/changelog"
+    soup = BeautifulSoup(content, "lxml")
+    body = soup.select_one(".devsite-article-body") or soup
+    entries: list[dict] = []
+    used_urls: set[str] = set()
+    for heading in body.find_all("h2"):
+        heading_id = str(heading.get("id") or "")
+        try:
+            published = datetime.strptime(
+                heading.get_text(" ", strip=True), "%B %d, %Y",
+            ).replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        node = heading.find_next_sibling()
+        item_number = 0
+        while node and node.name != "h2":
+            if node.name == "ul":
+                for item in node.find_all("li", recursive=False):
+                    item_number += 1
+                    summary = _clean_metadata_text(item.get_text(" ", strip=True))
+                    if not summary:
+                        continue
+                    strong = item.find("strong")
+                    title = _clean_metadata_text(
+                        strong.get_text(" ", strip=True) if strong else summary,
+                    )
+                    if len(title) > 160:
+                        title = title[:157] + "…"
+                    if len(summary) > 280:
+                        summary = summary[:280] + "…"
+                    anchor = item.find("a", href=True)
+                    link = urljoin(base_url, str(anchor.get("href"))) if anchor else ""
+                    if not link or link in used_urls:
+                        link = f"{base_url}#{heading_id or published.date().isoformat()}-{item_number}"
+                    used_urls.add(link)
+                    entries.append({
+                        "title": title,
+                        "url": link,
+                        "date": published.isoformat(),
+                        "summary": summary,
+                        "tags": [],
+                    })
+                    if len(entries) >= 20:
+                        return entries
+            node = node.find_next_sibling()
+    return entries
+
+
 async def _entries_from_sitemap(
     client: httpx.AsyncClient,
     root_url: str,
@@ -273,6 +400,14 @@ async def _fetch_feed(
         except ValueError as e:
             return [], spec.get("name") or url, f"invalid Qwen API JSON: {e}"
         return entries, spec.get("name") or url, None
+    if spec.get("format") == "openai_changelog":
+        entries = _parse_openai_changelog_entries(r.content)
+        error = None if entries else "OpenAI changelog contained no parseable updates"
+        return entries, spec.get("name") or url, error
+    if spec.get("format") == "gemini_changelog":
+        entries = _parse_gemini_changelog_entries(r.content)
+        error = None if entries else "Gemini changelog contained no parseable updates"
+        return entries, spec.get("name") or url, error
 
     feed = feedparser.parse(r.content)
     entries: list[dict] = []
