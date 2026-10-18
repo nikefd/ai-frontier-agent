@@ -15,7 +15,10 @@ from app.workers.ai_news_fetcher import (
     _decide_relevance,
     _entries_from_sitemap,
     _fetch_feed,
+    _canonical_feed_url,
+    _limit_source_entries,
     _parse_gemini_changelog_entries,
+    _parse_hf_daily_papers,
     _parse_openai_changelog_entries,
     _parse_page_metadata,
     _parse_qwen_api_entries,
@@ -57,7 +60,8 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
     from app.routers.ai_news import DEFAULT_FEED_SPECS
 
     urls = {spec["url"] for spec in DEFAULT_FEED_SPECS}
-    assert len(DEFAULT_FEED_SPECS) == 92
+    by_url = {spec["url"]: spec for spec in DEFAULT_FEED_SPECS}
+    assert len(DEFAULT_FEED_SPECS) == 93
     assert len(urls) == len(DEFAULT_FEED_SPECS)
     assert {
         "https://engineering.fb.com/category/ai-research/feed/",
@@ -71,7 +75,48 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "https://platform.claude.com/docs/en/release-notes/feed.xml",
         "https://ai.google.dev/gemini-api/docs/changelog",
         "https://cursor.com/changelog/rss.xml",
+        "https://huggingface.co/api/daily_papers?limit=100",
     } <= urls
+    assert by_url["https://huggingface.co/api/daily_papers?limit=100"]["source_priority"] == 1
+    assert all(by_url[url]["max_per_fetch"] == 2 for url in {
+        "http://export.arxiv.org/rss/cs.AI",
+        "http://export.arxiv.org/rss/cs.CL",
+        "http://export.arxiv.org/rss/cs.CV",
+        "http://export.arxiv.org/rss/cs.LG",
+    })
+
+
+def test_hf_daily_papers_rank_by_curation_signal_and_expose_code() -> None:
+    payload = [
+        {"paper": {"id": "2610.00001", "title": "Low signal", "upvotes": 2,
+                   "submittedOnDailyAt": "2026-10-16T00:00:00Z", "summary": "Abstract"}},
+        {"paper": {"id": "2610.00002v2", "title": "High signal", "upvotes": 120,
+                   "submittedOnDailyAt": "2026-10-16T00:00:00Z",
+                   "ai_summary": "A practical agent benchmark.",
+                   "githubRepo": "https://github.com/example/repo", "githubStars": 80}},
+    ]
+    entries = _parse_hf_daily_papers(payload)
+
+    assert [entry["title"] for entry in entries] == ["High signal", "Low signal"]
+    assert entries[0]["url"] == "https://huggingface.co/papers/2610.00002"
+    assert entries[0]["_dedupe_url"] == "https://arxiv.org/abs/2610.00002"
+    assert "120 community upvotes" in entries[0]["summary"]
+    assert "80 GitHub stars" in entries[0]["summary"]
+    assert entries[0]["tags"] == ["论文", "开源"]
+
+
+def test_arxiv_urls_and_raw_feed_caps_are_normalized() -> None:
+    assert _canonical_feed_url("http://arxiv.org/abs/2610.00002v3") == (
+        "https://arxiv.org/abs/2610.00002"
+    )
+    entries = [
+        {"title": "old", "date": "2026-10-14"},
+        {"title": "new", "date": "2026-10-16"},
+        {"title": "middle", "date": "2026-10-15"},
+    ]
+    assert [entry["title"] for entry in _limit_source_entries(
+        entries, {"max_per_fetch": 2},
+    )] == ["new", "middle"]
 
 
 def test_openai_changelog_adapter_keeps_individual_updates_and_dates() -> None:
@@ -225,6 +270,9 @@ def test_article_timestamp_accepts_iso_and_rfc822() -> None:
 
 
 def test_fetch_selection_has_hard_global_and_category_caps() -> None:
+    assert sum(_CATEGORY_FETCH_CAPS.values()) == 150
+    assert _CATEGORY_FETCH_CAPS["vendor"] == 46
+    assert _CATEGORY_FETCH_CAPS["paper"] == 14
     candidates = [
         *[_candidate(i, "vendor", 0) for i in range(200)],
         *[_candidate(1000 + i, "trending", 2) for i in range(40)],
@@ -262,6 +310,21 @@ def test_fetch_selection_deduplicates_urls_across_feeds() -> None:
     selected = _select_candidates([duplicate_a, duplicate_b, unique], global_cap=3)
     assert [c[2]["url"] for c in selected].count("https://lab.test/release") == 1
     assert len(selected) == 2
+
+
+def test_curated_paper_wins_over_raw_arxiv_duplicate() -> None:
+    curated = _candidate(10, "paper", tier_rank=0, feed="hf-daily")
+    curated[2].update({
+        "url": "https://huggingface.co/papers/2610.00002",
+        "_dedupe_url": "https://arxiv.org/abs/2610.00002",
+    })
+    raw = _candidate(9, "paper", tier_rank=1, feed="arxiv")
+    raw[2]["url"] = "http://arxiv.org/abs/2610.00002v2"
+
+    selected = _select_candidates([raw, curated], global_cap=2)
+
+    assert len(selected) == 1
+    assert selected[0][4] == "hf-daily"
 
 
 def test_summary_exact_headline_dedupe_prefers_official_source() -> None:

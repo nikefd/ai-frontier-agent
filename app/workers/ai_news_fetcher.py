@@ -212,6 +212,72 @@ def _parse_qwen_api_entries(payload: dict) -> list[dict]:
     return entries[:20]
 
 
+def _canonical_feed_url(value: str) -> str:
+    """Normalize arXiv paper links so curated and category feeds can dedupe."""
+    parsed = urlparse(value)
+    if parsed.hostname in {"arxiv.org", "www.arxiv.org"} and parsed.path.startswith("/abs/"):
+        path = re.sub(r"v\d+$", "", parsed.path)
+        return f"https://arxiv.org{path}"
+    return value
+
+
+def _parse_hf_daily_papers(payload: list[dict]) -> list[dict]:
+    """Rank Hugging Face's community-curated daily papers with useful signals."""
+    ranked: list[tuple[tuple[float, int, int, int], dict]] = []
+    for item in payload:
+        paper = item.get("paper") if isinstance(item, dict) else None
+        if not isinstance(paper, dict):
+            continue
+        paper_id = str(paper.get("id") or "").strip()
+        title = _clean_metadata_text(paper.get("title"))
+        if not paper_id or not title:
+            continue
+        submitted = str(
+            paper.get("submittedOnDailyAt") or paper.get("publishedAt")
+            or item.get("publishedAt") or ""
+        )
+        try:
+            upvotes = max(0, int(paper.get("upvotes") or 0))
+        except (TypeError, ValueError):
+            upvotes = 0
+        repo = str(paper.get("githubRepo") or "").strip()
+        try:
+            stars = max(0, int(paper.get("githubStars") or 0))
+        except (TypeError, ValueError):
+            stars = 0
+        signal = f"HF Daily Papers: {upvotes} community upvotes"
+        if repo:
+            signal += f"; code available ({stars} GitHub stars)"
+        abstract = _clean_metadata_text(paper.get("ai_summary") or paper.get("summary"))
+        summary = f"{signal}. {abstract}" if abstract else f"{signal}."
+        if len(summary) > 280:
+            summary = summary[:280] + "…"
+        paper_slug = re.sub(r"v\d+$", "", paper_id)
+        entry = {
+            "title": title,
+            "url": f"https://huggingface.co/papers/{paper_slug}",
+            "_dedupe_url": _canonical_feed_url(f"https://arxiv.org/abs/{paper_id}"),
+            "date": submitted,
+            "summary": summary,
+            "tags": ["论文"] + (["开源"] if repo else []),
+        }
+        score = (_parse_ts(submitted), upvotes, int(bool(repo)), stars)
+        ranked.append((score, entry))
+    ranked.sort(key=lambda row: row[0], reverse=True)
+    return [entry for _, entry in ranked[:20]]
+
+
+def _limit_source_entries(entries: list[dict], spec: dict) -> list[dict]:
+    """Apply an optional hard per-source cap after parsing, newest first."""
+    try:
+        limit = int(spec.get("max_per_fetch") or 0)
+    except (TypeError, ValueError):
+        return entries
+    if limit <= 0:
+        return entries
+    return sorted(entries, key=lambda entry: _parse_ts(entry.get("date") or ""), reverse=True)[:limit]
+
+
 def _plain_markdown(value: str) -> str:
     """Collapse the small Markdown subset used by official changelogs."""
     text = re.sub(r"\[([^\]]+)\]\([^\s)]+(?:\s+[^)]*)?\)", r"\1", value)
@@ -400,6 +466,16 @@ async def _fetch_feed(
         except ValueError as e:
             return [], spec.get("name") or url, f"invalid Qwen API JSON: {e}"
         return entries, spec.get("name") or url, None
+    if spec.get("format") == "hf_daily_papers":
+        try:
+            payload = r.json()
+            if not isinstance(payload, list):
+                raise ValueError("expected a JSON list")
+            entries = _parse_hf_daily_papers(payload)
+        except ValueError as e:
+            return [], spec.get("name") or url, f"invalid Hugging Face papers JSON: {e}"
+        error = None if entries else "Hugging Face Daily Papers contained no parseable papers"
+        return entries, spec.get("name") or url, error
     if spec.get("format") == "openai_changelog":
         entries = _parse_openai_changelog_entries(r.content)
         error = None if entries else "OpenAI changelog contained no parseable updates"
@@ -413,7 +489,7 @@ async def _fetch_feed(
     entries: list[dict] = []
     source = feed.feed.get("title") if feed.feed else url
     for ent in feed.entries[:20]:
-        link = ent.get("link") or ""
+        link = _canonical_feed_url(ent.get("link") or "")
         title = (ent.get("title") or "").strip()
         if not link or not title:
             continue
@@ -480,15 +556,16 @@ def _select_candidates(candidates: list[tuple], global_cap: int = _DAILY_FETCH_C
         if len(selected) >= global_cap:
             break
         url = str(cand[2].get("url") or "")
-        if url and url in seen_urls:
+        dedupe_url = str(cand[2].get("_dedupe_url") or _canonical_feed_url(url))
+        if dedupe_url and dedupe_url in seen_urls:
             continue
         category = cand[2].get("category") or "community"
         cap = _CATEGORY_FETCH_CAPS.get(category, global_cap)
         if category_counts.get(category, 0) >= cap:
             continue
         selected.append(cand)
-        if url:
-            seen_urls.add(url)
+        if dedupe_url:
+            seen_urls.add(dedupe_url)
         category_counts[category] = category_counts.get(category, 0) + 1
     return selected
 
@@ -545,6 +622,7 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
         m["last_error"] = None
         m["last_ok"] = _now_iso()
         m["consecutive_failures"] = 0
+        entries = _limit_source_entries(entries, spec)
 
         eligible_count = 0
         filtered_count = 0
@@ -561,7 +639,8 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
             if configured_name:
                 entry["source"] = configured_name
             ts = _parse_ts(entry.get("date") or "") or 0.0
-            candidates.append((tier_rank.get(tier, 9), -ts, entry, m, url))
+            source_priority = int(spec.get("source_priority") or 0)
+            candidates.append((tier_rank.get(tier, 9) - source_priority, -ts, entry, m, url))
             eligible_count += 1
         m["eligible"] = eligible_count
         m["last_filtered"] = filtered_count
@@ -571,7 +650,8 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
     added_total = 0
     for _, _, entry, m, _url in selected:
         try:
-            res = add_article(Article(**entry))
+            article_payload = {key: value for key, value in entry.items() if not key.startswith("_")}
+            res = add_article(Article(**article_payload))
             if not res.get("duplicate"):
                 m["last_added"] = (m.get("last_added") or 0) + 1
                 added_total += 1

@@ -92,10 +92,10 @@ _PER_FEED_CAP = 4       # first-pass max per feed (ensures source diversity)
 # Hard ceilings keep discovery channels from overwhelming first-party news and
 # substantive analysis.  The values intentionally add up to the global cap.
 _CATEGORY_FETCH_CAPS: dict[str, int] = {
-    "vendor": 38,
+    "vendor": 46,
     "media": 20,
     "blog": 16,
-    "paper": 22,
+    "paper": 14,
     "community": 18,
     "expert": 18,
     "x-ai": 12,
@@ -188,10 +188,11 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://simonwillison.net/atom/everything/", "name": "Simon Willison", "tier": "high", "category": "blog", "description": "Simon Willison 博客 · LLM 工具评测、prompt 技巧、每日观察"},
     {"url": "https://bair.berkeley.edu/blog/feed.xml", "name": "Berkeley AI Research", "tier": "high", "category": "blog", "description": "Berkeley AI Research 官方博客 · 学术前沿、系统与机器人研究"},
     # ── paper: arXiv 论文
-    {"url": "http://export.arxiv.org/rss/cs.AI", "name": "arXiv cs.AI", "tier": "high", "category": "paper", "description": "arXiv 人工智能类目（规划、知识表示、智能体）"},
-    {"url": "http://export.arxiv.org/rss/cs.CL", "name": "arXiv cs.CL", "tier": "high", "category": "paper", "description": "arXiv 计算语言学（NLP/LLM 论文主战场）"},
-    {"url": "http://export.arxiv.org/rss/cs.CV", "name": "arXiv cs.CV", "tier": "high", "category": "paper", "description": "arXiv 计算机视觉类目（多模态 / 图像生成相关论文）"},
-    {"url": "http://export.arxiv.org/rss/cs.LG", "name": "arXiv cs.LG", "tier": "high", "category": "paper", "description": "arXiv 机器学习类目（覆盖训练、优化、新架构论文）"},
+    {"url": "https://huggingface.co/api/daily_papers?limit=100", "name": "Hugging Face Daily Papers", "tier": "high", "category": "paper", "format": "hf_daily_papers", "source_priority": 1, "description": "HF 社区每日精选论文 · 结合票数、代码可用性与 GitHub stars 排序"},
+    {"url": "http://export.arxiv.org/rss/cs.AI", "name": "arXiv cs.AI", "tier": "high", "category": "paper", "max_per_fetch": 2, "description": "arXiv 人工智能类目（规划、知识表示、智能体）· 每轮保留最新 2 篇作长尾发现"},
+    {"url": "http://export.arxiv.org/rss/cs.CL", "name": "arXiv cs.CL", "tier": "high", "category": "paper", "max_per_fetch": 2, "description": "arXiv 计算语言学（NLP/LLM 论文主战场）· 每轮保留最新 2 篇作长尾发现"},
+    {"url": "http://export.arxiv.org/rss/cs.CV", "name": "arXiv cs.CV", "tier": "high", "category": "paper", "max_per_fetch": 2, "description": "arXiv 计算机视觉类目（多模态 / 图像生成相关论文）· 每轮保留最新 2 篇作长尾发现"},
+    {"url": "http://export.arxiv.org/rss/cs.LG", "name": "arXiv cs.LG", "tier": "high", "category": "paper", "max_per_fetch": 2, "description": "arXiv 机器学习类目（覆盖训练、优化、新架构论文）· 每轮保留最新 2 篇作长尾发现"},
     # ── community: 社区/周刊
     {"url": "https://quaily.com/op7418/feed/atom", "name": "AIGC Weekly", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
     {"url": "https://justlovemaki.github.io/CloudFlare-AI-Insight-Daily/rss.xml", "name": "AI资讯日报 RSS Feed", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},

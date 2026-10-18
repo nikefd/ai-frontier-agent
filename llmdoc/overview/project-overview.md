@@ -2,7 +2,7 @@
 
 ## 1. 定位
 
-- **是什么:** 一个个人「AI 前沿信息站」。后端是 FastAPI 单应用，定时从 92 个分层 RSS、官方 sitemap/API/changelog 源抓取 AI 资讯，经相关性过滤、跨源去重、分类配额和质量排序后做中英翻译、生成每日速报、按需生成单篇深度解读，并提供一个 sparrow 驱动的对话式 ReAct agent。
+- **是什么:** 一个个人「AI 前沿信息站」。后端是 FastAPI 单应用，定时从 93 个分层 RSS、官方 sitemap/API/changelog 源抓取 AI 资讯，经相关性过滤、跨源去重、分类配额和质量排序后做中英翻译、生成每日速报、按需生成单篇深度解读，并提供一个 sparrow 驱动的对话式 ReAct agent。
 - **目标:** 一个人每天打开一个页面，就能跟住 AI 前沿：官方实验室发布、专家博客、X/Twitter 大 V、社区周刊、arXiv 论文、GitHub 风向；不想读英文有双语，想深挖有深度解读和对话助手。
 - **出身:** 从 `zhangyangbin-agents`（即 openclaw-deploy 体系）抽取的「AI 前沿 agent」骨架，砍掉了 finance / climbing 模块，LLM 默认改用 DeepSeek（自包含，不再依赖内网网关 / token 窃取）。代码注释和部分 logger 名仍残留 `zyb` / `zhangyangbin` 字样，属历史遗留（见 [known-issues](../reference/known-issues.md)）。
 
@@ -40,7 +40,7 @@
 |---|---|---|
 | DeepSeek API | 翻译 / 速报 / 深度解读 / 深度指南 / 对话 agent，全部共用一个 key | 未配置 key 时，所有 LLM 端点返回 503，但 RSS 浏览仍可用 |
 | RSSHub | 部分 X 大 V / GitHub 路由的 RSS 源 | 公共 `rsshub.app` 容易限流/403/404，需自建私有实例（compose 内置）；Twitter 路由还需 `TWITTER_AUTH_TOKEN` |
-| 各资讯源 | 92 个分层源（官方/媒体/博客/论文/社区/专家/X 大 V/GitHub 风向）；Anthropic/Cohere/Mistral/xAI 读官方 sitemap，Qwen 读官方文章 API，OpenAI/Gemini 逐条解析官方 changelog，其余官方源优先读 RSS | 清单硬编码在 `app/routers/ai_news.py` 的 `DEFAULT_FEED_SPECS` |
+| 各资讯源 | 93 个分层源（官方/媒体/博客/论文/社区/专家/X 大 V/GitHub 风向）；Anthropic/Cohere/Mistral/xAI 读官方 sitemap，Qwen 读官方文章 API，OpenAI/Gemini 逐条解析官方 changelog；论文由 HF Daily Papers 策展源加四路限流 arXiv 组成 | 清单硬编码在 `app/routers/ai_news.py` 的 `DEFAULT_FEED_SPECS` |
 
 ## 5. 目录结构
 
@@ -67,7 +67,7 @@
 
 ## 6. 核心机制速览
 
-- **抓取入库:** 92 个 RSS、官方 sitemap/API/changelog 异步并发拉取 → sitemap 最新 6 页补全真实标题/摘要/发布时间，官方更新日志拆成独立发布项 → category 归一化 high/med/low → med/low 必须命中 AI 关键词（paper 除外）→ 跨源 URL 去重 → 每源分轮取候选 → 分类硬配额（Trending 6、X 12 等）→ `_DAILY_FETCH_CAP=150` 真正封顶 → 滚动历史 `_ARTICLE_LIMIT=400`（pinned 不淘汰）。富化时另生成保守 `event_key`，让不同标题的同一事件在速报前合并并保留佐证来源。
+- **抓取入库:** 93 个 RSS、官方 sitemap/API/changelog 异步并发拉取 → sitemap 最新 6 页补全元数据，官方更新日志拆成独立发布项，HF Daily Papers 按日期、社区票数、代码与 stars 排序 → category 归一化 high/med/low → med/low 必须命中 AI 关键词（paper 除外）→ arXiv ID/URL 去重 → 每源分轮取候选 → 分类硬配额（论文 14、Trending 6、X 12 等）→ `_DAILY_FETCH_CAP=150` 真正封顶 → 滚动历史 `_ARTICLE_LIMIT=400`（pinned 不淘汰）。富化时另生成保守 `event_key`，让不同标题的同一事件在速报前合并并保留佐证来源。
 - **速报选材:** 最近 30 小时文章先按规范化标题合并重复报道，再按 importance、来源类别、tier、时效综合排序；首轮限制同源最多 2 条，Trending 最多 2 条、X 最多 3 条，官方发布/关键研究优先。
 - **双语与实践富化:** worker 每批 8 篇，LLM 一次返回翻译/评分/标签和可选的最小实践建议，按 id 原子合并；政策、融资、纯观点或信息不足时不硬凑实践。文章流可只看“可实践”，并一键让 AI 基于原文拆成 15 分钟实验。失败不自动重试，管理员可重置。
 - **LLM 产物:** 单篇解读、全局每日速报、主题指南、画像、复盘和学习路径；手动主题解读只进用户库，不插入全局文章流。

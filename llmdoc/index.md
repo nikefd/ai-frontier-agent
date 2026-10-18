@@ -1,6 +1,6 @@
 # AI Frontier Agent — 文档索引
 
-个人 AI 前沿信息站：FastAPI 单应用，定时从 92 个分层 RSS、官方 sitemap/API/changelog 源抓取 AI 资讯，经相关性过滤、跨源去重、分类配额和质量排序后生成双语文章流与每日速报，外加按需深度解读和 ReAct agent。文件型主存储、Vite 构建前端、单进程一体化。
+个人 AI 前沿信息站：FastAPI 单应用，定时从 93 个分层 RSS、官方 sitemap/API/changelog 源抓取 AI 资讯，经相关性过滤、跨源去重、分类配额和质量排序后生成双语文章流与每日速报，外加按需深度解读和 ReAct agent。论文侧以 Hugging Face Daily Papers 策展信号为主、arXiv 长尾发现为辅。文件型主存储、Vite 构建前端、单进程一体化。
 
 ---
 
@@ -16,6 +16,7 @@
 | 理解「一篇文章从 RSS 到入库到翻译」怎么发生 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md) |
 | 理解信源分层、分类硬配额、每源轮次和 150 条全局上限 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.2-2.5 节） |
 | 理解官方 sitemap/API/changelog、页面元数据补全、跨源 URL 去重与速报事件聚类 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.2/2.5/2.7/3/4 节） |
+| 理解重要论文雷达、HF 策展信号、arXiv 限流与论文去重 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.2/2.5/2.7 节） |
 | 理解今日速报为什么不会被 Trending/X 淹没 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 4 节）＋ [API 参考](reference/api-reference.md)（第 4 节） |
 | 理解全天分时抓取 / 速报刷新 / 未变化跳过 LLM | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.1/4 节）＋ [配置参考](reference/config-reference.md) |
 | 找出可实践内容 / 理解实践建议怎么生成 / “带我做”如何接 AI | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 3/4 节）＋ [前端架构](architecture/frontend-architecture.md)（第 3/4 节）＋ [数据存储参考](reference/data-storage.md)（3.1） |

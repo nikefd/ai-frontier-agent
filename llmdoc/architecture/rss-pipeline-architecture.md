@@ -11,7 +11,7 @@
 flowchart TD
   cron[APScheduler 每 4 小时<br/>05:00 为锚点] --> fetch
   manual[管理员点「立即抓取」 POST /fetch] --> fetch
-  fetch[fetch_once：异步并发拉 92 个 RSS/sitemap/API/changelog 源]
+  fetch[fetch_once：异步并发拉 93 个 RSS/sitemap/API/changelog 源]
   fetch --> parse[feedparser 解析 RSS/Atom<br/>BS4 解析官方 sitemap/changelog<br/>适配官方 JSON API]
   parse --> gate[tier/category 相关性门槛<br/>high/paper 接受，med/low 需关键词]
   gate --> rounds[每源分 4 轮取候选<br/>先各源 1 条，再各源第 2 条]
@@ -39,7 +39,7 @@ flowchart TD
 
 ### 2.2 feed 清单与分类
 
-92 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；无稳定 RSS 的官方站可设置专用 format。当前 Anthropic、Cohere、Mistral、xAI 读取官方 sitemap，Qwen 读取官方文章 API；OpenAI API 的 Markdown changelog 与 Gemini API 的 HTML release notes 会拆成带真实日期和官方落地链接的独立发布项，Claude Platform 与 Cursor 直接读取 changelog RSS。开放研究和工程侧还覆盖 Ai2、Meta Engineering、PyTorch、Google Cloud AI、Cloudflare AI、Together AI 与 Ollama。Stanford HAI sitemap 会把旧文章 `lastmod` 标成当天、造成假鲜度，因此没有继续使用。
+93 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；无稳定 RSS 的官方站可设置专用 format。当前 Anthropic、Cohere、Mistral、xAI 读取官方 sitemap，Qwen 读取官方文章 API；OpenAI API 的 Markdown changelog 与 Gemini API 的 HTML release notes 会拆成带真实日期和官方落地链接的独立发布项，Claude Platform 与 Cursor 直接读取 changelog RSS。论文侧新增 Hugging Face Daily Papers 策展接口，结合社区票数、代码可用性和 GitHub stars 排序；四路原始 arXiv 各限最新 2 篇，只承担长尾发现。开放研究和工程侧还覆盖 Ai2、Meta Engineering、PyTorch、Google Cloud AI、Cloudflare AI、Together AI 与 Ollama。
 
 `category` 同时驱动前端分组、tier 归一化与抓取配额，共 8 类：
 
@@ -52,7 +52,7 @@ flowchart TD
 | `blog` | AI 博客（原始一批） | 6 |
 | `media` | 科技媒体 | 5 |
 | `trending` | GitHub 热门风向 | 1 |
-| `paper` | arXiv 论文类目 | 4 |
+| `paper` | HF 每日精选 + arXiv 论文类目 | 5 |
 
 启动时 `_DEFAULT_TIER_BY_CATEGORY` 会统一归一化 tier：vendor/blog 为 `high`，media/paper/community/expert 为 `med`，x-ai/trending 为 `low`。这样新增来源即使复制了旧条目的 tier，也不会绕过分类策略。
 
@@ -80,7 +80,7 @@ flowchart TD
 2. 进行 `_PER_FEED_CAP=4` 个分层轮次：先从每个来源取第 1 条，再从每个来源取第 2 条，直到第 4 条；不会让一个高频源先占满 4 个位置后才轮到慢源。
 3. 第 4 条之后的候选进入 overflow，等首轮完成后再考虑。
 4. 候选按 URL 全局去重：同一文章即使被多个 feed 收录，本轮也只占一个位置。
-5. 逐条执行 `_CATEGORY_FETCH_CAPS` 硬上限：vendor 38、media 20、blog 16、paper 22、community 18、expert 18、x-ai 12、trending 6。
+5. 逐条执行 `_CATEGORY_FETCH_CAPS` 硬上限：vendor 46、media 20、blog 16、paper 14、community 18、expert 18、x-ai 12、trending 6。论文预算从 22 收紧到 14，把 8 个位置让给不断扩充的官方发布；总和仍为 150。
 6. 最终无论有多少来源，严格停止在 `_DAILY_FETCH_CAP=150`；分类上限总和也等于 150。
 
 旧实现会先给每个来源直接放入 4 条，79 个来源时 `selected` 本身就可能超过 150，所谓全局上限实际失效；同时 5 路高度重叠 Trending 会重复占位。新实现把 Trending 收敛为 1 路，并在来源轮次之后再执行分类与全局硬限制。
@@ -104,6 +104,7 @@ flowchart TD
 - sitemap 最新 6 条会并发读取同站文章页，从 Open Graph、HTML meta 或 JSON-LD 补全真实标题、摘要和 `datePublished`；页面失败时保留 slug/lastmod 降级结果，不影响该源其余条目。限制为 6 页是为了覆盖 `_PER_FEED_CAP=4` 的正常候选并控制额外请求量。
 - Qwen 的 `qwen_api` 适配器读取官方 JSON、清理简介 HTML、按时间取最新 20 条。
 - OpenAI 的 `openai_changelog` 适配器按 Markdown 月份/日期标题拆分最新 20 条 API 更新，优先链接到对应功能文档；Gemini 的 `gemini_changelog` 适配器按日期和顶层列表项拆分模型发布、弃用与迁移提醒。两者都使用页面声明的日期，不以抓取时间冒充发布时间。
+- `hf_daily_papers` 读取 HF 官方公开 JSON，按策展日期优先，再结合 upvotes、代码仓库与 GitHub stars 排出最新 20 篇；摘要携带这些可解释信号供富化模型判断，但热度不直接等同重要性。文章链接指向 HF 论文页以便查看代码与讨论，内部 `_dedupe_url` 统一成无版本号的 arXiv URL，因此同篇原始 arXiv 条目不会重复占位。四路 arXiv 的 `max_per_fetch=2` 是硬上限。
 - `_parse_ts()` 同时支持 ISO 8601 和 RSS 常见 RFC 822 日期；未知格式回退为 0。抓取候选排序、文章流排序和最近 30 小时速报窗口共用这一实现。
 - `fetch_once` 有进程内异步锁，避免定时任务和管理员手动触发重叠。
 
@@ -113,7 +114,7 @@ worker 名义上叫翻译，实际**一次批量 LLM 调用同时做五件事**�
 
 - **触发**：`scheduler.py` 每 2 分钟一个 `IntervalTrigger`；admin 也可 `POST /translate/run` 手动跑一批。worker 自身还有异步锁，防两种入口重叠。
 - **选批**：优先挑 `translation_status` 不在 `{ok, failed, skipped}` 且没有 `title_zh`/`summary_zh` 的文章，一次 `BATCH_SIZE=8` 篇。最近 60 条已翻译但 `hands_on` 或 `event_key` 仍为 null 的旧文章会被一次性渐进回填；空字符串也代表已判断，后续不再重复消耗。
-- **单次调用**：8 篇拼成一个 prompt，要求 LLM 返回**单个 JSON 数组**，每项 `{id, title_zh, summary_zh, importance, tags, event_key, hands_on}`，不拆成多次调用。prompt 会传 source/category，并明确“官方一手发布和扎实研究优先，GitHub Trending、社区热度、单条社交观点本身不等于重要”。`importance` 0-10 整数（`_clean_importance` 钳位）；`tags` 从**受控词表** `TAG_VOCAB` 里选，最多 3 个。
+- **单次调用**：8 篇拼成一个 prompt，要求 LLM 返回**单个 JSON 数组**，每项 `{id, title_zh, summary_zh, importance, tags, event_key, hands_on}`，不拆成多次调用。prompt 会传 source/category，并明确“官方一手发布和扎实研究优先，GitHub Trending、社区热度、单条社交观点本身不等于重要”；HF 票数、代码和 stars 只作为论文策展信号，仍需判断方法新颖性、证据与实际影响。`importance` 0-10 整数（`_clean_importance` 钳位）；`tags` 从**受控词表** `TAG_VOCAB` 里选，最多 3 个。
 - **事件键护栏**：`event_key` 只给明确、可复述的新闻事件，格式为英文小写“核心实体-动作-对象”；同批同事件必须完全一致，泛泛观点/教程合集/无法判断时为空。服务端只保留 3-8 段 ASCII 键，拒绝 unknown/other 等占位值，降低误合并风险。
 - **实践护栏**：`hands_on` 只用于可试用模型/API/工具/开源项目/教程或小型复现实验，要求 20-80 字、动词开头、说明观察结果；政策、融资、纯观点或信息不足时必须为空。prompt 禁止编造命令、参数、URL、型号、版本和能力，服务端再压平空白并限制 120 字。
 - **写回**：LLM 返回后通过 `update_json_atomic` 重新读取最新文章列表并按 id 合并，避免等待模型期间覆盖新抓取文章。内容全局共享，一篇只富化一次。
