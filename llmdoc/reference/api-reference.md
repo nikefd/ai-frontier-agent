@@ -80,11 +80,11 @@
 
 | 方法 | 路径 | 🔒 | 说明 |
 |---|---|---|---|
-| GET | `/summary/today` | — | 返回缓存速报 + 今日候选元数据（`cohort_size` / `cohort_preview` / `today`）。全局共享 |
+| GET | `/summary/today` | — | 返回缓存速报 + 今日候选元数据（`cohort_size` / `cohort_preview` / `today`）+ `breaking_items`（近 36 小时最多 5 条模型发布/API 变更/安全事件/重要开源，零 LLM 实时判定）。全局共享 |
 | POST | `/summary/today` | admin | **LLM** 强制重生成全局中文速报：基于最近 30h 的质量平衡候选，先按规范化标题兼容去重，再按非空 `event_key` 合并不同标题的同一事件，优先保留一手来源并把其余报道记入 `related_articles`/多源佐证；之后按 importance、来源类别、tier、时效和多样性预筛，Trending 最多 2 条、X 最多 3 条。“值得动手”只使用已审核的 `hands_on`。后台默认每 4 小时调用同一实现，候选指纹不变时跳过 LLM |
 | GET | `/for-you` | 读* | **个性化排序**：把今日候选（同速报 cohort）按当前用户画像信号（pin 分类分布 / 高频标签 / track 关键词）加权重排，返回 `{personalized, today_count, items}`，每项带 `_score`/`_reasons`。**纯代码打分，0 LLM 调用**。匿名或无信号时 `personalized:false`、退化为按时间排序 |
 
-> 速报前端会把新标题「更多动态」以及旧缓存里的「边角料」统一渲染为默认收起、带条数的渐进展开区；引用 `[n]` 仍按缓存中的 cohort 链接到原文。`/for-you` 实现在独立模块 `app/routers/feed_personal.py`，打分纯函数 `score_articles()` 有单测（`tests/test_feed_personal.py`）。复用 ai_news 的 `_articles_for_today()` cohort 与 profile 的信号聚合。
+> 速报前端在正文前显示 `breaking_items`“刚刚发生”卡片，无事件时整块隐藏；新标题「更多动态」以及旧缓存里的「边角料」统一渲染为默认收起、带条数的渐进展开区；引用 `[n]` 仍按缓存中的 cohort 链接到原文。`/for-you` 实现在独立模块 `app/routers/feed_personal.py`，打分纯函数 `score_articles()` 有单测（`tests/test_feed_personal.py`）。复用 ai_news 的 `_articles_for_today()` cohort 与 profile 的信号聚合。
 
 ## 4b. 知识卡 + 间隔重复（prefix `/api/ai-news`）
 
@@ -160,7 +160,7 @@ agent 主动提议（B2）：基于用户行为信号给「下一步」建议。
 
 | 方法 | 路径 | 🔒 | 说明 |
 |---|---|---|---|
-| GET | `/sources` | — | 列 feed 及健康度（合并配置、抓取元数据、当前库文章数/最新内容时间）。每项带 `health_status=healthy/error/stale/never/orphan`、`health_reason`、抓取年龄、连续失败、最近成功/恢复；默认超过 3 个调度间隔未抓取即 `stale`。全局共享 |
+| GET | `/sources` | — | 列 feed 及健康度（合并配置、抓取元数据、当前库文章数/最新内容时间）。每项带 `cadence=fast/standard/slow`、`health_status=healthy/error/stale/never/orphan`、抓取年龄、连续失败与最近成功/恢复；按所属 cadence 超过 3 个调度间隔未抓取即 `stale`。全局共享 |
 | POST | `/fetch` | admin | 立即跑一轮全局抓取：相关性过滤 → 每源分轮 → 分类硬配额 → 全局 150 条上限，返回 `{ok, added}` |
 | POST | `/translate/run` | admin | 手动跑一批全局翻译，返回 `{ok, translated}` |
 

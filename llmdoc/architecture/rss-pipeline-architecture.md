@@ -9,7 +9,7 @@
 
 ```mermaid
 flowchart TD
-  cron[APScheduler 每 4 小时<br/>05:00 为锚点] --> fetch
+  cron[APScheduler 分层刷新<br/>官方 1h / 常规 4h / 发现 12h] --> fetch
   manual[管理员点「立即抓取」 POST /fetch] --> fetch
   fetch[fetch_once：异步并发拉 93 个 RSS/sitemap/API/changelog 源]
   fetch --> parse[feedparser 解析 RSS/Atom<br/>BS4 解析官方 sitemap/changelog<br/>适配官方 JSON API]
@@ -32,14 +32,17 @@ flowchart TD
 
 ### 2.1 触发方式
 
-- **定时**：`scheduler.py` 默认在 01/05/09/13/17/21 点抓取（`AIF_AI_NEWS_CRON_*` 设锚点，`AIF_AI_NEWS_INTERVAL_HOURS` 设间隔），时区 Asia/Shanghai。
+- **定时**：`scheduler.py` 按 `cadence` 把来源拆成互斥三组，时区 Asia/Shanghai：
+  - `fast`：12 个高时效官方源，每小时第 10 分钟检查；覆盖核心实验室新闻、模型/API 更新日志和关键开发工具 changelog。
+  - `standard`：51 个媒体、博客、社区及普通官方工程源，默认在 01/05/09/13/17/21 点（每 4 小时）检查。
+  - `slow`：30 个 paper、X 与 Trending 发现型源，默认在 05:20/17:20（每 12 小时）检查。
 - **手动**：admin-only 的 `POST /api/ai-news/fetch` 即时跑一轮（普通用户看不到按钮，直接调用返回 403）。
 
-抓取本身不调用 LLM，默认每 4 小时跑一轮；`fetch_once` 的进程内锁、文章 URL 去重和 RSSHub 缓存共同避免重叠与重复入库。临时要新内容仍可手动触发。
+抓取本身不调用 LLM。三个调度任务只把各自 URL 子集传给同一个 `fetch_once`；它们和管理员手动全量抓取共用进程内锁，文章 URL 去重与 RSSHub 缓存继续避免重叠和重复入库。
 
 ### 2.2 feed 清单与分类
 
-93 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；无稳定 RSS 的官方站可设置专用 format。当前 Anthropic、Cohere、Mistral、xAI 读取官方 sitemap，Qwen 读取官方文章 API；OpenAI API 的 Markdown changelog 与 Gemini API 的 HTML release notes 会拆成带真实日期和官方落地链接的独立发布项，Claude Platform 与 Cursor 直接读取 changelog RSS。论文侧新增 Hugging Face Daily Papers 策展接口，结合社区票数、代码可用性和 GitHub stars 排序；四路原始 arXiv 各限最新 2 篇，只承担长尾发现。开放研究和工程侧还覆盖 Ai2、Meta Engineering、PyTorch、Google Cloud AI、Cloudflare AI、Together AI 与 Ollama。
+93 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；加载时再根据 `_FAST_SOURCE_NAMES` 与 category 赋 `cadence=fast/standard/slow`。无稳定 RSS 的官方站可设置专用 format。当前 Anthropic、Cohere、Mistral、xAI 读取官方 sitemap，Qwen 读取官方文章 API；OpenAI API 的 Markdown changelog 与 Gemini API 的 HTML release notes会拆成带真实日期和官方落地链接的独立发布项，Claude Platform 与 Cursor 直接读取 changelog RSS。论文侧新增 Hugging Face Daily Papers 策展接口，结合社区票数、代码可用性和 GitHub stars 排序；四路原始 arXiv 各限最新 2 篇，只承担长尾发现。开放研究和工程侧还覆盖 Ai2、Meta Engineering、PyTorch、Google Cloud AI、Cloudflare AI、Together AI 与 Ollama。
 
 `category` 同时驱动前端分组、tier 归一化与抓取配额，共 8 类：
 
@@ -87,7 +90,7 @@ flowchart TD
 
 每源抓取结果写入 `sources.json`（按 url 为 key）：`last_fetch` / `last_ok` / `last_error` / `last_error_at` / `last_recovered_at` / `consecutive_failures` / `eligible` / `last_added` / `last_filtered` / `name` / `tier` / `category`。成功时连续失败归零；从失败恢复时记录恢复时间。
 
-`GET /sources` 不把“很久没发文章”误判为源故障，而是只判断**抓取运输层**：最近一轮报错为 `error`，从未跑过为 `never`，超过 `3 × AIF_AI_NEWS_INTERVAL_HOURS`（默认 12 小时，最少 6 小时）没有任何抓取记录为 `stale`，否则为 `healthy`。响应还动态计算当前滚动库内每源最新文章时间。前端把 error/stale 自动排到分类前面，并在顶部集中列出需关注来源。
+`GET /sources` 不把“很久没发文章”误判为源故障，而是只判断**抓取运输层**：最近一轮报错为 `error`，从未跑过为 `never`，超过所属 cadence 的 3 个调度间隔（最少 6 小时）没有抓取记录为 `stale`，否则为 `healthy`。响应同时返回 `cadence` 并动态计算当前滚动库内每源最新文章时间；前端显示“每小时 / 每 4 小时 / 每 12 小时”，把 error/stale 自动排到分类前面，并在顶部集中列出需关注来源。
 
 ### 2.6 入库与去重（`add_article`）
 
@@ -135,6 +138,10 @@ worker 名义上叫翻译，实际**一次批量 LLM 调用同时做五件事**�
 这些产物的存储结构见 [数据存储参考](../reference/data-storage.md)。
 
 > **今日速报是唯一有定时的 LLM 产物**：`scheduler.py` 默认在 02/06/10/14/18/22 点刷新（`AIF_SUMMARY_CRON_*` + `AIF_SUMMARY_INTERVAL_HOURS`），比每轮抓取晚一小时，为翻译留出窗口。`build_today_summary()` 对影响输出的候选字段生成 SHA-256 指纹；当天指纹与缓存一致时直接跳过，不调用 LLM。管理员 `POST /summary/today` 明确要求重生成，因此会忽略指纹强制执行。其余 LLM 产物（解读/指南/画像/复盘/学习路径）都是按需触发，无定时。
+
+### 4.1 “刚刚发生”重大提醒
+
+`GET /summary/today` 每次读取时都会调用 `news_alerts.build_breaking_alerts()`，从近 36 小时滚动文章中提取最多 5 条高置信事件，因此高时效源入库后无需等待下一轮 LLM 速报即可显示。规则刻意偏保守：API 弃用/迁移只接受官方 vendor 源，安全事件只接受 vendor/media，模型发布必须同时出现已知模型名与发布动作，重要开源必须来自官方且 `importance >= 7`。结果按 critical（API 变更/安全）→ high（模型发布/重要开源）、importance、时间排序，并优先用 `event_key` 去重。该区块不调用 LLM、无事件时前端整块隐藏。
 
 速报不再直接取“最新 25 条”。`_articles_for_today()` 先取最近 30 小时文章（不足 5 条时回退到近期库存），再由 `_select_summary_cohort()` 做两阶段合并：先以 NFKC/casefold/去标点后的标题键兼容旧数据，再用非空 `event_key` 合并不同标题的同一事件；两层都优先官方与高质量类别，并把其它报道保存为 `related_articles`。之后按 importance → 来源类别质量 → tier → 时效排序：
 

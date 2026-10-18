@@ -29,6 +29,7 @@ from pydantic import BaseModel, Field
 from ..auth import current_user_optional, require_admin, require_user, require_verified_user, require_llm_quota
 from ..llm_client import LLMUnavailable, chat_complete, chat_stream, llm_configured
 from ..models import Article, ChatRequest, Guide, Track, UserPublic
+from ..news_alerts import build_breaking_alerts
 from ..settings import settings
 from ..safe_fetch import UnsafeUrl, fetch_public_html, sanitize_reader_html
 from ..storage import read_json, update_json_atomic, write_json_atomic, write_text_atomic
@@ -111,6 +112,21 @@ _DEFAULT_TIER_BY_CATEGORY = {
     "community": "med",
     "x-ai": "low",
     "trending": "low",
+}
+
+_FAST_SOURCE_NAMES = {
+    "Anthropic News & Research",
+    "DeepSeek 新闻",
+    "Google DeepMind",
+    "Gemini API Release Notes",
+    "OpenAI News",
+    "OpenAI API Changelog",
+    "Claude Platform Release Notes",
+    "Mistral News",
+    "xAI News",
+    "Qwen Blog",
+    "GitHub Changelog",
+    "Cursor Changelog",
 }
 
 
@@ -249,6 +265,12 @@ DEFAULT_FEED_SPECS: list[dict] = [
 # drift because a newly added entry copied an old tier value.
 for _spec in DEFAULT_FEED_SPECS:
     _spec["tier"] = _DEFAULT_TIER_BY_CATEGORY.get(_spec.get("category"), "med")
+    if _spec.get("name") in _FAST_SOURCE_NAMES:
+        _spec["cadence"] = "fast"
+    elif _spec.get("category") in {"paper", "x-ai", "trending"}:
+        _spec["cadence"] = "slow"
+    else:
+        _spec["cadence"] = "standard"
 
 # Rewrite the public rsshub.app host to the configured (possibly self-hosted)
 # instance. Done once here so DEFAULT_FEEDS, FEED_SPEC_BY_URL and everything
@@ -751,6 +773,7 @@ def list_sources() -> list[dict]:
             "name": name,
             "tier": spec.get("tier") or m.get("tier"),
             "category": spec.get("category") or m.get("category"),
+            "cadence": spec.get("cadence", "standard"),
             "description": spec.get("description") or "",
             "enabled": True,
             "last_fetch": m.get("last_fetch"),
@@ -763,7 +786,10 @@ def list_sources() -> list[dict]:
             "last_filtered": m.get("last_filtered", 0),
             "article_count": counts.get(name, 0),
             "newest_article_at": newest.get(name, (0.0, None))[1],
-            **_source_health(m),
+            **_source_health(m, interval_hours={
+                "fast": settings.fast_news_interval_hours,
+                "slow": settings.slow_news_interval_hours,
+            }.get(spec.get("cadence"), settings.ai_news_interval_hours)),
         })
     # Also surface "orphan" sources — articles present without a tracked URL
     tracked_names = {s["name"] for s in out}
@@ -772,6 +798,7 @@ def list_sources() -> list[dict]:
             out.append({
                 "url": "", "name": name, "enabled": False,
                 "tier": None, "category": None,
+                "cadence": None,
                 "last_fetch": None, "last_ok": None, "last_error": None,
                 "last_error_at": None, "last_recovered_at": None,
                 "consecutive_failures": 0,
@@ -948,6 +975,7 @@ def get_today_summary() -> dict:
     """
     cached = read_json(SUMMARY_FILE, None)
     cohort = _articles_for_today()
+    alerts = build_breaking_alerts(_load_articles())
     return {
         "summary": cached if isinstance(cached, dict) else None,
         "cohort_size": len(cohort),
@@ -955,6 +983,7 @@ def get_today_summary() -> dict:
             {"id": a.get("id"), "title": a.get("title"), "source": a.get("source"), "date": a.get("date")}
             for a in cohort[:10]
         ],
+        "breaking_items": alerts,
         "today": _today_iso_date(),
     }
 

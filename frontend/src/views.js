@@ -83,11 +83,39 @@ async function renderSummary(body, summary) {
   await renderMermaidInside(body);
 }
 
+function renderBreaking(items = []) {
+  const section = $('#breaking-section'), list = $('#breaking-list');
+  if (!section || !list) return;
+  if (!items.length) {
+    section.classList.add('hidden');
+    list.innerHTML = '';
+    return;
+  }
+  list.innerHTML = items.map(item => {
+    const safeUrl = safeExternalUrl(item.url);
+    const title = escapeHtml(item.title || '（无标题）');
+    const linkedTitle = safeUrl
+      ? `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener">${title} ↗</a>`
+      : title;
+    return `<article class="breaking-item ${item.severity === 'critical' ? 'is-critical' : ''}">
+      <div class="breaking-meta">
+        <span class="breaking-label">${escapeHtml(item.label || '重要更新')}</span>
+        <span>${escapeHtml(item.source || '')}</span>
+        <time>${item.date ? fmtDate(item.date) : ''}</time>
+      </div>
+      <div class="breaking-title">${linkedTitle}</div>
+      <div class="breaking-reason">${escapeHtml(item.reason || '')}</div>
+    </article>`;
+  }).join('');
+  section.classList.remove('hidden');
+}
+
 export async function loadSummary() {
   const meta = $('#summary-meta'), body = $('#summary-body'), cohort = $('#summary-cohort');
   body.innerHTML = '<div class="muted-card">加载中…</div>';
   try {
     const r = await api('GET', '/api/ai-news/summary/today');
+    renderBreaking(r.breaking_items || []);
     const s = r.summary;
     cohort.textContent = r.cohort_size
       ? `基于今日 ${r.cohort_size} 篇文章 · 日期 ${r.today || ''}` : `今日候选 0 篇`;
@@ -102,6 +130,7 @@ export async function loadSummary() {
       </div>`;
     }
   } catch (e) {
+    renderBreaking([]);
     body.innerHTML = '<div class="muted-card">❌ ' + escapeHtml(e.message) + '</div>';
   }
 }
@@ -262,6 +291,7 @@ function sourceCard(s) {
   const lastOk = s.last_ok ? fmtDate(s.last_ok) : '—';
   const newestArticle = s.newest_article_at ? fmtDate(s.newest_article_at) : '—';
   const desc = s.description ? escapeHtml(s.description) : '<span class="text-faint">（无简介）</span>';
+  const cadence = { fast: '每小时', standard: '每 4 小时', slow: '每 12 小时' }[s.cadence] || '';
   const host = s.url ? (s.url.replace(/^https?:\/\//, '').split('/')[0] || '') : '';
   const safeUrl = safeExternalUrl(s.url);
   const linkRow = safeUrl
@@ -277,6 +307,7 @@ function sourceCard(s) {
       <div class="src-desc">${desc}</div>
       ${healthDetail}
       <div class="src-stats">
+        ${cadence ? `<span title="自动抓取频率">↻ ${cadence}</span><span class="dot-sep">·</span>` : ''}
         <span title="本次入库 / 被过滤"><span class="hs-ok">+${s.last_added ?? 0}</span> <span class="text-faint">/ ${s.last_filtered ?? 0} 过滤</span></span>
         <span class="dot-sep">·</span>
         <span title="当前滚动文章库中的数量">📚 ${s.article_count || 0} 篇</span>

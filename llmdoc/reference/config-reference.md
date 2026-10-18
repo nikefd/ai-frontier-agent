@@ -20,6 +20,11 @@
 | `AIF_AI_NEWS_CRON_HOUR` | `ai_news_cron_hour` | `5` | 分时抓取的锚点小时（Asia/Shanghai） |
 | `AIF_AI_NEWS_CRON_MINUTE` | `ai_news_cron_minute` | `0` | 分时抓取分钟 |
 | `AIF_AI_NEWS_INTERVAL_HOURS` | `ai_news_interval_hours` | `4` | 抓取间隔；支持 1/2/3/4/6/8/12/24，其它值安全回退为 4 |
+| `AIF_FAST_NEWS_CRON_MINUTE` | `fast_news_cron_minute` | `10` | 高时效官方源的抓取分钟 |
+| `AIF_FAST_NEWS_INTERVAL_HOURS` | `fast_news_interval_hours` | `1` | 高时效官方源抓取间隔；支持值同上 |
+| `AIF_SLOW_NEWS_CRON_HOUR` | `slow_news_cron_hour` | `5` | 发现型来源抓取锚点小时 |
+| `AIF_SLOW_NEWS_CRON_MINUTE` | `slow_news_cron_minute` | `20` | 发现型来源抓取分钟 |
+| `AIF_SLOW_NEWS_INTERVAL_HOURS` | `slow_news_interval_hours` | `12` | 论文/X/Trending 发现型来源抓取间隔；支持值同上 |
 | `AIF_SUMMARY_CRON_HOUR` | `summary_cron_hour` | `6` | 分时速报的锚点小时，默认比抓取晚一小时 |
 | `AIF_SUMMARY_CRON_MINUTE` | `summary_cron_minute` | `0` | 分时速报分钟 |
 | `AIF_SUMMARY_INTERVAL_HOURS` | `summary_interval_hours` | `4` | 速报刷新间隔；候选指纹不变时不调用 LLM，支持值同上 |
@@ -57,7 +62,7 @@
 | `_CATEGORY_FETCH_CAPS` | 共 150 | 单轮分类硬上限：vendor 46 / media 20 / blog 16 / paper 14 / community 18 / expert 18 / x-ai 12 / trending 6 |
 | `_DEFAULT_TIER_BY_CATEGORY` | 8 类映射 | 运行时按 category 归一化 tier：vendor/blog=high，media/paper/community/expert=med，x-ai/trending=low |
 | `_SUMMARY_CATEGORY_CAPS` | 8 类映射 | 速报候选上限；其中 trending=2、x-ai=3，且这两类永不放宽 |
-| `DEFAULT_FEED_SPECS` | 93 条 | RSS/Atom/官方 sitemap/API/changelog 清单；基础字段 url/name/tier/category/description，特殊源另带 format/include_paths/max_per_fetch/source_priority |
+| `DEFAULT_FEED_SPECS` | 93 条 | RSS/Atom/官方 sitemap/API/changelog 清单；加载时补 cadence（12 fast / 51 standard / 30 slow），特殊源另带 format/include_paths/max_per_fetch/source_priority |
 | `AI_KEYWORDS` | 一组中英词 | med/low 相关性过滤；high 与 paper 未命中时仍可按 curated 接受 |
 | `DEFAULT_TRACKS` | 3 条 | tracks.json 为空时的默认追踪主题 |
 

@@ -1,7 +1,9 @@
 """APScheduler-based background tasks.
 
-Three jobs:
-- ai_news_fetch:     intraday RSS pulls on a configurable cadence
+Five jobs:
+- ai_news_fast:      hourly first-party model/API updates
+- ai_news_standard:  broad editorial/news pulls on a configurable cadence
+- ai_news_slow:      twice-daily paper/social/discovery pulls
 - ai_news_translate: every-2-min tick that translates pending articles
 - ai_news_summary:   intraday briefing refresh, skipped when inputs are unchanged
 
@@ -17,6 +19,7 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
 from .settings import settings
+from .routers.ai_news import DEFAULT_FEED_SPECS
 from .workers.ai_news_fetcher import fetch_once
 from .workers.ai_news_translator import translate_once
 
@@ -41,10 +44,14 @@ def _cron_hours(anchor: int, interval: int) -> str:
     return ",".join(str(hour) for hour in _scheduled_hours(anchor, interval))
 
 
-async def _ai_news_job():
+def _feeds_for_cadence(cadence: str) -> list[str]:
+    return [spec["url"] for spec in DEFAULT_FEED_SPECS if spec.get("cadence") == cadence]
+
+
+async def _ai_news_job(cadence: str):
     try:
-        added = await fetch_once()
-        log.info("scheduled ai-news fetch: added=%d", added)
+        added = await fetch_once(_feeds_for_cadence(cadence))
+        log.info("scheduled ai-news %s fetch: added=%d", cadence, added)
     except Exception as e:  # noqa
         log.exception("ai-news fetch failed: %s", e)
 
@@ -80,12 +87,33 @@ def start() -> AsyncIOScheduler | None:
     if _scheduler is not None:
         return _scheduler
     sched = AsyncIOScheduler(timezone="Asia/Shanghai")
-    fetch_hours = _cron_hours(settings.ai_news_cron_hour, settings.ai_news_interval_hours)
+    fast_hours = _cron_hours(settings.ai_news_cron_hour, settings.fast_news_interval_hours)
+    standard_hours = _cron_hours(settings.ai_news_cron_hour, settings.ai_news_interval_hours)
+    slow_hours = _cron_hours(settings.slow_news_cron_hour, settings.slow_news_interval_hours)
     summary_hours = _cron_hours(settings.summary_cron_hour, settings.summary_interval_hours)
     sched.add_job(
         _ai_news_job,
-        CronTrigger(hour=fetch_hours, minute=settings.ai_news_cron_minute),
-        id="ai_news_daily",
+        CronTrigger(hour=fast_hours, minute=settings.fast_news_cron_minute),
+        args=["fast"],
+        id="ai_news_fast",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
+    sched.add_job(
+        _ai_news_job,
+        CronTrigger(hour=standard_hours, minute=settings.ai_news_cron_minute),
+        args=["standard"],
+        id="ai_news_standard",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
+    sched.add_job(
+        _ai_news_job,
+        CronTrigger(hour=slow_hours, minute=settings.slow_news_cron_minute),
+        args=["slow"],
+        id="ai_news_slow",
         replace_existing=True,
         max_instances=1,
         coalesce=True,
@@ -109,8 +137,10 @@ def start() -> AsyncIOScheduler | None:
     sched.start()
     _scheduler = sched
     log.info(
-        "scheduler started: fetch_hours=%s summary_hours=%s jobs=%s",
-        fetch_hours,
+        "scheduler started: fast=%s standard=%s slow=%s summary=%s jobs=%s",
+        fast_hours,
+        standard_hours,
+        slow_hours,
         summary_hours,
         [j.id for j in sched.get_jobs()],
     )

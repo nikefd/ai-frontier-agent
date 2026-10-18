@@ -44,6 +44,13 @@ class Settings(BaseSettings):
     ai_news_cron_hour: int = 5
     ai_news_cron_minute: int = 0
     ai_news_interval_hours: int = 4
+    # First-party model/API updates are checked hourly; low-urgency discovery
+    # sources (papers, X, Trending) are checked twice daily.
+    fast_news_cron_minute: int = 10
+    fast_news_interval_hours: int = 1
+    slow_news_cron_hour: int = 5
+    slow_news_cron_minute: int = 20
+    slow_news_interval_hours: int = 12
     # Refresh the briefing one hour after each fetch. An unchanged cohort is a
     # no-op, so this cadence does not create redundant LLM calls.
     summary_cron_hour: int = 6
