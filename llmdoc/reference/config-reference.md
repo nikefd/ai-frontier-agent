@@ -62,8 +62,8 @@
 | `_CATEGORY_FETCH_CAPS` | 共 150 | 单轮分类硬上限：vendor 46 / media 20 / blog 16 / paper 14 / community 18 / expert 18 / x-ai 12 / trending 6 |
 | `_DEFAULT_TIER_BY_CATEGORY` | 8 类映射 | 运行时按 category 归一化 tier：vendor/blog=high，media/paper/community/expert=med，x-ai/trending=low |
 | `_SUMMARY_CATEGORY_CAPS` | 8 类映射 | 速报候选上限；其中 trending=2、x-ai=3，且这两类永不放宽 |
-| `DEFAULT_FEED_SPECS` | 93 条 | RSS/Atom/官方 sitemap/API/changelog 清单；加载时补 cadence（12 fast / 51 standard / 30 slow），特殊源另带 format/include_paths/max_per_fetch/source_priority |
-| `AI_KEYWORDS` | 一组中英词 | med/low 相关性过滤；high 与 paper 未命中时仍可按 curated 接受 |
+| `DEFAULT_FEED_SPECS` | 93 条 | RSS/Atom/官方 sitemap/API/changelog 清单；加载时补 cadence（12 fast / 52 standard / 29 slow），特殊源另带 format/include_paths/max_per_fetch/source_priority/request_profile/curated |
+| `AI_KEYWORDS` | 一组中英词 | med/low 相关性过滤；high、paper 与显式 `curated=true` 的 AI 刊物未命中时仍可接受 |
 | `DEFAULT_TRACKS` | 3 条 | tracks.json 为空时的默认追踪主题 |
 
 在 `app/workers/ai_news_translator.py`：
@@ -83,4 +83,4 @@
 
 - 新增/改环境变量：改 `app/settings.py` 的 `Settings` 字段 → 同步更新 `.env.example` → 回这张表补一行。
 - 调容量参数（如想多留文章、多抓几篇）：改 `ai_news.py` 顶部常量；`_CATEGORY_FETCH_CAPS` 总和当前等于 `_DAILY_FETCH_CAP=150`，新增分类或放宽一类时需重新检查全局预算和测试。
-- 加/删源：编辑 `DEFAULT_FEED_SPECS`，注意 `category` 要落在前端已识别的 8 类内（vendor/x-ai/community/expert/blog/media/trending/paper）。没有 RSS 但提供标准 sitemap 的官方站可设 `format="sitemap"` 和 `include_paths`；官方 JSON 或 changelog 页面需在 fetcher 增加小型专用解析器和 format（现有 `qwen_api` / `hf_daily_papers` / `openai_changelog` / `gemini_changelog` 可参考）。`max_per_fetch` 是解析后的单源硬上限，`source_priority` 只影响同轮候选先后，不改变持久化 tier。
+- 加/删源：编辑 `DEFAULT_FEED_SPECS`，注意 `category` 要落在前端已识别的 8 类内（vendor/x-ai/community/expert/blog/media/trending/paper）。没有 RSS 但提供标准 sitemap 的官方站可设 `format="sitemap"` 和 `include_paths`；官方 JSON 或 changelog 页面需在 fetcher 增加小型专用解析器和 format（现有 `qwen_api` / `hf_daily_papers` / `openai_changelog` / `gemini_changelog` 可参考）。`max_per_fetch` 是解析后的单源硬上限，`source_priority` 只影响同轮候选先后，不改变持久化 tier。只有确认整个来源都属于 AI 内容时才设 `curated=true`；只有源站明确拦截抓取器 UA 时才设 `request_profile="browser"`。

@@ -14,7 +14,7 @@
 
 三条主要数据流：
 
-1. **抓取管线** — APScheduler 按时效分三层：12 个高时效官方源每小时、51 个常规源每 4 小时、30 个论文/社交/Trending 发现源每 12 小时；管理员也能即时触发全部来源。每源记录连续失败/恢复，API 按所属层识别超过三轮间隔未抓取的调度过期。详见 [RSS 抓取管线架构](../architecture/rss-pipeline-architecture.md)。
+1. **抓取管线** — APScheduler 按时效分三层：12 个高时效官方源每小时、52 个常规源每 4 小时、29 个论文/社交/Trending 发现源每 12 小时；管理员也能即时触发全部来源。每源记录连续失败/恢复，API 按所属层识别超过三轮间隔未抓取的调度过期；HTTP 200 但无可解析条目的响应也记为失败。详见 [RSS 抓取管线架构](../architecture/rss-pipeline-architecture.md)。
 2. **翻译 / LLM 加工** — 每 2 分钟一个翻译 tick 把 `pending` 文章批量译成中文；用户可对单篇生成「深度解读」（带 mermaid 图）、对一组生成「今日速报」、对任意主题生成「深度指南」。
 3. **对话 agent** — `/api/agent/chat` 是 sparrow `Harness` 跑的 ReAct agent，带读写工具（查文章/源/track、建 track、收藏），对话历史持久化在 `ui.db`。详见 [Agent 架构](../architecture/agent-architecture.md)。
 
@@ -40,7 +40,7 @@
 |---|---|---|
 | DeepSeek API | 翻译 / 速报 / 深度解读 / 深度指南 / 对话 agent，全部共用一个 key | 未配置 key 时，所有 LLM 端点返回 503，但 RSS 浏览仍可用 |
 | RSSHub | 部分 X 大 V / GitHub 路由的 RSS 源 | 公共 `rsshub.app` 容易限流/403/404，需自建私有实例（compose 内置）；Twitter 路由还需 `TWITTER_AUTH_TOKEN` |
-| 各资讯源 | 93 个分层源（官方/媒体/博客/论文/社区/专家/X 大 V/GitHub 风向）；Anthropic/Cohere/Mistral/xAI 读官方 sitemap，Qwen 读官方文章 API，OpenAI/Gemini 逐条解析官方 changelog；论文由 HF Daily Papers 策展源加四路限流 arXiv 组成 | 清单硬编码在 `app/routers/ai_news.py` 的 `DEFAULT_FEED_SPECS` |
+| 各资讯源 | 93 个分层源（官方/媒体/博客/论文/社区/专家/X 大 V/GitHub 风向）；Anthropic/Cohere/DeepSeek/LangChain/Mistral/xAI 读官方 sitemap，Qwen 读官方文章 API，OpenAI/Gemini 逐条解析官方 changelog；论文由 HF Daily Papers 策展源加四路限流 arXiv 组成 | 清单硬编码在 `app/routers/ai_news.py` 的 `DEFAULT_FEED_SPECS` |
 
 ## 5. 目录结构
 
@@ -70,7 +70,7 @@
 
 ## 6. 核心机制速览
 
-- **抓取入库:** 93 个 RSS、官方 sitemap/API/changelog 按 fast/standard/slow 三层异步并发拉取 → sitemap 最新 6 页补全元数据，官方更新日志拆成独立发布项，HF Daily Papers 按日期、社区票数、代码与 stars 排序 → category 归一化 high/med/low → med/low 必须命中 AI 关键词（paper 除外）→ arXiv ID/URL 去重 → 每源分轮取候选 → 分类硬配额（论文 14、Trending 6、X 12 等）→ `_DAILY_FETCH_CAP=150` 真正封顶 → 滚动历史 `_ARTICLE_LIMIT=400`（pinned 不淘汰）。富化时另生成保守 `event_key`，让不同标题的同一事件在速报前合并并保留佐证来源。
+- **抓取入库:** 93 个 RSS、官方 sitemap/API/changelog 按 fast/standard/slow 三层异步并发拉取 → transient 429/5xx 单次退避重试，特定 CDN 源使用显式 browser request profile，空白/伪 feed 记错 → sitemap 最新 6 页补全元数据，官方更新日志拆成独立发布项，HF Daily Papers 按日期、社区票数、代码与 stars 排序 → category 归一化 high/med/low → med/low 必须命中 AI 关键词（paper 与显式 `curated` AI 刊物除外）→ arXiv ID/URL 去重 → 每源分轮取候选 → 分类硬配额（论文 14、Trending 6、X 12 等）→ `_DAILY_FETCH_CAP=150` 真正封顶 → 滚动历史 `_ARTICLE_LIMIT=400`（pinned 不淘汰）。富化时另生成保守 `event_key`，让不同标题的同一事件在速报前合并并保留佐证来源。
 - **重大提醒:** `news_alerts.py` 对近 36 小时文章做高精度、零 LLM 分类；API 弃用和安全事件优先，其次是官方模型发布与重要开源，并按 `event_key` 去重。结果随 `GET /summary/today` 实时返回，不等待下一次 LLM 速报刷新。
 - **覆盖质量体检:** 数据源页按近 30 小时计算 fast 源健康率、高影响事件在速报/重大提醒中的露出率、待富化数量和发现延迟 P50/P90；同事件多篇报道只算一次，不调用 LLM。它衡量“已接入来源后的管线漏出”，不等同于对全网未知事件的绝对召回率。
 - **速报选材:** 最近 30 小时文章先按规范化标题合并重复报道，再按 importance、来源类别、tier、时效综合排序；首轮限制同源最多 2 条，Trending 最多 2 条、X 最多 3 条，官方发布/关键研究优先。

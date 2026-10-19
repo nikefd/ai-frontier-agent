@@ -24,6 +24,7 @@ from app.workers.ai_news_fetcher import (
     _parse_qwen_api_entries,
     _parse_sitemap_index,
     _parse_sitemap_entries,
+    _request_headers,
     _select_candidates,
 )
 from app.storage import write_json_atomic
@@ -46,6 +47,7 @@ def test_discovery_streams_require_ai_keyword() -> None:
     assert _decide_relevance(generic, "high", "vendor")[0] is True
     assert _decide_relevance(generic, "low", "trending") == (False, "rejected")
     assert _decide_relevance(ai_item, "low", "trending") == (True, "keyword")
+    assert _decide_relevance(generic, "med", "community", curated=True) == (True, "curated")
 
 
 def test_source_registry_uses_ai2_instead_of_unreliable_stanford_sitemap() -> None:
@@ -76,6 +78,9 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "https://ai.google.dev/gemini-api/docs/changelog",
         "https://cursor.com/changelog/rss.xml",
         "https://huggingface.co/api/daily_papers?limit=100",
+        "https://api-docs.deepseek.com/sitemap.xml",
+        "https://www.langchain.com/sitemap.xml",
+        "https://mlflow.org/blog/rss.xml",
     } <= urls
     assert by_url["https://huggingface.co/api/daily_papers?limit=100"]["source_priority"] == 1
     assert all(by_url[url]["max_per_fetch"] == 2 for url in {
@@ -84,6 +89,55 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "http://export.arxiv.org/rss/cs.CV",
         "http://export.arxiv.org/rss/cs.LG",
     })
+
+
+def test_unstable_sources_use_verified_replacements_and_scoped_headers() -> None:
+    from app.routers.ai_news import DEFAULT_FEED_SPECS
+
+    by_url = {spec["url"]: spec for spec in DEFAULT_FEED_SPECS}
+    assert "https://www.oneusefulthing.org/feed" in by_url
+    assert "https://rss.app/feeds/83CQGxSgKZmSqKb5.xml" not in by_url
+    assert "https://www.reddit.com/r/MachineLearning/new/.rss" in by_url
+    assert "https://rsshub.app/deepseek/news" not in by_url
+    assert "https://rsshub.app/yuque/wikidesign/vngzgk" not in by_url
+    assert not any(url.startswith("https://rss.zslren.com/") for url in by_url)
+    assert by_url["https://quaily.com/op7418/feed/atom"]["curated"] is True
+    assert by_url[
+        "https://justlovemaki.github.io/CloudFlare-AI-Insight-Daily/rss.xml"
+    ]["curated"] is True
+    assert "Mozilla/5.0" in _request_headers("https://x.ai/sitemap.xml")["User-Agent"]
+    assert "Mozilla/5.0" in _request_headers("https://pytorch.org/blog/feed/")["User-Agent"]
+    assert "Mozilla/5.0" in _request_headers("https://venturebeat.com/category/ai/feed/")["User-Agent"]
+    assert _request_headers("https://www.reddit.com/r/MachineLearning/new/.rss")["User-Agent"].startswith(
+        "ai-frontier-agent/",
+    )
+
+
+@pytest.mark.asyncio
+async def test_transient_feed_failure_is_retried_once(monkeypatch) -> None:
+    url = "https://pytorch.org/blog/feed/"
+    calls = 0
+
+    async def no_sleep(_delay):
+        return None
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(503, content=b"try again")
+        return httpx.Response(200, content=b'''<rss><channel><title>PyTorch</title>
+          <item><title>PyTorch 3 released</title><link>https://pytorch.org/blog/v3</link></item>
+        </channel></rss>''')
+
+    monkeypatch.setattr("app.workers.ai_news_fetcher.asyncio.sleep", no_sleep)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        entries, title, error = await _fetch_feed(client, url)
+
+    assert calls == 2
+    assert error is None
+    assert title == "PyTorch"
+    assert entries[0]["title"] == "PyTorch 3 released"
 
 
 def test_hf_daily_papers_rank_by_curation_signal_and_expose_code() -> None:
@@ -180,6 +234,21 @@ async def test_changelog_structure_break_is_reported_as_source_error() -> None:
     assert entries == []
     assert title == "OpenAI API Changelog"
     assert error == "OpenAI changelog contained no parseable updates"
+
+
+@pytest.mark.asyncio
+async def test_empty_or_non_feed_response_is_reported_as_source_error() -> None:
+    url = "https://example.com/feed.xml"
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=b"<html><body>Access denied</body></html>")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        entries, _title, error = await _fetch_feed(client, url)
+
+    assert entries == []
+    assert error is not None
+    assert error.startswith("feed contained no parseable entries")
 
 
 def test_official_sitemap_adapter_filters_and_sorts_paths() -> None:

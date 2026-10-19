@@ -22,7 +22,7 @@
 
 ## 4. X 来源仍依赖自建 RSSHub
 
-93 个源里仍有大量 X 路由走 RSSHub；公共实例可能 404/限流，24 个 x-ai 源还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS、Anthropic/Cohere/Mistral/xAI 官方 sitemap、Qwen/HF 官方 API 与 OpenAI/Gemini changelog 仍可工作。Mistral/xAI sitemap 若在部署网络超时，只会记录该源失败，不阻塞其它来源。详见 [部署指南](../guides/how-to-deploy.md)。
+93 个源里仍有大量 X 路由走 RSSHub；公共实例可能 404/限流，依赖 RSSHub 的 X 路由还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS、Anthropic/Cohere/DeepSeek/LangChain/Mistral/xAI 官方 sitemap、Qwen/HF 官方 API 与 OpenAI/Gemini changelog 仍可工作。Mistral/xAI sitemap 若在部署网络超时，只会记录该源失败，不阻塞其它来源。详见 [部署指南](../guides/how-to-deploy.md)。
 
 ## 5. tier 与分类配额已恢复生效
 
@@ -32,15 +32,9 @@
 
 `seed-data/ai-news/sources.json` 是 `{}`。首次部署后数据源页**全部显示「尚未抓取」**，直到第一轮 fetch 跑完才有健康数据。不是故障。
 
-## 7. 历史命名遗留（zyb / zhangyangbin）
+## 7. 历史命名遗留（已清理）
 
-项目从 `zhangyangbin-agents` 抽取，多处仍残留旧名：
-
-- logger 名：`logging.getLogger("zyb.ai_news")` / `"zyb.fetcher"` / `"zyb.translator")`（其它模块已用 `aif.*`）。
-- `app/workers/ai_news_fetcher.py` 的 `USER_AGENT` 写死 `"zyb-agents/0.2 (+https://github.com/yourname/zhangyangbin-agents)"`——是占位 URL。
-- `app/llm_client.py` 抛 `LLMUnavailable` 的错误文案提到 `ZYB_LLM_API_KEY` / `COPILOT_GITHUB_TOKEN`，**已过时**（现在前缀是 `AIF_`，回退是 `DEEPSEEK_API_KEY`）。文案误导，逻辑无误。
-
-都不影响运行，属命名债。
+> ✅ logger、抓取器 User-Agent 与 LLM 错误文案均已统一为 `aif` / `AIF_` 命名；`app/settings.py` 顶部只保留一次迁移说明，不参与运行。
 
 ## 8. `/reader/{aid}` SSRF / 原始 HTML（已修复）
 
@@ -53,7 +47,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 pytest/pytest-asyncio。当前 95 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、Qwen/HF API、OpenAI/Gemini changelog、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前 98 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、空/伪 feed 错误识别、瞬时错误重试与分源请求头、Qwen/HF API、OpenAI/Gemini changelog、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 

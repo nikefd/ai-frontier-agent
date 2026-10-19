@@ -30,9 +30,9 @@ flowchart LR
 - 对 **Twitter 路由 404**
 - 对部分 **GitHub 路由 403/限流**
 
-应用启动时会把所有 `rsshub.app` 前缀的 URL 改写到 `AIF_RSSHUB_BASE`（compose 内默认 `http://rsshub:1200`，即自建实例）。这样这些源才抓得到。Anthropic/Cohere/Mistral/xAI 直接读取官方 sitemap，Qwen 读取官方文章 API，Ai2 读取官方 RSS，均不依赖 RSSHub；其中 sitemap index 最多展开同站 12 个子 sitemap，并对最新 6 页补全标题、摘要和发布时间。单源或单页失败都会隔离记录/降级，不阻塞其它来源。
+应用启动时会把所有 `rsshub.app` 前缀的 URL 改写到 `AIF_RSSHUB_BASE`（compose 内默认 `http://rsshub:1200`，即自建实例）。这样这些源才抓得到。Anthropic/Cohere/DeepSeek/LangChain/Mistral/xAI 直接读取官方 sitemap，Qwen 读取官方文章 API，Ai2/MLflow 读取官方 RSS，均不依赖 RSSHub；其中 sitemap index 最多展开同站 12 个子 sitemap，并对最新 6 页补全标题、摘要和发布时间。单源或单页失败都会隔离记录/降级，不阻塞其它来源。
 
-**Twitter 路由额外需要登录态**：在 rsshub 容器配 `TWITTER_AUTH_TOKEN`（x.com 的 `auth_token` cookie）。留空则 Twitter 路由（24 个 x-ai 源）抓不到，其余源正常。这个 token 是登录凭证，**绝不写进代码/git**，在 Coolify 环境变量里手填。
+**Twitter 路由额外需要登录态**：在 rsshub 容器配 `TWITTER_AUTH_TOKEN`（x.com 的 `auth_token` cookie）。留空则依赖 RSSHub 的 X 路由抓不到（当前 `x-ai` 共 23 个来源，其中部分使用其它 RSS 服务），其余源正常。这个 token 是登录凭证，**绝不写进代码/git**，在 Coolify 环境变量里手填。
 
 ## 3. 环境变量（在 Coolify UI 配）
 
@@ -81,6 +81,7 @@ Dockerfile 内置 `HEALTHCHECK`，每 30s `curl http://127.0.0.1:9702/api/health
 |---|---|
 | 数据源页大量「抓取失败」 | 检查 rsshub 容器是否起来：`docker compose logs rsshub`；确认 `AIF_RSSHUB_BASE` 是 `http://rsshub:1200` |
 | Twitter 源全失败 | `TWITTER_AUTH_TOKEN` 没填或失效，重新从浏览器取 x.com 的 auth_token |
+| 某源 HTTP 200 仍显示失败 | 响应没有可解析条目，常见于空 feed、登录页或 CDN 拦截页；先检查该 URL 的响应正文，不要只看状态码 |
 | LLM 功能 503 | `DEEPSEEK_API_KEY` 没配或额度用尽 |
 | 部署后数据没了 | 检查是否误用 bind mount；应为命名卷 `ai-frontier-data` |
 | HTTPS 下登录后仍像未登录 | 确认 compose 已透传 `AIF_COOKIE_SECURE=1`，域名确实通过 HTTPS 访问 |

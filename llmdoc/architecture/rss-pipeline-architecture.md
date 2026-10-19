@@ -13,7 +13,7 @@ flowchart TD
   manual[管理员点「立即抓取」 POST /fetch] --> fetch
   fetch[fetch_once：异步并发拉 93 个 RSS/sitemap/API/changelog 源]
   fetch --> parse[feedparser 解析 RSS/Atom<br/>BS4 解析官方 sitemap/changelog<br/>适配官方 JSON API]
-  parse --> gate[tier/category 相关性门槛<br/>high/paper 接受，med/low 需关键词]
+  parse --> gate[tier/category 相关性门槛<br/>high/paper/显式精选源接受，med/low 需关键词]
   gate --> rounds[每源分 4 轮取候选<br/>先各源 1 条，再各源第 2 条]
   rounds --> category[分类硬配额<br/>Trending 6 / X 12 / 其它分类]
   category --> global[硬性全局上限 _DAILY_FETCH_CAP=150]
@@ -34,24 +34,24 @@ flowchart TD
 
 - **定时**：`scheduler.py` 按 `cadence` 把来源拆成互斥三组，时区 Asia/Shanghai：
   - `fast`：12 个高时效官方源，每小时第 10 分钟检查；覆盖核心实验室新闻、模型/API 更新日志和关键开发工具 changelog。
-  - `standard`：51 个媒体、博客、社区及普通官方工程源，默认在 01/05/09/13/17/21 点（每 4 小时）检查。
-  - `slow`：30 个 paper、X 与 Trending 发现型源，默认在 05:20/17:20（每 12 小时）检查。
+  - `standard`：52 个媒体、博客、社区及普通官方工程源，默认在 01/05/09/13/17/21 点（每 4 小时）检查。
+  - `slow`：29 个 paper、X 与 Trending 发现型源，默认在 05:20/17:20（每 12 小时）检查。
 - **手动**：admin-only 的 `POST /api/ai-news/fetch` 即时跑一轮（普通用户看不到按钮，直接调用返回 403）。
 
 抓取本身不调用 LLM。三个调度任务只把各自 URL 子集传给同一个 `fetch_once`；它们和管理员手动全量抓取共用进程内锁，文章 URL 去重与 RSSHub 缓存继续避免重叠和重复入库。
 
 ### 2.2 feed 清单与分类
 
-93 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；加载时再根据 `_FAST_SOURCE_NAMES` 与 category 赋 `cadence=fast/standard/slow`。无稳定 RSS 的官方站可设置专用 format。当前 Anthropic、Cohere、Mistral、xAI 读取官方 sitemap，Qwen 读取官方文章 API；OpenAI API 的 Markdown changelog 与 Gemini API 的 HTML release notes会拆成带真实日期和官方落地链接的独立发布项，Claude Platform 与 Cursor 直接读取 changelog RSS。论文侧新增 Hugging Face Daily Papers 策展接口，结合社区票数、代码可用性和 GitHub stars 排序；四路原始 arXiv 各限最新 2 篇，只承担长尾发现。开放研究和工程侧还覆盖 Ai2、Meta Engineering、PyTorch、Google Cloud AI、Cloudflare AI、Together AI 与 Ollama。
+93 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；加载时再根据 `_FAST_SOURCE_NAMES` 与 category 赋 `cadence=fast/standard/slow`。无稳定 RSS 的官方站可设置专用 format。当前 Anthropic、Cohere、DeepSeek、LangChain、Mistral、xAI 读取官方 sitemap，Qwen 读取官方文章 API；OpenAI API 的 Markdown changelog 与 Gemini API 的 HTML release notes会拆成带真实日期和官方落地链接的独立发布项，Claude Platform 与 Cursor 直接读取 changelog RSS。论文侧新增 Hugging Face Daily Papers 策展接口，结合社区票数、代码可用性和 GitHub stars 排序；四路原始 arXiv 各限最新 2 篇，只承担长尾发现。开放研究和工程侧还覆盖 Ai2、Meta Engineering、PyTorch、Google Cloud AI、Cloudflare AI、Together AI、Ollama 与 MLflow。
 
 `category` 同时驱动前端分组、tier 归一化与抓取配额，共 8 类：
 
 | category | 含义 | 数量 |
 |---|---|---|
-| `vendor` | 官方实验室 / 厂商第一手发布 | 31 |
-| `x-ai` | X(Twitter) 上的 AI 大 V | 24 |
-| `community` | 社区 / 周刊（含中文资讯） | 12 |
-| `expert` | 专家个人博客 | 9 |
+| `vendor` | 官方实验室 / 厂商第一手发布 | 33 |
+| `x-ai` | X(Twitter) 上的 AI 大 V | 23 |
+| `community` | 社区 / 周刊（含中文资讯） | 10 |
+| `expert` | 专家个人博客 | 10 |
 | `blog` | AI 博客（原始一批） | 6 |
 | `media` | 科技媒体 | 5 |
 | `trending` | GitHub 热门风向 | 1 |
@@ -71,6 +71,7 @@ flowchart TD
 
 - `high`：信任官方/AI 原生编辑源，即使没命中关键词也接受；标记为 `curated`。
 - `paper`：arXiv 类目本身已限定 AI/ML，按 curated 接受，避免标题未含通用关键词时漏掉重要论文。
+- 显式 `curated=true`：只用于已经确认内容边界就是 AI 的精选刊物；当前用于 AIGC Weekly 与 AI资讯日报，避免中文标题没命中通用词时整源被清空。
 - `med` / `low`：必须命中关键词才接受；未命中计入该源 `last_filtered`，不会进入文章库或 LLM 富化队列。
 
 这条规则尤其约束 X 与 GitHub Trending：热度只作为发现信号，不能因为“热门”就自动成为 AI 前沿内容。
@@ -103,6 +104,8 @@ flowchart TD
 ### 2.7 容错
 
 - 单 feed 失败（HTTP 错误/超时/解析异常）只记进该源的 `last_error` 并累加 `consecutive_failures`，**绝不阻塞其它源**（`asyncio.gather(..., return_exceptions=True)`）。下一次成功会归零并记录 `last_recovered_at`。
+- 429、500、502、503、504 会做一次 0.1–1 秒的有界退避重试；xAI、PyTorch、VentureBeat 等明确需要普通浏览器请求头的源通过 `request_profile="browser"` 单独启用，不全局伪装浏览器，避免影响 Reddit 等要求可识别抓取器 UA 的来源。
+- HTTP 200 不等于健康：普通 RSS/Atom、sitemap 与官方 API 若没有任何可解析条目，会返回明确解析错误并显示在数据源页，不再把登录页、拦截页或空 feed 记成成功。
 - 每个 RSS/Atom 只取前 20 个 entry；官方 sitemap 支持单层同站 sitemap index（最多展开 12 个子 sitemap），按 `lastmod` 排序、路径过滤后取前 20 个 URL。
 - sitemap 最新 6 条会并发读取同站文章页，从 Open Graph、HTML meta 或 JSON-LD 补全真实标题、摘要和 `datePublished`；页面失败时保留 slug/lastmod 降级结果，不影响该源其余条目。限制为 6 页是为了覆盖 `_PER_FEED_CAP=4` 的正常候选并控制额外请求量。
 - Qwen 的 `qwen_api` 适配器读取官方 JSON、清理简介 HTML、按时间取最新 20 条。

@@ -5,14 +5,14 @@ Pipeline per entry:
   2. Keyword relevance check (AI_KEYWORDS allowlist; cn + en)
   3. Tier-based gating:
      - tier=high  → accept (trusted first-party/editorial source)
-     - paper      → accept (the category itself is AI/ML scoped)
+     - paper/explicitly curated AI feeds → accept
      - tier=med/low → accept only on keyword hit
   4. Enforce per-feed diversity, category ceilings, and a hard global ceiling
   5. Persist via add_article() with tier + ai_relevance fields
   6. Mark translation_status="pending" so the translation worker picks it up
 
 Best-effort guarantees retained:
-  - one feed failing never blocks others
+  - one feed failing never blocks others; empty/non-feed responses are failures
   - duplicates by url/id are skipped at the storage layer
   - per-feed metadata in sources.json (last_fetch, last_ok, last_error,
     last_added, filtered_count, tier, name)
@@ -50,8 +50,52 @@ from ..models import Article
 log = logging.getLogger("aif.fetcher")
 
 USER_AGENT = "ai-frontier-agent/0.2 (RSS fetcher)"
+BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36"
+)
 _FETCH_LOCK = asyncio.Lock()
 _SITEMAP_METADATA_LIMIT = 6
+
+
+def _request_headers(source_url: str, *, accept: str | None = None) -> dict[str, str]:
+    """Return source-specific headers without making every feed impersonate a browser.
+
+    Reddit accepts a descriptive feed-reader UA but several CDN-protected
+    publishers reject it. Their registry entries explicitly opt into the
+    browser profile so one workaround cannot regress another source.
+    """
+    spec = FEED_SPEC_BY_URL.get(source_url, {})
+    headers = {
+        "User-Agent": BROWSER_USER_AGENT if spec.get("request_profile") == "browser" else USER_AGENT,
+    }
+    if accept:
+        headers["Accept"] = accept
+    if spec.get("request_profile") == "browser":
+        headers["Accept-Language"] = "en-US,en;q=0.8"
+    return headers
+
+
+async def _get_source(
+    client: httpx.AsyncClient,
+    url: str,
+    *,
+    source_url: str,
+    timeout: float = 15.0,
+    accept: str | None = None,
+) -> httpx.Response:
+    """GET once, with one bounded retry for rate limits and transient upstreams."""
+    headers = _request_headers(source_url, accept=accept)
+    response = await client.get(url, timeout=timeout, headers=headers)
+    if response.status_code in {429, 500, 502, 503, 504}:
+        retry_after = response.headers.get("retry-after", "")
+        try:
+            delay = min(1.0, max(0.1, float(retry_after)))
+        except ValueError:
+            delay = 0.35
+        await asyncio.sleep(delay)
+        response = await client.get(url, timeout=timeout, headers=headers)
+    return response
 
 
 def _now_iso() -> str:
@@ -169,7 +213,7 @@ async def _hydrate_sitemap_entries(
             response = await client.get(
                 link,
                 timeout=10.0,
-                headers={"User-Agent": USER_AGENT, "Accept": "text/html"},
+                headers=_request_headers(root_url, accept="text/html"),
             )
             response.raise_for_status()
             metadata = _parse_page_metadata(response.content)
@@ -422,8 +466,9 @@ async def _entries_from_sitemap(
 
     async def fetch_child(child_url: str) -> bytes | None:
         try:
-            response = await client.get(
-                child_url, timeout=15.0, headers={"User-Agent": USER_AGENT},
+            response = await _get_source(
+                client, child_url, source_url=root_url, timeout=15.0,
+                accept="application/xml,text/xml;q=0.9,*/*;q=0.5",
             )
             response.raise_for_status()
             return response.content
@@ -449,7 +494,10 @@ async def _fetch_feed(
 ) -> tuple[list[dict], str | None, str | None]:
     """Returns (raw_entries, feed_title, error_msg)."""
     try:
-        r = await client.get(url, timeout=15.0, headers={"User-Agent": USER_AGENT})
+        r = await _get_source(
+            client, url, source_url=url, timeout=15.0,
+            accept="application/rss+xml,application/atom+xml,application/xml,text/xml;q=0.9,*/*;q=0.5",
+        )
         r.raise_for_status()
     except (httpx.HTTPError, asyncio.TimeoutError) as e:
         log.warning("feed %s failed: %s", url, e)
@@ -459,13 +507,15 @@ async def _fetch_feed(
         entries = await _entries_from_sitemap(
             client, url, r.content, spec.get("include_paths") or [],
         )
-        return entries, spec.get("name") or url, None
+        error = None if entries else "sitemap contained no matching parseable pages"
+        return entries, spec.get("name") or url, error
     if spec.get("format") == "qwen_api":
         try:
             entries = _parse_qwen_api_entries(r.json())
         except ValueError as e:
             return [], spec.get("name") or url, f"invalid Qwen API JSON: {e}"
-        return entries, spec.get("name") or url, None
+        error = None if entries else "Qwen API contained no parseable articles"
+        return entries, spec.get("name") or url, error
     if spec.get("format") == "hf_daily_papers":
         try:
             payload = r.json()
@@ -507,10 +557,19 @@ async def _fetch_feed(
                 "tags": [],
             }
         )
+    if not entries:
+        parser_error = str(getattr(feed, "bozo_exception", "") or "").strip()
+        detail = f": {parser_error[:180]}" if parser_error else ""
+        return [], source, f"feed contained no parseable entries{detail}"
     return entries, source, None
 
 
-def _decide_relevance(entry: dict, tier: str, category: str | None = None) -> tuple[bool, str]:
+def _decide_relevance(
+    entry: dict,
+    tier: str,
+    category: str | None = None,
+    curated: bool = False,
+) -> tuple[bool, str]:
     """Apply stricter gating as source trust decreases.
 
     First-party/editorial AI feeds and AI paper categories are curated enough
@@ -519,7 +578,7 @@ def _decide_relevance(entry: dict, tier: str, category: str | None = None) -> tu
     entering the enrichment queue.
     """
     hit = _is_ai_relevant_keywords(entry.get("title") or "", entry.get("summary") or "")
-    if tier == "high" or category == "paper":
+    if tier == "high" or category == "paper" or curated:
         return True, ("keyword" if hit else "curated")
     return hit, ("keyword" if hit else "rejected")
 
@@ -627,7 +686,9 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
         eligible_count = 0
         filtered_count = 0
         for entry in entries:
-            accept, reason = _decide_relevance(entry, tier, category)
+            accept, reason = _decide_relevance(
+                entry, tier, category, curated=bool(spec.get("curated")),
+            )
             if not accept:
                 filtered_count += 1
                 continue

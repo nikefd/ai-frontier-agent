@@ -261,7 +261,7 @@ export async function loadSources() {
         ${attention.length ? `<div class="src-attention"><strong>需关注：</strong>${attention.slice(0, 8).map(s => `${escapeHtml(s.name)}（${escapeHtml(s.health_reason || '异常')}）`).join('、')}${attention.length > 8 ? ` 等 ${attention.length} 个源` : ''}</div>` : ''}
       </div>`;
 
-    const healthRank = { error: 0, stale: 1, never: 2, healthy: 3, orphan: 4 };
+    const healthRank = { error: 0, stale: 1, never: 2, healthy: 3 };
     Object.values(groups).forEach(items => items.sort((a, b) =>
       (healthRank[a.health_status] ?? 9) - (healthRank[b.health_status] ?? 9)
       || String(a.name || '').localeCompare(String(b.name || ''))));
@@ -319,7 +319,6 @@ function sourceCard(s) {
   if (s.health_status === 'error') { status = '⚠️ 抓取失败'; statusClass = 'st-err'; }
   else if (s.health_status === 'stale') { status = '◷ 调度过期'; statusClass = 'st-stale'; }
   else if (s.health_status === 'healthy') { status = '✓ 正常'; statusClass = 'st-ok'; }
-  else if (s.health_status === 'orphan') { status = '历史来源'; statusClass = 'st-neutral'; }
   else { status = '⊝ 尚未抓取'; statusClass = 'st-neutral'; }
   const healthDetail = ['error', 'stale'].includes(s.health_status)
     ? `<div class="src-err ${s.health_status === 'stale' ? 'is-stale' : ''}" title="${escapeHtml(s.last_error || s.health_reason || '')}">${escapeHtml(s.last_error ? (s.last_error.length > 80 ? s.last_error.slice(0, 77) + '…' : s.last_error) : s.health_reason || '')}</div>`
