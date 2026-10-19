@@ -74,6 +74,9 @@ def guides_dir(uid: str) -> Path:
 def deep_dives_dir(uid: str) -> Path:
     return user_dir(uid) / "deep-dives"
 
+def experiments_dir(uid: str) -> Path:
+    return user_dir(uid) / "experiments"
+
 def profile_path(uid: str) -> Path:
     return user_dir(uid) / "profile.json"
 
@@ -372,11 +375,12 @@ def _all_pinned_ids() -> set[str]:
 
 
 def _overlay_user_state(articles: list[dict], uid: str | None) -> None:
-    """Stamp per-user `pinned` + `deep_dive_status` onto article dicts for the
+    """Stamp per-user artifact state onto article dicts for the
     response. These are NOT persisted to the global articles.json (pins live in
-    the user's pins.json; deep-dives in the user's deep-dives/)."""
+    the user's pins.json; generated artifacts live under the user's directory)."""
     pins = _load_pins(uid) if uid else set()
     ddir = deep_dives_dir(uid) if uid else None
+    edir = experiments_dir(uid) if uid else None
     for a in articles:
         aid = a.get("id")
         a["pinned"] = aid in pins
@@ -386,6 +390,8 @@ def _overlay_user_state(articles: list[dict], uid: str | None) -> None:
         else:
             a["deep_dive_status"] = None
             a["deep_dive_id"] = None
+        experiment = read_json(edir / f"{aid}.json", None) if edir is not None and aid else None
+        a["experiment_status"] = experiment.get("status") if isinstance(experiment, dict) else None
 
 
 # ── Articles ───────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 # AI Frontier Agent — 个人 AI 前沿信息站
 
-分层抓取 93 个 AI 源：模型/API 等 12 个高时效官方源每小时更新，51 个常规资讯源每 4 小时更新，论文、X 与 GitHub Trending 等 30 个发现型源每 12 小时更新。内容经过相关性过滤、同事件聚类与分类配额，再做双语翻译和可实践性判断；今日速报会直接标出近 36 小时的模型发布、API 弃用、安全事件与重要开源，并保留可点击的一手来源。同一事件的不同标题会合并并保留多源佐证；论文结合 Hugging Face Daily Papers 票数、开源代码和 GitHub stars 筛选，同时保留受限的 arXiv 长尾发现。数据源页持续体检高时效源健康、高影响事件露出、富化积压和发现延迟；候选未变化时跳过速报 LLM 调用。
+分层抓取 93 个 AI 源：模型/API 等 12 个高时效官方源每小时更新，51 个常规资讯源每 4 小时更新，论文、X 与 GitHub Trending 等 30 个发现型源每 12 小时更新。内容经过相关性过滤、同事件聚类与分类配额，再做双语翻译和可实践性判断；今日速报会直接标出近 36 小时的模型发布、API 弃用、安全事件与重要开源，并保留可点击的一手来源。同一事件的不同标题会合并并保留多源佐证；论文结合 Hugging Face Daily Papers 票数、开源代码和 GitHub stars 筛选，同时保留受限的 arXiv 长尾发现。可实践文章还能按需生成结构化实验卡，保存进度与结果笔记，再把完整实验上下文交给 AI 逐步带练。数据源页持续体检高时效源健康、高影响事件露出、富化积压和发现延迟；候选未变化时跳过速报 LLM 调用。
 
 ## 组成
 
@@ -9,8 +9,8 @@
 | FastAPI 应用 | `app/` | 单进程一体化：HTTP API + 静态托管 + APScheduler 抓取/翻译（入口 `app.main:app`，默认 `:9702`） |
 | RSS 管线 | `app/workers/` | 异步抓取（每源配额 + 全局上限）+ 批量翻译 worker |
 | 对话 agent | `app/agent_chat.py` + `app/agent_tools.py` | sparrow 驱动的 ReAct agent，带工具/引用/对话记忆 |
-| 前端 | `static/` | 零构建原生 ES module 单页 + sparrow-chat 对话组件 |
-| 数据 | `<data_dir>/ai-news/` | 一组 JSON（原子写）+ SQLite `ui.db`（对话记忆），无数据库服务 |
+| 前端 | `frontend/` → `static/dist/` | Vite 构建的原生 ES module 单页 + sparrow-chat 对话组件 |
+| 数据 | `<data_dir>/ai-news/` + `<data_dir>/users/<uid>/` | 全局资讯与按用户隔离的 JSON（原子写）+ SQLite 对话记忆，无数据库服务 |
 | 容器化 | `Dockerfile` / `docker-compose.yml` | 单镜像 + 自建 rsshub + redis 三服务 |
 | 文档 | `llmdoc/` | 面向人和 AI 的架构/指南/参考（**改代码前先读**） |
 

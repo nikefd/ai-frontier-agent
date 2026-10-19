@@ -43,6 +43,7 @@
 | `usage.json` | dict | 当日 LLM 操作计数 `{date, count}`，跨天自动重置（防滥用限额） |
 | `reflection.json` | dict | 该用户最近一次 AI 复盘（recap + 苏格拉底问题，见 §3.9） |
 | `learning-paths/<slug>.json` | 每文件一条 | 该用户的分阶段学习路径（见 §3.10） |
+| `experiments/{aid}.json` | 每文件一张 | 由可实践文章生成的实验卡、进度与结果笔记（见 §3.11） |
 | `ui.db` | SQLite | 该用户的 sparrow 对话记忆（会话/消息/journal） |
 
 > `users/_legacy/` 是迁移哨兵目录：启动时老单用户产物先搬到这里，首个注册账号（或 `AIF_ADMIN_EMAIL` 指定者）注册时改名成其 uid 目录继承。详见 [认证架构](../architecture/auth-architecture.md) 与 [已知问题](known-issues.md) 第 14 条。
@@ -139,6 +140,12 @@ list，每项一张卡：
 ### 3.10 learning-paths/<slug>.json（学习路径，每条一个文件）
 
 `{slug, topic, generated_at, model, based_on_profile, stages[]}`。每个 stage：`{title, goal, learn[], read[], suggest, practice}`，`read` 项是 `{type:"deep-dive"|"article", id, title, url, note}`（**只含库内真实存在的 id**，编造的被 `_resolve_reads` 丢弃）。是 guides 之上的编排层（多阶段路线 vs 单篇长文）。由 `POST /learning-paths/generate` 生成，独立库（像 deep-dives 那样直接扫目录）。
+
+### 3.11 experiments/{aid}.json（结构化实验卡）
+
+每篇文章、每位用户最多一张：`{article_id, article_title, article_url, source, generated_at, updated_at, model, status, note, title, goal, duration_minutes, difficulty, prerequisites[], official_links[], steps[], success_criteria[], cost, risks[]}`。`status` 为 `planned/in_progress/completed`；`steps` 每项为 `{title, action, expected}`。
+
+卡片只从全局文章中 `hands_on` 非空的条目按需生成，不随文章流刷新自动调用 LLM。`official_links` 仅保留原文或输入材料里实际出现过的 http(s) URL；模型编造的 URL 会在写入前丢弃。重新生成会更新方案，但保留原来的 `generated_at`、`status` 与 `note`。`GET /articles` 只叠加轻量 `experiment_status`，完整内容仍从实验端点读取。
 
 ## 4. 并发与原子性
 

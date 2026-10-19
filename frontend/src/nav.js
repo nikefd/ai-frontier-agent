@@ -10,10 +10,11 @@ import { loadReflection } from './reflection.js';
 import { loadLearning } from './learning.js';
 import { loadAdminUsers } from './admin.js';
 import { loadSuggestions } from './suggestions.js';
+import { loadExperiments } from './experiments.js';
 
 // All routable views. The landing/home page is the root path "/".
 const VIEWS = ['feed', 'foryou', 'summary', 'dives', 'review', 'reflection',
-               'profile', 'sources', 'admin', 'learning'];
+               'profile', 'sources', 'admin', 'learning', 'experiments'];
 
 const VIEW_META = {
   summary: ['今日速报', '先用几分钟掌握今天最值得关注的 AI 动态'],
@@ -23,6 +24,7 @@ const VIEW_META = {
   review: ['知识卡', '复习并沉淀读过的内容'],
   reflection: ['复盘', '回顾最近的关注方向和行动'],
   learning: ['学习路径', '围绕一个主题建立阶段化学习路线'],
+  experiments: ['实验室', '把前沿资讯变成短小、可验证的实践'],
   profile: ['我的画像', '查看 AI 对你关注方向的理解'],
   sources: ['数据源', '查看信源覆盖与抓取状态'],
   admin: ['用户管理', '管理站点用户与权限'],
@@ -36,6 +38,7 @@ function _runLoader(v) {
   if (v === 'review') loadReview();
   if (v === 'reflection') loadReflection();
   if (v === 'learning') loadLearning();
+  if (v === 'experiments') loadExperiments();
   if (v === 'profile') loadProfile();
   if (v === 'sources') loadSources();
   if (v === 'admin') loadAdminUsers();

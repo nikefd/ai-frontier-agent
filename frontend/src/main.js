@@ -154,8 +154,14 @@ $('#btn-toggle-newcard').addEventListener('click', () => {
 });
 
 // ── Boot ─────────────────────────────────────────────────────────────
-initAuth();
-// Re-load the current view when the logged-in identity changes (login / logout).
-window.addEventListener('aif:auth-changed', () => { state.offset = 0; applyRoute(); });
-// Restore the view from the URL (deep-link / refresh / back-forward).
-applyRoute();
+// Resolve the persisted session before loading a user-scoped deep link. Without
+// this ordering, /experiments (and other personal views) briefly decides the
+// user is anonymous and never fetches its data after initAuth completes.
+async function boot() {
+  await initAuth();
+  // Re-load the current view when the logged-in identity changes (login / logout).
+  window.addEventListener('aif:auth-changed', () => { state.offset = 0; applyRoute(); });
+  // Restore the view from the URL (deep-link / refresh / back-forward).
+  applyRoute();
+}
+boot();

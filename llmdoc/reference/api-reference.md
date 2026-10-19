@@ -46,7 +46,7 @@
 
 | 方法 | 路径 | 🔒 | 说明 |
 |---|---|---|---|
-| GET | `/articles` | 读* | 分页列表。query：`q` / `pinned_only` / `translated_only` / `hands_on_only` / `tier` / `category`（逗号分隔多值）/ `tag`（逗号分隔，受控词表）/ `sort`（`newest` 默认 / `important` 按重要性降序，未评分沉底）/ `offset` / `limit`（1–100）。所有筛选均在分页前执行，返回 `{total, offset, limit, items}`。**收藏不再置顶**（按 sort 正常排，仅带 ★ 标识；收藏夹用 `pinned_only` 看）。每项的 `pinned`/`deep_dive_status` 按当前用户叠加；`importance`/`tags`/`hands_on` 由富化 worker写在全局文章上 |
+| GET | `/articles` | 读* | 分页列表。query：`q` / `pinned_only` / `translated_only` / `hands_on_only` / `tier` / `category`（逗号分隔多值）/ `tag`（逗号分隔，受控词表）/ `sort`（`newest` 默认 / `important` 按重要性降序，未评分沉底）/ `offset` / `limit`（1–100）。所有筛选均在分页前执行，返回 `{total, offset, limit, items}`。**收藏不再置顶**（按 sort 正常排，仅带 ★ 标识；收藏夹用 `pinned_only` 看）。每项的 `pinned`/`deep_dive_status`/`experiment_status` 按当前用户叠加；`importance`/`tags`/`hands_on` 由富化 worker写在全局文章上 |
 | POST | `/articles` | admin | 手动新增一篇全局文章；按 id/url 去重；超 400 滚动淘汰。fetcher 在进程内直接复用该函数 |
 | DELETE | `/articles/{aid}` | admin | 删除一篇全局文章 |
 | POST | `/articles/{aid}/pin` | 写 | 收藏/取消收藏（toggle）。pin 存当前用户的 `pins.json`，不写全局文章对象 |
@@ -120,6 +120,19 @@ agent 主动提议（B2）：基于用户行为信号给「下一步」建议。
 | GET | `/suggestions` | 读* | 返回当前最该提的 1-2 条建议 `{items:[{id,text,action,view}]}`；匿名空 |
 
 > 实现：`app/routers/suggestions.py`，规则示例：收藏 ≥5 篇且某类 ≥3 篇且无学习路径 → 建议生成路径；收藏 ≥5 篇且无画像 → 建议生成画像；收藏 ≥8 篇且无复盘 → 建议复盘。封顶 2 条不刷屏。前端文章流顶部显示为可关闭的建议条（`suggestions.js`），关闭/采纳记 localStorage 不再提示。注意与 `/learning-paths/suggestions`（推荐学习方向）是两个端点，别混。
+
+## 4e. 结构化实验卡（prefix `/api/ai-news`）
+
+把已有 `hands_on` 的可实践文章按需转成 15/30/60 分钟实验，按用户存于 `users/<uid>/experiments/{aid}.json`。生成会消耗一次 LLM 配额；读取、改进度与记结果不调用 LLM。
+
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| GET | `/experiments` | 读* | 列当前用户全部实验卡，按更新时间倒序；匿名返回空 |
+| GET | `/articles/{aid}/experiment` | 读* | 取当前用户的单张实验卡；没有或匿名返回 `{status:"none"}` |
+| POST | `/articles/{aid}/experiment` | 写 | **LLM** 生成 `{force?:false}`；只接受已有 `hands_on` 的文章，默认命中已有卡直接返回，`force:true` 重生成但保留进度/笔记 |
+| PATCH | `/articles/{aid}/experiment` | 写 | 保存 `{status?:planned/in_progress/completed, note?:string}`，note 最长 4000 字 |
+
+> 实现：`app/routers/experiments.py`。模型只看到文章元数据和材料中已出现的 URL；服务端再丢弃不在允许集合内的外链，并强制补上原文入口，避免生成“伪官方”链接。步骤、列表、文本长度与枚举也会二次收敛；少于 3 步或缺目标/验收标准时返回 502。前端 `experiments.js` 同时服务文章内展开卡和独立「实验室」记录库，“让 AI 带我做”会把完整步骤与成功标准预填进对话，而非直接执行。
 
 ## 5. 追踪主题 tracks（prefix `/api/ai-news`）
 

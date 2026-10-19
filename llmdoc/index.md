@@ -1,6 +1,6 @@
 # AI Frontier Agent — 文档索引
 
-个人 AI 前沿信息站：FastAPI 单应用，定时从 93 个分层 RSS、官方 sitemap/API/changelog 源抓取 AI 资讯，经相关性过滤、跨源去重、分类配额和质量排序后生成双语文章流与每日速报，外加按需深度解读和 ReAct agent。论文侧以 Hugging Face Daily Papers 策展信号为主、arXiv 长尾发现为辅。文件型主存储、Vite 构建前端、单进程一体化。
+个人 AI 前沿信息站：FastAPI 单应用，定时从 93 个分层 RSS、官方 sitemap/API/changelog 源抓取 AI 资讯，经相关性过滤、跨源去重、分类配额和质量排序后生成双语文章流与每日速报，外加按需深度解读、结构化实验卡和 ReAct agent。论文侧以 Hugging Face Daily Papers 策展信号为主、arXiv 长尾发现为辅。文件型主存储、Vite 构建前端、单进程一体化。
 
 ---
 
@@ -22,6 +22,7 @@
 | 理解分层刷新 / “刚刚发生”重大提醒 / 各层健康阈值 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.1/2.2/2.5/4 节）＋ [API 参考](reference/api-reference.md)（第 4/7 节） |
 | 检查来源覆盖 / 高影响事件漏出 / 富化积压 / 发现延迟 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 5 节）＋ [API 参考](reference/api-reference.md)（第 7 节）＋ `app/quality_report.py` |
 | 找出可实践内容 / 理解实践建议怎么生成 / “带我做”如何接 AI | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 3/4 节）＋ [前端架构](architecture/frontend-architecture.md)（第 3/4 节）＋ [数据存储参考](reference/data-storage.md)（3.1） |
+| 结构化实验卡怎么生成 / 外链如何防幻觉 / 进度笔记存哪 | [API 参考](reference/api-reference.md)（第 4e 节）＋ [数据存储参考](reference/data-storage.md)（3.11）＋ `app/routers/experiments.py` |
 | 理解对话 agent（sparrow ReAct）怎么工作 / 加工具 | [Agent 架构](architecture/agent-architecture.md) |
 | agent 能调哪些工具 | [Agent 架构](architecture/agent-architecture.md)（第 3 节） |
 | 改前端 / 理解 ES module 结构 / 视图切换 / Vite 构建 | [前端架构](architecture/frontend-architecture.md) |

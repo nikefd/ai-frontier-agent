@@ -36,7 +36,7 @@
 
 ### 2.1 pin 为什么要迁出文章对象
 
-原来 `pinned` 写在全局 `articles.json` 每篇文章上 → 多用户后一个人 pin 了所有人都看到。所以 pin 迁成「用户↔文章」关联：存于 `users/<uid>/pins.json`（article id 列表）。`GET /articles` 读全局文章后**按当前用户叠加** `pinned` / `deep_dive_status`（后者由该用户的 `deep-dives/{aid}.json` 是否存在推导），匿名全为 false/none。文章滚动淘汰（上限 400）的「pinned 不淘汰」保护改为**按所有用户 pins.json 的并集**（`_all_pinned_ids()`）。
+原来 `pinned` 写在全局 `articles.json` 每篇文章上 → 多用户后一个人 pin 了所有人都看到。所以 pin 迁成「用户↔文章」关联：存于 `users/<uid>/pins.json`（article id 列表）。`GET /articles` 读全局文章后**按当前用户叠加** `pinned` / `deep_dive_status` / `experiment_status`（后两者分别由该用户的 `deep-dives/{aid}.json` 与 `experiments/{aid}.json` 推导），匿名全为 false/none。文章滚动淘汰（上限 400）的「pinned 不淘汰」保护改为**按所有用户 pins.json 的并集**（`_all_pinned_ids()`）。
 
 ## 3. 认证流程
 

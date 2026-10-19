@@ -5,6 +5,7 @@ import { api } from './api.js';
 import { state } from './state.js';
 import { jumpToDive } from './dives.js';
 import { isAuthed, openAuthModal } from './auth.js';
+import { toggleExperiment } from './experiments.js';
 
 export async function refreshList() {
   renderActiveFilters();
@@ -105,11 +106,17 @@ function articleCardHtml(a) {
     ? `<a class="btn-card primary" href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener">原文 ↗</a>` : '';
   const copyBtn = safeUrl ? `<button class="btn-card ghost" data-action="copy">复制链接</button>` : '';
   const handsOn = String(a.hands_on || '').trim();
+  const expLabel = a.experiment_status === 'completed' ? '✓ 已完成'
+    : a.experiment_status ? '查看实验卡' : '生成实验卡';
   const handsOnHtml = handsOn
     ? `<div class="hands-on-box">
         <div><span class="hands-on-label">实践</span>${escapeHtml(handsOn)}</div>
-        <button class="hands-on-start" data-action="practice">带我做</button>
-      </div>` : '';
+        <div class="hands-on-actions">
+          <button class="hands-on-start" data-action="experiment">${expLabel}</button>
+          <button class="hands-on-start subtle" data-action="practice">直接问 AI</button>
+        </div>
+      </div>
+      <div class="experiment-slot hidden"></div>` : '';
   return `
     <article class="article-card ${pinClass}" data-aid="${escapeHtml(a.id)}">
       <header class="card-head">
@@ -178,6 +185,10 @@ export function renderList() {
     el.querySelector('[data-action="practice"]')?.addEventListener('click', () => {
       const a = state.items.find(x => x.id === aid);
       practiceArticle(a);
+    });
+    el.querySelector('[data-action="experiment"]')?.addEventListener('click', (event) => {
+      const a = state.items.find(x => x.id === aid);
+      toggleExperiment(a, el.querySelector('.experiment-slot'), event.currentTarget);
     });
     el.querySelector('[data-action="srs"]')?.addEventListener('click', async (e) => {
       const btn = e.currentTarget, orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ 加入中…';

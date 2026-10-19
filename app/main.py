@@ -116,6 +116,10 @@ app.include_router(reflection.router)
 from .routers import learning
 app.include_router(learning.router)
 
+# Structured, time-boxed practice cards generated on demand from actionable articles.
+from .routers import experiments
+app.include_router(experiments.router)
+
 # Proactive nudges (rule-based, zero LLM) — agent suggesting the next step.
 from .routers import suggestions
 app.include_router(suggestions.router)
