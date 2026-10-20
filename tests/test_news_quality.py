@@ -1,6 +1,8 @@
 """Regression tests for source gating and editorial cohort selection."""
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import httpx
 import pytest
 
@@ -15,6 +17,7 @@ from app.workers.ai_news_fetcher import (
     _decide_relevance,
     _entries_from_sitemap,
     _fetch_feed,
+    _fetch_once,
     _canonical_feed_url,
     _limit_source_entries,
     _parse_gemini_changelog_entries,
@@ -27,7 +30,8 @@ from app.workers.ai_news_fetcher import (
     _request_headers,
     _select_candidates,
 )
-from app.storage import write_json_atomic
+from app.publication_dates import publication_date_from_url, repair_known_publication_dates
+from app.storage import read_json, write_json_atomic
 
 
 def _candidate(i: int, category: str, tier_rank: int = 0, feed: str | None = None) -> tuple:
@@ -138,6 +142,41 @@ async def test_transient_feed_failure_is_retried_once(monkeypatch) -> None:
     assert error is None
     assert title == "PyTorch"
     assert entries[0]["title"] == "PyTorch 3 released"
+
+
+@pytest.mark.asyncio
+async def test_fetch_rejects_missing_and_future_publication_dates(monkeypatch) -> None:
+    now = datetime.now(timezone.utc)
+    entries = [
+        {"title": "New LLM valid", "url": "https://example.test/valid",
+         "source": "Test feed", "summary": "AI",
+         "date": (now - timedelta(hours=1)).isoformat(), "tags": []},
+        {"title": "New LLM undated", "url": "https://example.test/undated",
+         "source": "Test feed", "summary": "AI", "date": "", "tags": []},
+        {"title": "New LLM future", "url": "https://example.test/future",
+         "source": "Test feed", "summary": "AI",
+         "date": (now + timedelta(days=1)).isoformat(), "tags": []},
+    ]
+    saved_meta = {}
+    persisted = []
+
+    async def fake_fetch(_client, _url):
+        return entries, "Test feed", None
+
+    monkeypatch.setattr("app.workers.ai_news_fetcher._fetch_feed", fake_fetch)
+    monkeypatch.setattr("app.workers.ai_news_fetcher._load_sources_meta", lambda: {})
+    monkeypatch.setattr(
+        "app.workers.ai_news_fetcher._save_sources_meta",
+        lambda value: saved_meta.update(value),
+    )
+    monkeypatch.setattr(
+        "app.workers.ai_news_fetcher.add_article",
+        lambda article: persisted.append(article) or {"ok": True},
+    )
+
+    assert await _fetch_once(["https://example.test/feed.xml"]) == 1
+    assert [article.url for article in persisted] == ["https://example.test/valid"]
+    assert saved_meta["https://example.test/feed.xml"]["last_invalid_date"] == 2
 
 
 def test_hf_daily_papers_rank_by_curation_signal_and_expose_code() -> None:
@@ -262,6 +301,22 @@ def test_official_sitemap_adapter_filters_and_sorts_paths() -> None:
     assert all("careers" not in e["url"] for e in entries)
 
 
+def test_deepseek_sitemap_dates_are_inferred_from_official_news_paths() -> None:
+    xml = b"""<?xml version="1.0"?><urlset>
+      <url><loc>https://api-docs.deepseek.com/news/news1120</loc></url>
+      <url><loc>https://api-docs.deepseek.com/news/news261017</loc></url>
+      <url><loc>https://api-docs.deepseek.com/guides/news261018</loc></url>
+    </urlset>"""
+    entries = _parse_sitemap_entries(xml, ["/news/"])
+
+    assert [entry["url"].rsplit("/", 1)[-1] for entry in entries] == [
+        "news261017", "news1120",
+    ]
+    assert entries[0]["date"].startswith("2026-10-17")
+    assert entries[1]["date"].startswith("2024-11-20")
+    assert publication_date_from_url("https://example.com/news/news261017") == ""
+
+
 def test_sitemap_index_extracts_child_sitemaps() -> None:
     xml = b"""<?xml version="1.0"?><sitemapindex>
       <sitemap><loc>https://lab.test/news-sitemap.xml</loc></sitemap>
@@ -286,6 +341,50 @@ def test_official_page_metadata_prefers_editorial_fields_and_jsonld_date() -> No
         "summary": "A safer frontier model.",
         "date": "2026-10-16T08:00:00Z",
     }
+
+
+def test_official_page_metadata_reads_leading_visible_publication_date() -> None:
+    page = b'''<html><head><title>Release</title></head><body><article>
+      <h1>DeepSeek-R1-Lite Release</h1><p>2024/11/20</p><p>Released today.</p>
+    </article></body></html>'''
+    parsed = _parse_page_metadata(page)
+
+    assert parsed["date"].startswith("2024-11-20")
+
+
+def test_stored_deepseek_dates_are_repaired_and_stale_summary_invalidated(tmp_path) -> None:
+    articles_file = tmp_path / "articles.json"
+    summary_file = tmp_path / "summary_today.json"
+    write_json_atomic(articles_file, [{
+        "id": "a_old", "source": "DeepSeek 新闻",
+        "url": "https://api-docs.deepseek.com/news/news1120",
+        "date": "2026-10-19T15:10:03+00:00",
+    }])
+    write_json_atomic(summary_file, {"cohort": [{"id": "a_old"}], "body": "stale"})
+
+    assert repair_known_publication_dates(articles_file, summary_file) == 1
+    assert read_json(articles_file, [])[0]["date"].startswith("2024-11-20")
+    assert not summary_file.exists()
+    assert repair_known_publication_dates(articles_file, summary_file) == 0
+
+
+def test_today_cohort_never_falls_back_to_old_undated_or_future_items(monkeypatch) -> None:
+    import app.routers.ai_news as news
+
+    now = datetime.now(timezone.utc)
+    articles = [
+        {"id": "recent", "title": "Recent", "url": "https://example.test/recent",
+         "source": "Lab", "date": (now - timedelta(hours=2)).isoformat()},
+        {"id": "old", "title": "Old", "url": "https://example.test/old",
+         "source": "Lab", "date": (now - timedelta(days=3)).isoformat()},
+        {"id": "future", "title": "Future", "url": "https://example.test/future",
+         "source": "Lab", "date": (now + timedelta(days=1)).isoformat()},
+        {"id": "undated", "title": "Undated", "url": "https://example.test/undated",
+         "source": "Lab", "date": None},
+    ]
+    monkeypatch.setattr(news, "_load_articles", lambda: articles)
+
+    assert [article["id"] for article in news._articles_for_today()] == ["recent"]
 
 
 @pytest.mark.asyncio

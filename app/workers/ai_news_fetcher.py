@@ -46,6 +46,7 @@ from ..routers.ai_news import (
     add_article,
 )
 from ..models import Article
+from ..publication_dates import publication_date_from_url
 
 log = logging.getLogger("aif.fetcher")
 
@@ -123,10 +124,11 @@ def _parse_sitemap_entries(content: bytes, include_paths: list[str]) -> list[dic
         if not slug:
             continue
         lastmod_node = node.find("lastmod")
+        published = lastmod_node.get_text(strip=True) if lastmod_node else ""
         entries.append({
             "title": slug.replace("-", " ").strip().title(),
             "url": link,
-            "date": lastmod_node.get_text(strip=True) if lastmod_node else "",
+            "date": published or publication_date_from_url(link),
             "summary": "",
             "tags": [],
         })
@@ -191,6 +193,23 @@ def _parse_page_metadata(content: bytes) -> dict[str, str]:
 
     if not result["title"] and soup.title:
         result["title"] = _clean_metadata_text(soup.title.get_text(" ", strip=True))
+    if not result["date"]:
+        article = soup.find("article") or soup.find("main")
+        leading_text = (
+            _clean_metadata_text(article.get_text(" ", strip=True)[:500])
+            if article
+            else ""
+        )
+        visible_date = re.search(
+            r"\b(20\d{2})[/-](0?[1-9]|1[0-2])[/-](0?[1-9]|[12]\d|3[01])\b",
+            leading_text,
+        )
+        if visible_date:
+            year, month, day = (int(part) for part in visible_date.groups())
+            try:
+                result["date"] = datetime(year, month, day, tzinfo=timezone.utc).isoformat()
+            except ValueError:
+                pass
     if len(result["summary"]) > 280:
         result["summary"] = result["summary"][:280] + "…"
     return result
@@ -228,7 +247,9 @@ async def _hydrate_sitemap_entries(
 
     limit = min(len(entries), _SITEMAP_METADATA_LIMIT)
     hydrated = await asyncio.gather(*(hydrate(entry) for entry in entries[:limit]))
-    return [*hydrated, *entries[limit:]]
+    result = [*hydrated, *entries[limit:]]
+    result.sort(key=lambda entry: _parse_ts(entry.get("date") or ""), reverse=True)
+    return result
 
 
 def _parse_qwen_api_entries(payload: dict) -> list[dict]:
@@ -663,6 +684,7 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
         m["eligible"] = 0
         m["last_added"] = 0
         m["last_filtered"] = 0
+        m["last_invalid_date"] = 0
         if isinstance(result, Exception):
             m["last_error"] = str(result)
             m["last_error_at"] = m["last_fetch"]
@@ -685,12 +707,18 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
 
         eligible_count = 0
         filtered_count = 0
+        invalid_date_count = 0
+        latest_allowed_ts = datetime.now(timezone.utc).timestamp() + 6 * 3600
         for entry in entries:
             accept, reason = _decide_relevance(
                 entry, tier, category, curated=bool(spec.get("curated")),
             )
             if not accept:
                 filtered_count += 1
+                continue
+            ts = _parse_ts(entry.get("date") or "")
+            if not ts or ts > latest_allowed_ts:
+                invalid_date_count += 1
                 continue
             entry["tier"] = tier
             entry["ai_relevance"] = reason
@@ -699,12 +727,12 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
                 entry["category"] = category
             if configured_name:
                 entry["source"] = configured_name
-            ts = _parse_ts(entry.get("date") or "") or 0.0
             source_priority = int(spec.get("source_priority") or 0)
             candidates.append((tier_rank.get(tier, 9) - source_priority, -ts, entry, m, url))
             eligible_count += 1
         m["eligible"] = eligible_count
         m["last_filtered"] = filtered_count
+        m["last_invalid_date"] = invalid_date_count
 
     selected = _select_candidates(candidates)
 

@@ -39,6 +39,10 @@ async def lifespan(app: FastAPI):
     )
     from .migrate import migrate_legacy_to_holding
     migrate_legacy_to_holding()
+    from .publication_dates import repair_known_publication_dates
+    repaired_dates = repair_known_publication_dates()
+    if repaired_dates:
+        log.warning("repaired trusted publication dates for %d stored articles", repaired_dates)
     scheduler.start()
     try:
         yield

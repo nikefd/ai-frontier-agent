@@ -47,7 +47,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 pytest/pytest-asyncio。当前 98 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、空/伪 feed 错误识别、瞬时错误重试与分源请求头、Qwen/HF API、OpenAI/Gemini changelog、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前 103 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、Qwen/HF API、OpenAI/Gemini changelog、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 
@@ -95,3 +95,7 @@
 历史 `write_json_atomic` 只能防文件写一半，不能防并发读改写丢更新。现在计数、toggle、append 和翻译合并用 `update_json_atomic` 锁住完整事务，fetch/translate sweep 也避免同进程重叠。锁仍是进程内锁；如果未来开多个 uvicorn worker，需迁到 SQLite/数据库或跨进程锁。
 
 因为内容一变文件名就变、入口 HTML 改引用新文件名，**强缓存与“立即生效”不再冲突**，也不再依赖 Cloudflare 配置——边缘的 `max-age` 反而是正确行为。详见 [前端架构](../architecture/frontend-architecture.md) 第 1 节。
+
+## 18. DeepSeek 历史文章曾被标成抓取时间（已修复）
+
+> ✅ DeepSeek 官方 sitemap 没有 `lastmod`，旧实现又只从 meta/JSON-LD 取日期，导致 2024 年文章入库时被 `add_article` 填成当日。现在官方 URL/正文日期会作为可信发布时间，补全后重排；无可信日期不入库，今日速报也不再用旧文兜底。启动修复会更正已污染文章，并使引用它们的旧速报缓存失效。

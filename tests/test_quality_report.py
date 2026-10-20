@@ -68,4 +68,4 @@ def test_new_articles_record_ingestion_time(tmp_path, monkeypatch) -> None:
 
     stored = read_json(articles_file, [])
     assert stored[0]["ingested_at"]
-    assert stored[0]["date"]
+    assert stored[0]["date"] is None

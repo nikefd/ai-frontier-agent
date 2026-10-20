@@ -14,7 +14,7 @@
 
 三条主要数据流：
 
-1. **抓取管线** — APScheduler 按时效分三层：12 个高时效官方源每小时、52 个常规源每 4 小时、29 个论文/社交/Trending 发现源每 12 小时；管理员也能即时触发全部来源。每源记录连续失败/恢复，API 按所属层识别超过三轮间隔未抓取的调度过期；HTTP 200 但无可解析条目的响应也记为失败。详见 [RSS 抓取管线架构](../architecture/rss-pipeline-architecture.md)。
+1. **抓取管线** — APScheduler 按时效分三层：12 个高时效官方源每小时、52 个常规源每 4 小时、29 个论文/社交/Trending 发现源每 12 小时；管理员也能即时触发全部来源。每源记录连续失败/恢复，API 按所属层识别超过三轮间隔未抓取的调度过期；HTTP 200 但无可解析条目的响应也记为失败，无可信发布日期或明显未来时间的条目不入库。详见 [RSS 抓取管线架构](../architecture/rss-pipeline-architecture.md)。
 2. **翻译 / LLM 加工** — 每 2 分钟一个翻译 tick 把 `pending` 文章批量译成中文；用户可对单篇生成「深度解读」（带 mermaid 图）、对一组生成「今日速报」、对任意主题生成「深度指南」。
 3. **对话 agent** — `/api/agent/chat` 是 sparrow `Harness` 跑的 ReAct agent，带读写工具（查文章/源/track、建 track、收藏），对话历史持久化在 `ui.db`。详见 [Agent 架构](../architecture/agent-architecture.md)。
 
@@ -50,6 +50,7 @@
 | `app/settings.py` | pydantic-settings 配置（`AIF_` 前缀），模块级单例 `settings` |
 | `app/models.py` | pydantic schema：`Article` / `Track` / `Guide` / `ChatMessage` / `ChatRequest` |
 | `app/storage.py` | 原子覆盖写 + 锁住完整 JSON 读改写事务 + 只读 SQLite |
+| `app/publication_dates.py` | 可信发布时间推导与定向历史数据修复；启动时幂等更正已知污染记录并失效关联速报 |
 | `app/safe_fetch.py` | 阅读器 SSRF 校验、限流式抓取和惰性 HTML 清洗 |
 | `app/llm_client.py` | DeepSeek（OpenAI 兼容）薄封装：`chat_complete` / `chat_stream` |
 | `app/news_alerts.py` | 零 LLM 的重大事件判定：模型发布、API 变更、安全事件、重要开源；近 36 小时去重排序 |
@@ -70,7 +71,7 @@
 
 ## 6. 核心机制速览
 
-- **抓取入库:** 93 个 RSS、官方 sitemap/API/changelog 按 fast/standard/slow 三层异步并发拉取 → transient 429/5xx 单次退避重试，特定 CDN 源使用显式 browser request profile，空白/伪 feed 记错 → sitemap 最新 6 页补全元数据，官方更新日志拆成独立发布项，HF Daily Papers 按日期、社区票数、代码与 stars 排序 → category 归一化 high/med/low → med/low 必须命中 AI 关键词（paper 与显式 `curated` AI 刊物除外）→ arXiv ID/URL 去重 → 每源分轮取候选 → 分类硬配额（论文 14、Trending 6、X 12 等）→ `_DAILY_FETCH_CAP=150` 真正封顶 → 滚动历史 `_ARTICLE_LIMIT=400`（pinned 不淘汰）。富化时另生成保守 `event_key`，让不同标题的同一事件在速报前合并并保留佐证来源。
+- **抓取入库:** 93 个 RSS、官方 sitemap/API/changelog 按 fast/standard/slow 三层异步并发拉取 → transient 429/5xx 单次退避重试，特定 CDN 源使用显式 browser request profile，空白/伪 feed 记错 → sitemap 最新 6 页补全元数据并在补全后重排，DeepSeek 官方 URL/正文日期作为可信日期 → 无日期或明显未来条目拒绝入库 → 官方更新日志拆成独立发布项，HF Daily Papers 按日期、社区票数、代码与 stars 排序 → category 归一化 high/med/low → med/low 必须命中 AI 关键词（paper 与显式 `curated` AI 刊物除外）→ arXiv ID/URL 去重 → 每源分轮取候选 → 分类硬配额（论文 14、Trending 6、X 12 等）→ `_DAILY_FETCH_CAP=150` 真正封顶 → 滚动历史 `_ARTICLE_LIMIT=400`（pinned 不淘汰）。富化时另生成保守 `event_key`，让不同标题的同一事件在速报前合并并保留佐证来源。
 - **重大提醒:** `news_alerts.py` 对近 36 小时文章做高精度、零 LLM 分类；API 弃用和安全事件优先，其次是官方模型发布与重要开源，并按 `event_key` 去重。结果随 `GET /summary/today` 实时返回，不等待下一次 LLM 速报刷新。
 - **覆盖质量体检:** 数据源页按近 30 小时计算 fast 源健康率、高影响事件在速报/重大提醒中的露出率、待富化数量和发现延迟 P50/P90；同事件多篇报道只算一次，不调用 LLM。它衡量“已接入来源后的管线漏出”，不等同于对全网未知事件的绝对召回率。
 - **速报选材:** 最近 30 小时文章先按规范化标题合并重复报道，再按 importance、来源类别、tier、时效综合排序；首轮限制同源最多 2 条，Trending 最多 2 条、X 最多 3 条，官方发布/关键研究优先。

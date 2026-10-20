@@ -345,6 +345,7 @@ function sourceCard(s) {
       <div class="src-stats">
         ${cadence ? `<span title="自动抓取频率">↻ ${cadence}</span><span class="dot-sep">·</span>` : ''}
         <span title="本次入库 / 被过滤"><span class="hs-ok">+${s.last_added ?? 0}</span> <span class="text-faint">/ ${s.last_filtered ?? 0} 过滤</span></span>
+        ${(s.last_invalid_date || 0) > 0 ? `<span class="dot-sep">·</span><span class="hs-err" title="发布日期缺失或异常，未入库">日期异常 ${s.last_invalid_date} 条</span>` : ''}
         <span class="dot-sep">·</span>
         <span title="当前滚动文章库中的数量">📚 ${s.article_count || 0} 篇</span>
         <span class="dot-sep">·</span>

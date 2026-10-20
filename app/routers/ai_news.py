@@ -496,7 +496,6 @@ def add_article(article: Article) -> dict:
             return articles
         payload = article.model_dump()
         payload["id"] = aid
-        payload["date"] = payload.get("date") or _now_iso()
         payload["ingested_at"] = payload.get("ingested_at") or _now_iso()
         for k in ("pinned", "deep_dive_status", "deep_dive_id"):
             payload.pop(k, None)
@@ -791,6 +790,7 @@ def list_sources() -> list[dict]:
             "consecutive_failures": int(m.get("consecutive_failures") or 0),
             "last_added": m.get("last_added", 0),
             "last_filtered": m.get("last_filtered", 0),
+            "last_invalid_date": m.get("last_invalid_date", 0),
             "article_count": counts.get(name, 0),
             "newest_article_at": newest.get(name, (0.0, None))[1],
             **_source_health(m, interval_hours={
@@ -946,12 +946,12 @@ def _articles_for_today(limit: int = 25) -> list[dict]:
     from datetime import timedelta
     now = datetime.now(timezone.utc)
     cutoff = (now - timedelta(hours=30)).timestamp()
+    future_limit = (now + timedelta(hours=1)).timestamp()
     arts = _load_articles()
-    fresh = [a for a in arts if _parse_ts(a.get("date") or "") >= cutoff]
-    # Fall back to the latest N if nothing dated recently
-    if len(fresh) < 5:
-        fresh = sorted(arts, key=lambda a: _parse_ts(a.get("date") or ""), reverse=True)
-        fresh = fresh[: max(8, limit * 3)]
+    fresh = [
+        a for a in arts
+        if cutoff <= _parse_ts(a.get("date") or "") <= future_limit
+    ]
     return _select_summary_cohort(fresh, limit)
 
 
@@ -983,6 +983,7 @@ def _summary_fingerprint(cohort: list[dict]) -> str:
         {
             "id": article.get("id"),
             "title": article.get("title"),
+            "date": article.get("date"),
             "summary": article.get("summary"),
             "source": article.get("source"),
             "category": _article_category(article),
