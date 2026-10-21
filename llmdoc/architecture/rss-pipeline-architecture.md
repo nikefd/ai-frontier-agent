@@ -50,8 +50,8 @@ flowchart TD
 |---|---|---|
 | `vendor` | 官方实验室 / 厂商第一手发布 | 35 |
 | `x-ai` | X(Twitter) 上的 AI 大 V | 21 |
-| `community` | 社区 / 周刊（含中文资讯） | 10 |
-| `expert` | 专家个人博客 | 10 |
+| `community` | 社区 / 周刊（含中文资讯） | 9 |
+| `expert` | 专家个人博客 | 11 |
 | `blog` | AI 博客（原始一批） | 6 |
 | `media` | 科技媒体 | 5 |
 | `trending` | GitHub 热门风向 | 1 |
@@ -105,14 +105,14 @@ flowchart TD
 ### 2.7 容错
 
 - 单 feed 失败（HTTP 错误/超时/解析异常）只记进该源的 `last_error` 并累加 `consecutive_failures`，**绝不阻塞其它源**（`asyncio.gather(..., return_exceptions=True)`）。下一次成功会归零并记录 `last_recovered_at`。
-- 429、500、502、503、504 会做一次 0.1–1 秒的有界退避重试；VentureBeat 等明确需要普通浏览器请求头的源通过 `request_profile="browser"` 单独启用，不全局伪装浏览器。两个 Reddit 源使用可识别抓取器 UA，并通过同一个异步锁串行抓取、每次间隔 1 秒，避免同一出口瞬时并发触发 429。
+- 429、500、502、503、504 会做一次 0.1–1 秒的有界退避重试；VentureBeat 等明确需要普通浏览器请求头的源通过 `request_profile="browser"` 单独启用，不全局伪装浏览器。四路 arXiv 使用 HTTPS，并通过同一个异步锁串行抓取、每次间隔 1 秒，避免同时下载四个约 1 MB feed 时被上游返回空内容。
 - HTTP 200 不等于健康：普通 RSS/Atom、sitemap 与官方 API 若没有任何可解析条目，会返回明确解析错误并显示在数据源页，不再把登录页、拦截页或空 feed 记成成功。
 - 发布时间必须可追溯：RSS 使用 `published/updated`，sitemap 使用 `lastmod`、官方 URL 中明确编码的日期或文章正文开头日期。缺少日期或时间超过当前 6 小时的条目不入库，并累计到 `last_invalid_date`；`add_article` 不再用抓取时间填充 `date`。
 - 每个 RSS/Atom 只取前 20 个 entry；官方 sitemap 支持单层同站 sitemap index（最多展开 12 个子 sitemap），按 `lastmod` 排序、路径过滤后取前 20 个 URL。
 - sitemap 最新 6 条会并发读取同站文章页，从 Open Graph、HTML meta、JSON-LD 或正文开头的明确日期补全真实标题、摘要和发布时间，补全后再次按日期排序；页面失败时保留 slug/lastmod 降级结果，不影响该源其余条目。DeepSeek 的官方 news URL 另按其已确认的 MMDD/YYMMDD 规则推导日期，避免无 `lastmod` 的 sitemap 把旧文当新文。限制补全为 6 页是为了覆盖 `_PER_FEED_CAP=4` 的正常候选并控制额外请求量。
 - Qwen 的 `qwen_api` 适配器读取官方 JSON、清理简介 HTML、按时间取最新 20 条。
 - OpenAI 的 `openai_changelog` 适配器按 Markdown 月份/日期标题拆分最新 20 条 API 更新，优先链接到对应功能文档；Gemini 的 `gemini_changelog` 适配器按日期和顶层列表项拆分模型发布、弃用与迁移提醒。两者都使用页面声明的日期，不以抓取时间冒充发布时间。
-- `hf_daily_papers` 读取 HF 官方公开 JSON，按策展日期优先，再结合 upvotes、代码仓库与 GitHub stars 排出最新 20 篇；摘要携带这些可解释信号供富化模型判断，但热度不直接等同重要性。文章链接指向 HF 论文页以便查看代码与讨论，内部 `_dedupe_url` 统一成无版本号的 arXiv URL，因此同篇原始 arXiv 条目不会重复占位。四路 arXiv 的 `max_per_fetch=2` 是硬上限。
+- `hf_daily_papers` 读取 HF 官方公开 JSON，按策展日期优先，再结合 upvotes、代码仓库与 GitHub stars 排出最新 20 篇；摘要携带这些可解释信号供富化模型判断，但热度不直接等同重要性。文章链接指向 HF 论文页以便查看代码与讨论，内部 `_dedupe_url` 统一成无版本号的 arXiv URL，因此同篇原始 arXiv 条目不会重复占位。四路 arXiv 的 `max_per_fetch=2` 是硬上限，且共享 `host_throttle=arxiv` 串行下载。
 - `github_releases` 读取 GitHub 官方 API，忽略 draft，保留 release 名称、发布时间、正文摘要和官方 release URL；当前用于替代生产出口长期 403 的 xAI/PyTorch 官网源，并补充 Transformers、vLLM 两个高价值工程发布源。
 - `_parse_ts()` 同时支持 ISO 8601 和 RSS 常见 RFC 822 日期；未知格式回退为 0。抓取候选排序、文章流排序和最近 30 小时速报窗口共用这一实现。
 - `fetch_once` 有进程内异步锁，避免定时任务和管理员手动触发重叠。

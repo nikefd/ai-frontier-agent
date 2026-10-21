@@ -47,7 +47,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 pytest/pytest-asyncio。当前 105 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、GitHub Releases 适配与 Reddit 同域限流、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、Qwen/HF API、OpenAI/Gemini changelog、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前 105 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、GitHub Releases 适配与 arXiv 同域限流、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、Qwen/HF API、OpenAI/Gemini changelog、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 
@@ -102,4 +102,8 @@
 
 ## 19. 生产出口曾长期无法抓 xAI/PyTorch（已降级修复）
 
-> ✅ xAI sitemap 在真实浏览器可读，但生产数据中心出口连续 70 次 403；PyTorch Blog feed 连续 21 次 403，说明不是请求头问题。两者现改读所属官方 GitHub 仓库的 Releases API，并同时补入 Transformers、vLLM 官方发布；这保证模型/API/工程版本信号稳定，但 xAI 官网非 SDK 类公司新闻仍主要依靠媒体与 X 来源补充。连续 6 次 503 且从未产出文章的 Riley Brown、vas RSSHub 路由已移除；两个 Reddit 源改为串行错峰以降低 429。
+> ✅ xAI sitemap 在真实浏览器可读，但生产数据中心出口连续 70 次 403；PyTorch Blog feed 连续 21 次 403，说明不是请求头问题。两者现改读所属官方 GitHub 仓库的 Releases API，并同时补入 Transformers、vLLM 官方发布；这保证模型/API/工程版本信号稳定，但 xAI 官网非 SDK 类公司新闻仍主要依靠媒体与 X 来源补充。连续 6 次 503 且从未产出文章的 Riley Brown、vas RSSHub 路由已移除；连续 3 次 429 的 r/MachineLearning 改为稳定的 Import AI 专家通讯。
+
+## 20. 四路 arXiv 曾同时返回空 feed（已修复）
+
+> ✅ 四个约 1 MB 的 arXiv 分类 feed 原先并发下载，生产出口连续两轮同时得到无可解析条目。现统一使用 HTTPS，并以 `host_throttle=arxiv` 串行抓取、每路间隔 1 秒；HF Daily Papers 仍是论文主雷达，四路 arXiv 只各保留 2 篇作长尾发现。

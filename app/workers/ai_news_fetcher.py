@@ -56,7 +56,7 @@ BROWSER_USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36"
 )
 _FETCH_LOCK = asyncio.Lock()
-_REDDIT_FETCH_LOCK = asyncio.Lock()
+_HOST_FETCH_LOCKS = {"arxiv": asyncio.Lock()}
 _HOST_THROTTLE_SECONDS = 1.0
 _SITEMAP_METADATA_LIMIT = 6
 
@@ -646,9 +646,10 @@ async def _fetch_feed_with_host_policy(
 ) -> tuple[list[dict], str | None, str | None]:
     """Serialize opt-in same-host feeds so they do not trigger burst limits."""
     spec = FEED_SPEC_BY_URL.get(url, {})
-    if spec.get("host_throttle") != "reddit":
+    lock = _HOST_FETCH_LOCKS.get(str(spec.get("host_throttle") or ""))
+    if lock is None:
         return await _fetch_feed(client, url)
-    async with _REDDIT_FETCH_LOCK:
+    async with lock:
         result = await _fetch_feed(client, url)
         await asyncio.sleep(_HOST_THROTTLE_SECONDS)
         return result

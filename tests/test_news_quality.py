@@ -93,12 +93,14 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "https://api.github.com/repos/vllm-project/vllm/releases?per_page=20",
     } <= urls
     assert by_url["https://huggingface.co/api/daily_papers?limit=100"]["source_priority"] == 1
-    assert all(by_url[url]["max_per_fetch"] == 2 for url in {
-        "http://export.arxiv.org/rss/cs.AI",
-        "http://export.arxiv.org/rss/cs.CL",
-        "http://export.arxiv.org/rss/cs.CV",
-        "http://export.arxiv.org/rss/cs.LG",
-    })
+    arxiv_urls = {
+        "https://export.arxiv.org/rss/cs.AI",
+        "https://export.arxiv.org/rss/cs.CL",
+        "https://export.arxiv.org/rss/cs.CV",
+        "https://export.arxiv.org/rss/cs.LG",
+    }
+    assert all(by_url[url]["max_per_fetch"] == 2 for url in arxiv_urls)
+    assert all(by_url[url]["host_throttle"] == "arxiv" for url in arxiv_urls)
 
 
 def test_unstable_sources_use_verified_replacements_and_scoped_headers() -> None:
@@ -107,9 +109,8 @@ def test_unstable_sources_use_verified_replacements_and_scoped_headers() -> None
     by_url = {spec["url"]: spec for spec in DEFAULT_FEED_SPECS}
     assert "https://www.oneusefulthing.org/feed" in by_url
     assert "https://rss.app/feeds/83CQGxSgKZmSqKb5.xml" not in by_url
-    assert "https://www.reddit.com/r/MachineLearning/new/.rss" in by_url
-    assert by_url["https://www.reddit.com/r/MachineLearning/new/.rss"]["host_throttle"] == "reddit"
-    assert by_url["https://www.reddit.com/r/LocalLLaMA/.rss"]["host_throttle"] == "reddit"
+    assert "https://www.reddit.com/r/MachineLearning/new/.rss" not in by_url
+    assert by_url["https://jack-clark.net/feed/"]["curated"] is True
     assert "https://rsshub.app/deepseek/news" not in by_url
     assert "https://rsshub.app/yuque/wikidesign/vngzgk" not in by_url
     assert not any(url.startswith("https://rss.zslren.com/") for url in by_url)
@@ -124,7 +125,7 @@ def test_unstable_sources_use_verified_replacements_and_scoped_headers() -> None
         "https://api.github.com/repos/pytorch/pytorch/releases?per_page=20",
     )["X-GitHub-Api-Version"] == "2022-11-28"
     assert "Mozilla/5.0" in _request_headers("https://venturebeat.com/category/ai/feed/")["User-Agent"]
-    assert _request_headers("https://www.reddit.com/r/MachineLearning/new/.rss")["User-Agent"].startswith(
+    assert _request_headers("https://www.reddit.com/r/LocalLLaMA/.rss")["User-Agent"].startswith(
         "ai-frontier-agent/",
     )
 
@@ -185,7 +186,7 @@ def test_github_release_adapter_keeps_first_party_release_metadata() -> None:
 
 
 @pytest.mark.asyncio
-async def test_reddit_feeds_are_serialized_to_avoid_burst_limits(monkeypatch) -> None:
+async def test_arxiv_feeds_are_serialized_to_avoid_burst_limits(monkeypatch) -> None:
     import app.workers.ai_news_fetcher as fetcher
 
     active = 0
@@ -197,13 +198,13 @@ async def test_reddit_feeds_are_serialized_to_avoid_burst_limits(monkeypatch) ->
         max_active = max(max_active, active)
         await asyncio.sleep(0.01)
         active -= 1
-        return [], "Reddit", None
+        return [], "arXiv", None
 
     monkeypatch.setattr(fetcher, "_fetch_feed", fake_fetch)
     monkeypatch.setattr(fetcher, "_HOST_THROTTLE_SECONDS", 0)
     urls = [
-        "https://www.reddit.com/r/LocalLLaMA/.rss",
-        "https://www.reddit.com/r/MachineLearning/new/.rss",
+        "https://export.arxiv.org/rss/cs.AI",
+        "https://export.arxiv.org/rss/cs.CL",
     ]
     async with httpx.AsyncClient() as client:
         await asyncio.gather(*(
