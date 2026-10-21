@@ -33,6 +33,7 @@
 | 前端 | Vite ES module；精确锁定的 marked + DOMPurify + Mermaid strict；无第三方运行时 CDN |
 | 容器化 | 单镜像（python:3.12-slim）+ docker-compose（app + 自建 rsshub + redis） |
 | 部署 | Coolify（Traefik 反代，命名卷持久化） |
+| CI | GitHub Actions：Python 3.11/3.12 测试、Node 20 构建/审计、生产 Docker 镜像构建 |
 
 ## 4. 关键外部服务
 
@@ -66,6 +67,7 @@
 | `frontend/` | 前端源码：`index.html` + `src/`（ES module）+ `style.css` + `public/sparrow-chat.js`；Vite 构建到 `static/dist/` |
 | `seed-data/ai-news/` | 镜像内种子数据，首次启动卷为空时灌入（`articles.json` / `tracks.json` / 示例 guides + deep-dives） |
 | `Dockerfile` / `docker-compose.yml` / `docker-entrypoint.sh` | 容器化：单镜像 + app/rsshub/redis 三服务 + 种子灌入逻辑 |
+| `.github/workflows/ci.yml` | PR/main 的确定性质量门禁；后端、前端通过后构建生产镜像 |
 | `deploy/` | 当前为空目录（部署托管给 Coolify，无 systemd/nginx 配置入库） |
 | `llmdoc/` | 本文档体系 |
 

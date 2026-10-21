@@ -12,6 +12,7 @@
 | 前端 | `frontend/` → `static/dist/` | Vite 构建的原生 ES module 单页 + sparrow-chat 对话组件 |
 | 数据 | `<data_dir>/ai-news/` + `<data_dir>/users/<uid>/` | 全局资讯与按用户隔离的 JSON（原子写）+ SQLite 对话记忆，无数据库服务 |
 | 容器化 | `Dockerfile` / `docker-compose.yml` | 单镜像 + 自建 rsshub + redis 三服务 |
+| CI | `.github/workflows/ci.yml` | PR 与 main 推送自动跑 Python 3.11/3.12 测试、前端构建/审计和生产镜像构建 |
 | 文档 | `llmdoc/` | 面向人和 AI 的架构/指南/参考（**改代码前先读**） |
 
 ## 快速开始（裸机）
@@ -39,6 +40,10 @@ docker compose up -d --build
 ## 部署
 
 用 [Coolify](https://coolify.io/)（Traefik 反代 + 命名卷持久化）。部分 X 源走 RSSHub，所以 compose 自带私有实例；Twitter 路由还需 `TWITTER_AUTH_TOKEN`。Anthropic/Cohere/Mistral 等无稳定 RSS 的官方源读取 sitemap 并补全页面元数据，xAI/PyTorch/Transformers/vLLM 读取官方 GitHub Releases API，Qwen 读取官方文章 API；OpenAI/Gemini 官方更新日志由专用解析器逐条拆分，Claude Platform/Cursor 读取官方 changelog RSS。详见 [llmdoc/guides/how-to-deploy.md](llmdoc/guides/how-to-deploy.md)。
+
+## 质量门禁
+
+GitHub Actions 会在每个 PR、`main` 推送和手动触发时运行确定性 CI：后端在 Python 3.11/3.12 上执行全部测试和字节码编译，前端在 Node 20 上执行锁文件安装、生产构建和高危依赖审计；全部通过后再构建生产 Docker 镜像。详细命令见 [运行指南](llmdoc/guides/how-to-run.md#测试与-ci)。
 
 ## 文档导航（llmdoc）
 

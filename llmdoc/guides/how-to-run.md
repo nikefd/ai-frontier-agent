@@ -76,7 +76,7 @@ docker compose logs -f ai-frontier      # 看日志
 | 单独跑翻译脚本（裸机调试） | `python -m app.workers.ai_news_translator` |
 | 关掉定时任务 | `.env` 设 `AIF_SCHEDULER_ENABLED=0` |
 
-## 测试
+## 测试与 CI
 
 ```bash
 pip install -e ".[dev]"     # pytest + pytest-asyncio
@@ -84,6 +84,14 @@ pytest
 ```
 
 当前安全/业务回归共 105 项；提交前同时运行 `pytest`、`cd frontend && npm run build && npm audit`。
+
+正式 CI 位于 `.github/workflows/ci.yml`，在 PR、`main` 推送及手动触发时运行：
+
+- 后端：Python 3.11、3.12 分别安装 `.[dev]`，执行全部 pytest 和 `compileall`。
+- 前端：Node 20 执行 `npm ci`、Vite 生产构建和 `npm audit --audit-level=high`。
+- 镜像：后端与前端检查全部通过后，按仓库 `Dockerfile` 构建生产镜像。
+
+工作流只授予 `contents: read`，不读取部署或 LLM secrets；同一分支的新提交会取消旧的未完成运行。AI PR 审查位于独立的 `pr-review.yml`，不替代这些确定性检查。
 
 ## 排障
 

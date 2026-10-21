@@ -107,3 +107,7 @@
 ## 20. 四路 arXiv 曾同时返回空 feed（已修复）
 
 > ✅ 四个约 1 MB 的 arXiv 分类 feed 原先并发下载，生产出口连续两轮同时得到无可解析条目。现统一使用 HTTPS，并以 `host_throttle=arxiv` 串行抓取、每路间隔 1 秒；HF Daily Papers 仍是论文主雷达，四路 arXiv 只各保留 2 篇作长尾发现。
+
+## 21. 确定性 CI（已补齐）
+
+> ✅ `.github/workflows/ci.yml` 会在 PR、`main` 推送和手动触发时运行 Python 3.11/3.12 全套测试与编译检查、Node 20 前端生产构建与高危依赖审计，并在这些检查通过后构建生产 Docker 镜像。工作流最小权限为 `contents: read`，且不依赖业务 secrets。原有 AI PR Review 只负责启发式审查，不能替代这套门禁。
