@@ -1,6 +1,7 @@
 """Regression tests for source gating and editorial cohort selection."""
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -17,10 +18,12 @@ from app.workers.ai_news_fetcher import (
     _decide_relevance,
     _entries_from_sitemap,
     _fetch_feed,
+    _fetch_feed_with_host_policy,
     _fetch_once,
     _canonical_feed_url,
     _limit_source_entries,
     _parse_gemini_changelog_entries,
+    _parse_github_releases,
     _parse_hf_daily_papers,
     _parse_openai_changelog_entries,
     _parse_page_metadata,
@@ -72,7 +75,7 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
     assert {
         "https://engineering.fb.com/category/ai-research/feed/",
         "https://engineering.fb.com/category/ml-applications/feed/",
-        "https://pytorch.org/blog/feed/",
+        "https://api.github.com/repos/pytorch/pytorch/releases?per_page=20",
         "https://cloudblog.withgoogle.com/products/ai-machine-learning/rss/",
         "https://blog.cloudflare.com/tag/ai/rss/",
         "https://www.together.ai/blog/rss.xml",
@@ -85,6 +88,9 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "https://api-docs.deepseek.com/sitemap.xml",
         "https://www.langchain.com/sitemap.xml",
         "https://mlflow.org/blog/rss.xml",
+        "https://api.github.com/repos/xai-org/xai-sdk-python/releases?per_page=20",
+        "https://api.github.com/repos/huggingface/transformers/releases?per_page=20",
+        "https://api.github.com/repos/vllm-project/vllm/releases?per_page=20",
     } <= urls
     assert by_url["https://huggingface.co/api/daily_papers?limit=100"]["source_priority"] == 1
     assert all(by_url[url]["max_per_fetch"] == 2 for url in {
@@ -102,6 +108,8 @@ def test_unstable_sources_use_verified_replacements_and_scoped_headers() -> None
     assert "https://www.oneusefulthing.org/feed" in by_url
     assert "https://rss.app/feeds/83CQGxSgKZmSqKb5.xml" not in by_url
     assert "https://www.reddit.com/r/MachineLearning/new/.rss" in by_url
+    assert by_url["https://www.reddit.com/r/MachineLearning/new/.rss"]["host_throttle"] == "reddit"
+    assert by_url["https://www.reddit.com/r/LocalLLaMA/.rss"]["host_throttle"] == "reddit"
     assert "https://rsshub.app/deepseek/news" not in by_url
     assert "https://rsshub.app/yuque/wikidesign/vngzgk" not in by_url
     assert not any(url.startswith("https://rss.zslren.com/") for url in by_url)
@@ -109,8 +117,12 @@ def test_unstable_sources_use_verified_replacements_and_scoped_headers() -> None
     assert by_url[
         "https://justlovemaki.github.io/CloudFlare-AI-Insight-Daily/rss.xml"
     ]["curated"] is True
-    assert "Mozilla/5.0" in _request_headers("https://x.ai/sitemap.xml")["User-Agent"]
-    assert "Mozilla/5.0" in _request_headers("https://pytorch.org/blog/feed/")["User-Agent"]
+    assert "https://x.ai/sitemap.xml" not in by_url
+    assert "https://pytorch.org/blog/feed/" not in by_url
+    assert not any(spec["name"] in {"Riley Brown", "vas"} for spec in DEFAULT_FEED_SPECS)
+    assert _request_headers(
+        "https://api.github.com/repos/pytorch/pytorch/releases?per_page=20",
+    )["X-GitHub-Api-Version"] == "2022-11-28"
     assert "Mozilla/5.0" in _request_headers("https://venturebeat.com/category/ai/feed/")["User-Agent"]
     assert _request_headers("https://www.reddit.com/r/MachineLearning/new/.rss")["User-Agent"].startswith(
         "ai-frontier-agent/",
@@ -119,7 +131,7 @@ def test_unstable_sources_use_verified_replacements_and_scoped_headers() -> None
 
 @pytest.mark.asyncio
 async def test_transient_feed_failure_is_retried_once(monkeypatch) -> None:
-    url = "https://pytorch.org/blog/feed/"
+    url = "https://venturebeat.com/category/ai/feed/"
     calls = 0
 
     async def no_sleep(_delay):
@@ -142,6 +154,63 @@ async def test_transient_feed_failure_is_retried_once(monkeypatch) -> None:
     assert error is None
     assert title == "PyTorch"
     assert entries[0]["title"] == "PyTorch 3 released"
+
+
+def test_github_release_adapter_keeps_first_party_release_metadata() -> None:
+    entries = _parse_github_releases([
+        {
+            "name": "PyTorch 2.14.1 Release",
+            "tag_name": "v2.14.1",
+            "html_url": "https://github.com/pytorch/pytorch/releases/tag/v2.14.1",
+            "published_at": "2026-09-30T19:14:48Z",
+            "body": "## Highlights\n- Adds [feature](https://pytorch.org/docs/feature).",
+            "draft": False,
+            "prerelease": False,
+        },
+        {
+            "name": "Ignored draft",
+            "html_url": "https://github.com/example/draft",
+            "created_at": "2026-10-01T00:00:00Z",
+            "draft": True,
+        },
+    ])
+
+    assert entries == [{
+        "title": "PyTorch 2.14.1 Release",
+        "url": "https://github.com/pytorch/pytorch/releases/tag/v2.14.1",
+        "date": "2026-09-30T19:14:48Z",
+        "summary": "Highlights - Adds feature.",
+        "tags": ["开源"],
+    }]
+
+
+@pytest.mark.asyncio
+async def test_reddit_feeds_are_serialized_to_avoid_burst_limits(monkeypatch) -> None:
+    import app.workers.ai_news_fetcher as fetcher
+
+    active = 0
+    max_active = 0
+
+    async def fake_fetch(_client, _url):
+        nonlocal active, max_active
+        active += 1
+        max_active = max(max_active, active)
+        await asyncio.sleep(0.01)
+        active -= 1
+        return [], "Reddit", None
+
+    monkeypatch.setattr(fetcher, "_fetch_feed", fake_fetch)
+    monkeypatch.setattr(fetcher, "_HOST_THROTTLE_SECONDS", 0)
+    urls = [
+        "https://www.reddit.com/r/LocalLLaMA/.rss",
+        "https://www.reddit.com/r/MachineLearning/new/.rss",
+    ]
+    async with httpx.AsyncClient() as client:
+        await asyncio.gather(*(
+            _fetch_feed_with_host_policy(client, url) for url in urls
+        ))
+
+    assert max_active == 1
 
 
 @pytest.mark.asyncio

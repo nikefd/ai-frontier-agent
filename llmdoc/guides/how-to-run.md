@@ -83,7 +83,7 @@ pip install -e ".[dev]"     # pytest + pytest-asyncio
 pytest
 ```
 
-当前安全/业务回归共 103 项；提交前同时运行 `pytest`、`cd frontend && npm run build && npm audit`。
+当前安全/业务回归共 105 项；提交前同时运行 `pytest`、`cd frontend && npm run build && npm audit`。
 
 ## 排障
 

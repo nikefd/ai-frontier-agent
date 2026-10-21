@@ -56,6 +56,8 @@ BROWSER_USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36"
 )
 _FETCH_LOCK = asyncio.Lock()
+_REDDIT_FETCH_LOCK = asyncio.Lock()
+_HOST_THROTTLE_SECONDS = 1.0
 _SITEMAP_METADATA_LIMIT = 6
 
 
@@ -72,6 +74,8 @@ def _request_headers(source_url: str, *, accept: str | None = None) -> dict[str,
     }
     if accept:
         headers["Accept"] = accept
+    if urlparse(source_url).hostname == "api.github.com":
+        headers["X-GitHub-Api-Version"] = "2022-11-28"
     if spec.get("request_profile") == "browser":
         headers["Accept-Language"] = "en-US,en;q=0.8"
     return headers
@@ -350,6 +354,38 @@ def _plain_markdown(value: str) -> str:
     return _clean_metadata_text(text)
 
 
+def _parse_github_releases(payload: list[dict]) -> list[dict]:
+    """Convert first-party GitHub releases into feed-like entries."""
+    entries: list[dict] = []
+    for release in payload:
+        if not isinstance(release, dict) or release.get("draft"):
+            continue
+        title = _clean_metadata_text(release.get("name") or release.get("tag_name"))
+        url = str(release.get("html_url") or "").strip()
+        published = str(release.get("published_at") or release.get("created_at") or "")
+        if not title or not url or not published:
+            continue
+        body_raw = re.sub(
+            r"(?m)^\s{0,3}#{1,6}\s*",
+            "",
+            str(release.get("body") or ""),
+        )
+        body = _plain_markdown(body_raw)
+        if release.get("prerelease"):
+            body = f"Pre-release. {body}" if body else "Pre-release."
+        if len(body) > 280:
+            body = body[:280] + "…"
+        entries.append({
+            "title": title,
+            "url": url,
+            "date": published,
+            "summary": body,
+            "tags": ["开源"],
+        })
+    entries.sort(key=lambda entry: _parse_ts(entry.get("date") or ""), reverse=True)
+    return entries[:20]
+
+
 def _parse_openai_changelog_entries(content: bytes) -> list[dict]:
     """Turn OpenAI's official Markdown changelog into dated feed entries."""
     base_url = "https://developers.openai.com/api/docs/changelog"
@@ -515,9 +551,18 @@ async def _fetch_feed(
 ) -> tuple[list[dict], str | None, str | None]:
     """Returns (raw_entries, feed_title, error_msg)."""
     try:
+        spec = FEED_SPEC_BY_URL.get(url, {})
+        accept = (
+            "application/vnd.github+json"
+            if spec.get("format") == "github_releases"
+            else (
+                "application/rss+xml,application/atom+xml,application/xml,"
+                "text/xml;q=0.9,*/*;q=0.5"
+            )
+        )
         r = await _get_source(
             client, url, source_url=url, timeout=15.0,
-            accept="application/rss+xml,application/atom+xml,application/xml,text/xml;q=0.9,*/*;q=0.5",
+            accept=accept,
         )
         r.raise_for_status()
     except (httpx.HTTPError, asyncio.TimeoutError) as e:
@@ -546,6 +591,16 @@ async def _fetch_feed(
         except ValueError as e:
             return [], spec.get("name") or url, f"invalid Hugging Face papers JSON: {e}"
         error = None if entries else "Hugging Face Daily Papers contained no parseable papers"
+        return entries, spec.get("name") or url, error
+    if spec.get("format") == "github_releases":
+        try:
+            payload = r.json()
+            if not isinstance(payload, list):
+                raise ValueError("expected a JSON list")
+            entries = _parse_github_releases(payload)
+        except ValueError as e:
+            return [], spec.get("name") or url, f"invalid GitHub releases JSON: {e}"
+        error = None if entries else "GitHub releases contained no parseable releases"
         return entries, spec.get("name") or url, error
     if spec.get("format") == "openai_changelog":
         entries = _parse_openai_changelog_entries(r.content)
@@ -583,6 +638,20 @@ async def _fetch_feed(
         detail = f": {parser_error[:180]}" if parser_error else ""
         return [], source, f"feed contained no parseable entries{detail}"
     return entries, source, None
+
+
+async def _fetch_feed_with_host_policy(
+    client: httpx.AsyncClient,
+    url: str,
+) -> tuple[list[dict], str | None, str | None]:
+    """Serialize opt-in same-host feeds so they do not trigger burst limits."""
+    spec = FEED_SPEC_BY_URL.get(url, {})
+    if spec.get("host_throttle") != "reddit":
+        return await _fetch_feed(client, url)
+    async with _REDDIT_FETCH_LOCK:
+        result = await _fetch_feed(client, url)
+        await asyncio.sleep(_HOST_THROTTLE_SECONDS)
+        return result
 
 
 def _decide_relevance(
@@ -660,7 +729,7 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
     feeds = list(feeds or DEFAULT_FEEDS)
     meta = _load_sources_meta()
     async with httpx.AsyncClient(follow_redirects=True) as client:
-        tasks = [_fetch_feed(client, f) for f in feeds]
+        tasks = [_fetch_feed_with_host_policy(client, f) for f in feeds]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
     # Tier ranks (lower number = preferred). Within tier we rank by freshness.

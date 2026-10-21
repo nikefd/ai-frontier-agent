@@ -11,7 +11,7 @@
 flowchart TD
   cron[APScheduler 分层刷新<br/>官方 1h / 常规 4h / 发现 12h] --> fetch
   manual[管理员点「立即抓取」 POST /fetch] --> fetch
-  fetch[fetch_once：异步并发拉 93 个 RSS/sitemap/API/changelog 源]
+  fetch[fetch_once：异步拉取 93 个 RSS/sitemap/API/changelog/GitHub Releases 源]
   fetch --> parse[feedparser 解析 RSS/Atom<br/>BS4 解析官方 sitemap/changelog<br/>适配官方 JSON API]
   parse --> gate[tier/category 相关性门槛<br/>high/paper/显式精选源接受，med/low 需关键词]
   gate --> rounds[每源分 4 轮取候选<br/>先各源 1 条，再各源第 2 条]
@@ -34,22 +34,22 @@ flowchart TD
 
 - **定时**：`scheduler.py` 按 `cadence` 把来源拆成互斥三组，时区 Asia/Shanghai：
   - `fast`：12 个高时效官方源，每小时第 10 分钟检查；覆盖核心实验室新闻、模型/API 更新日志和关键开发工具 changelog。
-  - `standard`：52 个媒体、博客、社区及普通官方工程源，默认在 01/05/09/13/17/21 点（每 4 小时）检查。
-  - `slow`：29 个 paper、X 与 Trending 发现型源，默认在 05:20/17:20（每 12 小时）检查。
+  - `standard`：54 个媒体、博客、社区及普通官方工程源，默认在 01/05/09/13/17/21 点（每 4 小时）检查。
+  - `slow`：27 个 paper、X 与 Trending 发现型源，默认在 05:20/17:20（每 12 小时）检查。
 - **手动**：admin-only 的 `POST /api/ai-news/fetch` 即时跑一轮（普通用户看不到按钮，直接调用返回 403）。
 
 抓取本身不调用 LLM。三个调度任务只把各自 URL 子集传给同一个 `fetch_once`；它们和管理员手动全量抓取共用进程内锁，文章 URL 去重与 RSSHub 缓存继续避免重叠和重复入库。
 
 ### 2.2 feed 清单与分类
 
-93 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；加载时再根据 `_FAST_SOURCE_NAMES` 与 category 赋 `cadence=fast/standard/slow`。无稳定 RSS 的官方站可设置专用 format。当前 Anthropic、Cohere、DeepSeek、LangChain、Mistral、xAI 读取官方 sitemap，Qwen 读取官方文章 API；OpenAI API 的 Markdown changelog 与 Gemini API 的 HTML release notes会拆成带真实日期和官方落地链接的独立发布项，Claude Platform 与 Cursor 直接读取 changelog RSS。论文侧新增 Hugging Face Daily Papers 策展接口，结合社区票数、代码可用性和 GitHub stars 排序；四路原始 arXiv 各限最新 2 篇，只承担长尾发现。开放研究和工程侧还覆盖 Ai2、Meta Engineering、PyTorch、Google Cloud AI、Cloudflare AI、Together AI、Ollama 与 MLflow。
+93 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；加载时再根据 `_FAST_SOURCE_NAMES` 与 category 赋 `cadence=fast/standard/slow`。无稳定 RSS 的官方站可设置专用 format。当前 Anthropic、Cohere、DeepSeek、LangChain、Mistral 读取官方 sitemap；xAI Python SDK、PyTorch、Transformers 与 vLLM 读取所属官方 GitHub 仓库的 Releases API；Qwen 读取官方文章 API；OpenAI API 的 Markdown changelog 与 Gemini API 的 HTML release notes 会拆成带真实日期和官方落地链接的独立发布项，Claude Platform 与 Cursor 直接读取 changelog RSS。论文侧使用 Hugging Face Daily Papers 策展接口，结合社区票数、代码可用性和 GitHub stars 排序；四路原始 arXiv 各限最新 2 篇，只承担长尾发现。开放研究和工程侧还覆盖 Ai2、Meta Engineering、Google Cloud AI、Cloudflare AI、Together AI、Ollama 与 MLflow。
 
 `category` 同时驱动前端分组、tier 归一化与抓取配额，共 8 类：
 
 | category | 含义 | 数量 |
 |---|---|---|
-| `vendor` | 官方实验室 / 厂商第一手发布 | 33 |
-| `x-ai` | X(Twitter) 上的 AI 大 V | 23 |
+| `vendor` | 官方实验室 / 厂商第一手发布 | 35 |
+| `x-ai` | X(Twitter) 上的 AI 大 V | 21 |
 | `community` | 社区 / 周刊（含中文资讯） | 10 |
 | `expert` | 专家个人博客 | 10 |
 | `blog` | AI 博客（原始一批） | 6 |
@@ -63,7 +63,7 @@ flowchart TD
 
 部分 feed（主要是 Twitter/GitHub）写的是公共 `https://rsshub.app` 主机。模块加载时，若 `AIF_RSSHUB_BASE` 不等于公共实例，就**把所有 `rsshub.app` 前缀 URL 改写到配置的私有实例**（compose 内默认 `http://rsshub:1200`）。
 
-原因：公共 `rsshub.app` 容易对 Twitter/GitHub 路由限流或返回 403/404；私有实例更可控。Twitter 路由还需在 rsshub 容器配 `TWITTER_AUTH_TOKEN`（x.com 登录态 cookie）。Anthropic/Cohere/Mistral/xAI 已改走官方 sitemap，Qwen 走官方文章 API，不受 RSSHub 健康度影响。详见 [部署指南](../guides/how-to-deploy.md)。
+原因：公共 `rsshub.app` 容易对 Twitter 路由限流或返回 403/404；私有实例更可控。Twitter 路由还需在 rsshub 容器配 `TWITTER_AUTH_TOKEN`（x.com 登录态 cookie）。Anthropic/Cohere/Mistral 已改走官方 sitemap，xAI/PyTorch/Transformers/vLLM 走官方 GitHub Releases API，Qwen 走官方文章 API，不受 RSSHub 健康度影响。详见 [部署指南](../guides/how-to-deploy.md)。
 
 ### 2.4 相关性门槛
 
@@ -105,7 +105,7 @@ flowchart TD
 ### 2.7 容错
 
 - 单 feed 失败（HTTP 错误/超时/解析异常）只记进该源的 `last_error` 并累加 `consecutive_failures`，**绝不阻塞其它源**（`asyncio.gather(..., return_exceptions=True)`）。下一次成功会归零并记录 `last_recovered_at`。
-- 429、500、502、503、504 会做一次 0.1–1 秒的有界退避重试；xAI、PyTorch、VentureBeat 等明确需要普通浏览器请求头的源通过 `request_profile="browser"` 单独启用，不全局伪装浏览器，避免影响 Reddit 等要求可识别抓取器 UA 的来源。
+- 429、500、502、503、504 会做一次 0.1–1 秒的有界退避重试；VentureBeat 等明确需要普通浏览器请求头的源通过 `request_profile="browser"` 单独启用，不全局伪装浏览器。两个 Reddit 源使用可识别抓取器 UA，并通过同一个异步锁串行抓取、每次间隔 1 秒，避免同一出口瞬时并发触发 429。
 - HTTP 200 不等于健康：普通 RSS/Atom、sitemap 与官方 API 若没有任何可解析条目，会返回明确解析错误并显示在数据源页，不再把登录页、拦截页或空 feed 记成成功。
 - 发布时间必须可追溯：RSS 使用 `published/updated`，sitemap 使用 `lastmod`、官方 URL 中明确编码的日期或文章正文开头日期。缺少日期或时间超过当前 6 小时的条目不入库，并累计到 `last_invalid_date`；`add_article` 不再用抓取时间填充 `date`。
 - 每个 RSS/Atom 只取前 20 个 entry；官方 sitemap 支持单层同站 sitemap index（最多展开 12 个子 sitemap），按 `lastmod` 排序、路径过滤后取前 20 个 URL。
@@ -113,6 +113,7 @@ flowchart TD
 - Qwen 的 `qwen_api` 适配器读取官方 JSON、清理简介 HTML、按时间取最新 20 条。
 - OpenAI 的 `openai_changelog` 适配器按 Markdown 月份/日期标题拆分最新 20 条 API 更新，优先链接到对应功能文档；Gemini 的 `gemini_changelog` 适配器按日期和顶层列表项拆分模型发布、弃用与迁移提醒。两者都使用页面声明的日期，不以抓取时间冒充发布时间。
 - `hf_daily_papers` 读取 HF 官方公开 JSON，按策展日期优先，再结合 upvotes、代码仓库与 GitHub stars 排出最新 20 篇；摘要携带这些可解释信号供富化模型判断，但热度不直接等同重要性。文章链接指向 HF 论文页以便查看代码与讨论，内部 `_dedupe_url` 统一成无版本号的 arXiv URL，因此同篇原始 arXiv 条目不会重复占位。四路 arXiv 的 `max_per_fetch=2` 是硬上限。
+- `github_releases` 读取 GitHub 官方 API，忽略 draft，保留 release 名称、发布时间、正文摘要和官方 release URL；当前用于替代生产出口长期 403 的 xAI/PyTorch 官网源，并补充 Transformers、vLLM 两个高价值工程发布源。
 - `_parse_ts()` 同时支持 ISO 8601 和 RSS 常见 RFC 822 日期；未知格式回退为 0。抓取候选排序、文章流排序和最近 30 小时速报窗口共用这一实现。
 - `fetch_once` 有进程内异步锁，避免定时任务和管理员手动触发重叠。
 

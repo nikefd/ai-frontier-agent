@@ -22,7 +22,7 @@
 
 ## 4. X 来源仍依赖自建 RSSHub
 
-93 个源里仍有大量 X 路由走 RSSHub；公共实例可能 404/限流，依赖 RSSHub 的 X 路由还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS、Anthropic/Cohere/DeepSeek/LangChain/Mistral/xAI 官方 sitemap、Qwen/HF 官方 API 与 OpenAI/Gemini changelog 仍可工作。Mistral/xAI sitemap 若在部署网络超时，只会记录该源失败，不阻塞其它来源。详见 [部署指南](../guides/how-to-deploy.md)。
+93 个源里仍有 21 个 X 来源，其中多数路由走 RSSHub；公共实例可能 404/限流，依赖 RSSHub 的 X 路由还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS、Anthropic/Cohere/DeepSeek/LangChain/Mistral sitemap、xAI/PyTorch/Transformers/vLLM GitHub Releases、Qwen/HF 官方 API 与 OpenAI/Gemini changelog 仍可工作。Mistral sitemap 若在部署网络超时，只会记录该源失败，不阻塞其它来源。详见 [部署指南](../guides/how-to-deploy.md)。
 
 ## 5. tier 与分类配额已恢复生效
 
@@ -47,7 +47,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 pytest/pytest-asyncio。当前 103 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、Qwen/HF API、OpenAI/Gemini changelog、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前 105 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、GitHub Releases 适配与 Reddit 同域限流、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、Qwen/HF API、OpenAI/Gemini changelog、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 
@@ -99,3 +99,7 @@
 ## 18. DeepSeek 历史文章曾被标成抓取时间（已修复）
 
 > ✅ DeepSeek 官方 sitemap 没有 `lastmod`，旧实现又只从 meta/JSON-LD 取日期，导致 2024 年文章入库时被 `add_article` 填成当日。现在官方 URL/正文日期会作为可信发布时间，补全后重排；无可信日期不入库，今日速报也不再用旧文兜底。启动修复会更正已污染文章，并使引用它们的旧速报缓存失效。
+
+## 19. 生产出口曾长期无法抓 xAI/PyTorch（已降级修复）
+
+> ✅ xAI sitemap 在真实浏览器可读，但生产数据中心出口连续 70 次 403；PyTorch Blog feed 连续 21 次 403，说明不是请求头问题。两者现改读所属官方 GitHub 仓库的 Releases API，并同时补入 Transformers、vLLM 官方发布；这保证模型/API/工程版本信号稳定，但 xAI 官网非 SDK 类公司新闻仍主要依靠媒体与 X 来源补充。连续 6 次 503 且从未产出文章的 Riley Brown、vas RSSHub 路由已移除；两个 Reddit 源改为串行错峰以降低 429。
