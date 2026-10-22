@@ -84,3 +84,8 @@ def test_digest_endpoint_supports_reader_discovery_cache(monkeypatch) -> None:
         headers={"If-None-Match": response.headers["etag"]},
     )
     assert cached.status_code == 304
+    proxy_cached = client.get(
+        "/rss/digest.xml",
+        headers={"If-None-Match": f'W/{response.headers["etag"]}'},
+    )
+    assert proxy_cached.status_code == 304

@@ -98,6 +98,15 @@ def build_digest_rss(summaries: list[dict], base_url: str) -> bytes:
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
+def _etag_matches(header: str | None, etag: str) -> bool:
+    """Treat proxy-weakened ETags as the same entity validator."""
+    expected = etag.removeprefix("W/")
+    return any(
+        candidate.strip().removeprefix("W/") == expected
+        for candidate in (header or "").split(",")
+    )
+
+
 def _digest_response(request: Request, *, head_only: bool = False) -> Response:
     configured = str(settings.public_base_url or "").strip()
     base_url = configured or str(request.base_url)
@@ -113,7 +122,7 @@ def _digest_response(request: Request, *, head_only: bool = False) -> Response:
             _as_datetime(summaries[0].get("generated_at")).astimezone(timezone.utc),
             usegmt=True,
         )
-    if request.headers.get("if-none-match") == etag:
+    if _etag_matches(request.headers.get("if-none-match"), etag):
         return Response(status_code=304, headers=headers)
     if head_only:
         headers["Content-Length"] = str(len(payload))
