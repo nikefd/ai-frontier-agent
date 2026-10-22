@@ -614,6 +614,12 @@ async def _fetch_feed(
     feed = feedparser.parse(r.content)
     entries: list[dict] = []
     source = feed.feed.get("title") if feed.feed else url
+    # Daily ranking feeds describe one dated snapshot whose items do not have
+    # individual publication times. For explicitly opted-in sources, the
+    # channel date is the truthful publication time of every ranked item.
+    feed_snapshot_date = ""
+    if spec.get("snapshot_date_from_feed") and feed.feed:
+        feed_snapshot_date = feed.feed.get("published") or feed.feed.get("updated") or ""
     for ent in feed.entries[:20]:
         link = _canonical_feed_url(ent.get("link") or "")
         title = (ent.get("title") or "").strip()
@@ -622,7 +628,7 @@ async def _fetch_feed(
         summary_raw = ent.get("summary") or ent.get("description") or ""
         text = BeautifulSoup(summary_raw, "lxml").get_text(" ", strip=True)
         summary = (text[:280] + "…") if len(text) > 280 else text
-        published = ent.get("published") or ent.get("updated") or ""
+        published = ent.get("published") or ent.get("updated") or feed_snapshot_date
         entries.append(
             {
                 "title": title,

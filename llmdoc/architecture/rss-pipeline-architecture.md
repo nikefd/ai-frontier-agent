@@ -108,6 +108,7 @@ flowchart TD
 - 429、500、502、503、504 会做一次 0.1–1 秒的有界退避重试；VentureBeat 等明确需要普通浏览器请求头的源通过 `request_profile="browser"` 单独启用，不全局伪装浏览器。四路 arXiv 使用 HTTPS，并通过同一个异步锁串行抓取、每次间隔 1 秒，避免同时下载四个约 1 MB feed 时被上游返回空内容。
 - HTTP 200 不等于健康：普通 RSS/Atom、sitemap 与官方 API 若没有任何可解析条目，会返回明确解析错误并显示在数据源页，不再把登录页、拦截页或空 feed 记成成功。
 - 发布时间必须可追溯：RSS 使用 `published/updated`，sitemap 使用 `lastmod`、官方 URL 中明确编码的日期或文章正文开头日期。缺少日期或时间超过当前 6 小时的条目不入库，并累计到 `last_invalid_date`；`add_article` 不再用抓取时间填充 `date`。
+- GitHub Trending 是按天发布的一张榜单快照：频道有当天 `pubDate`，但仓库 item 没有独立时间。该源显式启用 `snapshot_date_from_feed`，把频道发布日期作为榜单内条目的快照时间；普通 RSS 不会使用频道时间兜底，仍严格要求 item 自带可信日期。
 - 每个 RSS/Atom 只取前 20 个 entry；官方 sitemap 支持单层同站 sitemap index（最多展开 12 个子 sitemap），按 `lastmod` 排序、路径过滤后取前 20 个 URL。
 - sitemap 最新 6 条会并发读取同站文章页，从 Open Graph、HTML meta、JSON-LD 或正文开头的明确日期补全真实标题、摘要和发布时间，补全后再次按日期排序；页面失败时保留 slug/lastmod 降级结果，不影响该源其余条目。DeepSeek 的官方 news URL 另按其已确认的 MMDD/YYMMDD 规则推导日期，避免无 `lastmod` 的 sitemap 把旧文当新文。限制补全为 6 页是为了覆盖 `_PER_FEED_CAP=4` 的正常候选并控制额外请求量。
 - Qwen 的 `qwen_api` 适配器读取官方 JSON、清理简介 HTML、按时间取最新 20 条。

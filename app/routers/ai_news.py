@@ -261,7 +261,7 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://rsshub.app/twitter/user/hesamation", "name": "ℏεsam", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
     {"url": "https://rsshub.app/twitter/user/lxfater", "name": "铁锤人", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
     # ── trending: GitHub 风向
-    {"url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml", "name": "GH Trending · All", "tier": "high", "category": "trending", "description": "GitHub 每日热门仓库 · 全语言榜，社区在用什么的风向标"},
+    {"url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml", "name": "GH Trending · All", "tier": "high", "category": "trending", "snapshot_date_from_feed": True, "description": "GitHub 每日热门仓库 · 全语言榜，社区在用什么的风向标"},
 ]
 
 # Keep the registry readable while ensuring category policy cannot silently

@@ -111,3 +111,7 @@
 ## 21. 确定性 CI（已补齐）
 
 > ✅ `.github/workflows/ci.yml` 会在 PR、`main` 推送和手动触发时运行 Python 3.11/3.12 全套测试与编译检查、Node 20 前端生产构建与高危依赖审计，并在这些检查通过后构建生产 Docker 镜像。工作流最小权限为 `contents: read`，且不依赖业务 secrets。原有 AI PR Review 只负责启发式审查，不能替代这套门禁。
+
+## 22. GitHub Trending 曾长期没有新数据（已修复）
+
+> ✅ `GH Trending · All` 的每日 Feed 只在频道级声明当天 `pubDate`，各仓库 item 没有独立发布时间。可信日期规则上线后，相关条目因此被记入 `last_invalid_date` 而没有入库；来源运输层仍成功，所以数据源页显示健康。现在只对这个明确的每日榜单源使用频道日期作为榜单快照时间，不放宽其它 RSS 的 item 日期要求。

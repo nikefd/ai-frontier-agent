@@ -101,6 +101,30 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
     }
     assert all(by_url[url]["max_per_fetch"] == 2 for url in arxiv_urls)
     assert all(by_url[url]["host_throttle"] == "arxiv" for url in arxiv_urls)
+    assert by_url[
+        "https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml"
+    ]["snapshot_date_from_feed"] is True
+
+
+@pytest.mark.asyncio
+async def test_daily_trending_uses_truthful_channel_snapshot_date() -> None:
+    url = "https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert str(request.url) == url
+        return httpx.Response(200, content=b'''<rss><channel>
+          <title>GitHub Daily Trending Repositories</title>
+          <pubDate>Thu, 22 Oct 2026 05:37:43 GMT</pubDate>
+          <item><title>example/ai-agent</title>
+          <link>https://github.com/example/ai-agent</link>
+          <description>Open-source AI agent framework</description></item>
+        </channel></rss>''')
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        entries, _, error = await _fetch_feed(client, url)
+
+    assert error is None
+    assert entries[0]["date"] == "Thu, 22 Oct 2026 05:37:43 GMT"
 
 
 def test_unstable_sources_use_verified_replacements_and_scoped_headers() -> None:
