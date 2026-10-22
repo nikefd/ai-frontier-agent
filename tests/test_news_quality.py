@@ -699,6 +699,7 @@ async def test_scheduled_summary_skips_unchanged_cohort_but_manual_force_runs(
     monkeypatch.setattr(news, "SUMMARY_FILE", tmp_path / "summary_today.json")
     monkeypatch.setattr(news, "_articles_for_today", lambda limit=25: [article])
     monkeypatch.setattr(news, "chat_complete", fake_chat)
+    monkeypatch.setattr(news, "archive_summary", lambda payload: [])
 
     assert await news.build_today_summary() is not None
     assert await news.build_today_summary() is None

@@ -86,6 +86,12 @@
 
 > 速报前端在正文前显示 `breaking_items`“刚刚发生”卡片，无事件时整块隐藏；新标题「更多动态」以及旧缓存里的「边角料」统一渲染为默认收起、带条数的渐进展开区；引用 `[n]` 仍按缓存中的 cohort 链接到原文。`/for-you` 实现在独立模块 `app/routers/feed_personal.py`，打分纯函数 `score_articles()` 有单测（`tests/test_feed_personal.py`）。复用 ai_news 的 `_articles_for_today()` cohort 与 profile 的信号聚合。
 
+### RSS 订阅（无 API prefix）
+
+| 方法 | 路径 | 🔒 | 说明 |
+|---|---|---|---|
+| GET | `/rss/digest.xml` | — | RSS 2.0 全文速报；最近 30 天最多 180 个版本，cohort 指纹作为稳定 GUID，正文 `[n]` 引用转为可点击的一手来源。支持 ETag、Last-Modified 和 5 分钟公共缓存；只含全局速报，不含用户数据 |
+
 ## 4b. 知识卡 + 间隔重复（prefix `/api/ai-news`）
 
 把文章 / 深度解读 / 手动笔记转成知识卡，用 SM-2 间隔重复调度。按用户存于 `users/<uid>/review-cards.json`。**0 LLM 成本**：卡片背面复用现成摘要，调度是纯算术。所有端点需登录。

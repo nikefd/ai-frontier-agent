@@ -33,6 +33,7 @@ from ..news_alerts import build_breaking_alerts
 from ..settings import settings
 from ..safe_fetch import UnsafeUrl, fetch_public_html, sanitize_reader_html
 from ..storage import read_json, update_json_atomic, write_json_atomic, write_text_atomic
+from ..summary_feed import archive_summary
 
 log = logging.getLogger("aif.ai_news")
 
@@ -1076,6 +1077,12 @@ async def build_today_summary(*, force: bool = False) -> dict | None:
         ],
     }
     write_json_atomic(SUMMARY_FILE, payload)
+    try:
+        archive_summary(payload)
+    except OSError as exc:
+        # The current cache is still enough to serve one RSS item. Do not turn
+        # a successful LLM generation into a failed admin/scheduler request.
+        log.warning("failed to archive summary for RSS: %s", exc)
     return payload
 
 

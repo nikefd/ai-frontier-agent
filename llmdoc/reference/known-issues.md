@@ -47,7 +47,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 pytest/pytest-asyncio。当前 105 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、GitHub Releases 适配与 arXiv 同域限流、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、Qwen/HF API、OpenAI/Gemini changelog、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前 109 项测试覆盖内容质量配额、官方 sitemap/index 与页面元数据补全、GitHub Releases/Trending 快照适配与 arXiv 同域限流、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、Qwen/HF API、OpenAI/Gemini changelog、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹与 RSS 归档、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 

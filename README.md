@@ -1,6 +1,6 @@
 # AI Frontier Agent — 个人 AI 前沿信息站
 
-分层抓取 93 个 AI 源：模型/API 等 12 个高时效官方源每小时更新，54 个常规资讯源每 4 小时更新，论文、X 与 GitHub Trending 等 27 个发现型源每 12 小时更新。内容经过相关性过滤、同事件聚类与分类配额，再做双语翻译和可实践性判断；今日速报会直接标出近 36 小时的模型发布、API 弃用、安全事件与重要开源，并保留可点击的一手来源。同一事件的不同标题会合并并保留多源佐证；论文结合 Hugging Face Daily Papers 票数、开源代码和 GitHub stars 筛选，同时保留受限的 arXiv 长尾发现。可实践文章还能按需生成结构化实验卡，保存进度与结果笔记，再把完整实验上下文交给 AI 逐步带练。数据源页持续体检高时效源健康、高影响事件露出、富化积压和发现延迟；空白/伪 RSS 与无可信发布日期的条目都会被拒绝，不再显示“假健康”或用抓取时间冒充发布时间。候选未变化时跳过速报 LLM 调用。
+分层抓取 93 个 AI 源：模型/API 等 12 个高时效官方源每小时更新，54 个常规资讯源每 4 小时更新，论文、X 与 GitHub Trending 等 27 个发现型源每 12 小时更新。内容经过相关性过滤、同事件聚类与分类配额，再做双语翻译和可实践性判断；今日速报会直接标出近 36 小时的模型发布、API 弃用、安全事件与重要开源，并保留可点击的一手来源，也可通过 `/rss/digest.xml` 全文订阅。同一事件的不同标题会合并并保留多源佐证；论文结合 Hugging Face Daily Papers 票数、开源代码和 GitHub stars 筛选，同时保留受限的 arXiv 长尾发现。可实践文章还能按需生成结构化实验卡，保存进度与结果笔记，再把完整实验上下文交给 AI 逐步带练。数据源页持续体检高时效源健康、高影响事件露出、富化积压和发现延迟；空白/伪 RSS 与无可信发布日期的条目都会被拒绝，不再显示“假健康”或用抓取时间冒充发布时间。候选未变化时跳过速报 LLM 调用。
 
 ## 组成
 
@@ -40,6 +40,10 @@ docker compose up -d --build
 ## 部署
 
 用 [Coolify](https://coolify.io/)（Traefik 反代 + 命名卷持久化）。部分 X 源走 RSSHub，所以 compose 自带私有实例；Twitter 路由还需 `TWITTER_AUTH_TOKEN`。Anthropic/Cohere/Mistral 等无稳定 RSS 的官方源读取 sitemap 并补全页面元数据，xAI/PyTorch/Transformers/vLLM 读取官方 GitHub Releases API，Qwen 读取官方文章 API；OpenAI/Gemini 官方更新日志由专用解析器逐条拆分，Claude Platform/Cursor 读取官方 changelog RSS。详见 [llmdoc/guides/how-to-deploy.md](llmdoc/guides/how-to-deploy.md)。
+
+## RSS 订阅
+
+把 `/rss/digest.xml` 加入任意 RSS 阅读器即可订阅完整中文速报。每次候选集发生实质变化都会生成一个稳定条目，引用编号直接链接一手来源；服务保留最近 30 天、最多 180 个版本，并用 ETag/Last-Modified 避免阅读器重复下载。RSS 只包含全局速报，不包含任何用户画像、收藏或实验记录。
 
 ## 质量门禁
 

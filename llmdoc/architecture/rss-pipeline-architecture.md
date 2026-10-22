@@ -138,13 +138,15 @@ worker 名义上叫翻译，实际**一次批量 LLM 调用同时做五件事**�
 | 产物 | 端点 | 存储 |
 |---|---|---|
 | 单篇深度解读（含 mermaid 图） | `POST /articles/{aid}/deep-dive` | `deep-dives/{aid}.json` |
-| 今日速报（聚合最近 30h） | admin `POST /summary/today` + **每 4 小时分时刷新** | `summary_today.json` |
+| 今日速报（聚合最近 30h） | admin `POST /summary/today` + **每 4 小时分时刷新** | `summary_today.json` + `summary_history.json`（RSS 历史） |
 | 主题深度指南 | `POST /guides/generate` | `guides/guide_*.json` |
 | 手动输入主题 → 深度解读 | `POST /manual-dive` | 仅写当前用户 `deep-dives/{aid}.json`，不进全局文章流 |
 
 这些产物的存储结构见 [数据存储参考](../reference/data-storage.md)。
 
 > **今日速报是唯一有定时的 LLM 产物**：`scheduler.py` 默认在 02/06/10/14/18/22 点刷新（`AIF_SUMMARY_CRON_*` + `AIF_SUMMARY_INTERVAL_HOURS`），比每轮抓取晚一小时，为翻译留出窗口。`build_today_summary()` 对影响输出的候选字段生成 SHA-256 指纹；当天指纹与缓存一致时直接跳过，不调用 LLM。管理员 `POST /summary/today` 明确要求重生成，因此会忽略指纹强制执行。其余 LLM 产物（解读/指南/画像/复盘/学习路径）都是按需触发，无定时。
+
+成功生成的全局速报还会按 cohort 指纹归档最近 30 天（最多 180 个版本），由公开 `/rss/digest.xml` 输出 RSS 2.0 全文订阅。Feed 中的 `[n]` 会链接回 cohort 的一手 URL，且只读取全局速报文件，不包含任何用户产物。
 
 ### 4.1 “刚刚发生”重大提醒
 

@@ -20,6 +20,7 @@
 | `articles.json` | list | 文章主存储，上限 400（被任一用户 pin 的不淘汰）。每项是 `Article`。**不含 per-user 的 `pinned`/`deep_dive_status`** |
 | `sources.json` | dict（按 url 为 key） | 每个 feed 的抓取元数据 |
 | `summary_today.json` | dict | 缓存的「今日速报」 |
+| `summary_history.json` | list | 已生成速报的公开 RSS 历史；最近 30 天、最多 180 个不同 cohort |
 | `reader-cache/*.html` | 每文件一篇 | 经白名单清洗后的安全阅读副本；旧原始缓存命中时自动迁移 |
 
 ### 2.2 认证（`auth/`，全局）
@@ -102,9 +103,11 @@
 
 `{id, slug, title, topic, depth, tags, model, generated_at, updated_at, anchors[], body}`。`anchors` 是生成时引用的 RSS 文章。slug 形如 `guide_<sha1前10>`。
 
-### 3.5 summary_today.json
+### 3.5 summary_today.json / summary_history.json
 
 `{generated_at, date, model, cohort_size, cohort_fingerprint, body, cohort[]}`。`body` 是 Markdown 速报，`cohort` 是参与生成的文章列表；每个 cohort 项可带 `event_key` 与 `related_articles[]`（同一事件被合并的其它报道）。`cohort_fingerprint` 覆盖这些字段，用于让分时任务在候选未变化时跳过 LLM。候选来自最近 30 小时，先按规范化标题兼容去重，再按事件键合并不同标题并优先官方/高质量来源，然后按 importance、来源类别、tier、时效与来源多样性预筛；Trending 最多 2 条、X 最多 3 条。
+
+每次成功生成后，同一 payload 还会按 `cohort_fingerprint` 去重写入 `summary_history.json`；保留最近 30 天且最多 180 项。`GET /rss/digest.xml` 合并当前缓存与历史，所以功能上线后无需等待下一轮生成就能订阅现有速报。RSS 只读这两份全局文件，不接触 `users/<uid>/`。
 
 ### 3.6 ui.db（SQLite，每用户一个）
 

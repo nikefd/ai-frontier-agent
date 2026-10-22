@@ -89,6 +89,7 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 - **筛选收纳与反馈**：搜索与最新/重要排序始终可见；收藏/已翻译/可实践范围和全部 8 类来源（含此前漏掉的 `blog`）放进筛选面板，仍由 `main.js` 更新同一份 `state` 并调用 `refreshList()`。已启用的来源、范围和标签会显示为可单独清除的活动标签，避免面板收起后看不出筛选条件。
 - **轻量弹层行为**：筛选和卡片「更多」使用原生 `<details>`；选择筛选后自动收起，并由 `main.js` 补充点击外部与 Esc 收起。侧栏「更多」属于持久导航，不参与这套自动关闭逻辑。
 - **速报渐进阅读**：`views.js` 在安全 Markdown 渲染和引用链接化之后，把末节旧标题「边角料」或新标题「更多动态」统一转换为默认收起的原生 `<details>`，显示其中条数；展开时保留原有引用链接。移动端去掉速报正文的内层边框和额外水平 padding，避免外层卡片与 reader 双重留白挤压正文。
+- **RSS 发现**：入口 `<head>` 声明 `/rss/digest.xml` 的 `rel=alternate`，今日速报标题区提供订阅入口；Feed 是后端生成的公开全局内容，不经过前端 Markdown 渲染，也不携带登录态或个人数据。
 - **安全 Markdown / mermaid**：LLM/RSS 可控文本不能直接进 `innerHTML`。`markdown.js` 禁止 script/style/iframe/form/svg/img 和事件/样式属性；mermaid 使用 `securityLevel: 'strict'`。普通外链再经 `safeExternalUrl` 限定为 http(s)。
 - **立即抓取 / 批量翻译 / 重生成速报**：仅 admin 看得到按钮，后端也用 `require_admin` 强制校验，不能靠改 DOM 绕过。
 

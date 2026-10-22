@@ -31,6 +31,7 @@
 | 理解阅读优先的信息架构 / 首页入口 / 导航分层 / 文章卡片操作 | [前端架构](architecture/frontend-architecture.md)（第 1.2/3/4 节） |
 | 排查文章分页 / 活动筛选标签 / `<details>` 弹层收起行为 | [前端架构](architecture/frontend-architecture.md)（第 3/4 节）＋ `frontend/src/state.js` / `main.js` / `feed.js` |
 | 理解今日速报的引用链接 / “更多动态”折叠 / 移动端版式 | [前端架构](architecture/frontend-architecture.md)（第 4 节）＋ [API 参考](reference/api-reference.md)（第 4 节） |
+| 订阅今日速报 RSS / 理解速报历史与缓存 | [API 参考](reference/api-reference.md)（RSS 订阅）＋ [数据存储参考](reference/data-storage.md)（3.5）＋ `app/routers/rss.py` |
 | 深度解读为什么是独立内容库 / 跟文章流怎么解耦 | [前端架构](architecture/frontend-architecture.md)（第 2/4 节）＋ [数据存储参考](reference/data-storage.md)（3.3）＋ [API 参考](reference/api-reference.md)（第 3 节） |
 | 个人画像怎么来 / 聚合了哪些信号 / 存哪 | [API 参考](reference/api-reference.md)（第 3b 节）＋ [数据存储参考](reference/data-storage.md)（3.7） |
 | 「为你推荐」怎么排序 / 为什么不花 LLM | [API 参考](reference/api-reference.md)（第 4 节 `/for-you`）＋ `app/routers/feed_personal.py` |

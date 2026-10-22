@@ -132,6 +132,10 @@ app.include_router(suggestions.router)
 from .routers import quality
 app.include_router(quality.router)
 
+# Public full-text briefing feed. Contains only the global summary archive.
+from .routers import rss
+app.include_router(rss.router)
+
 # Auth (register / login / logout / me + session dependencies).
 from .auth import router as auth_router
 app.include_router(auth_router)

@@ -55,6 +55,7 @@
 | `app/safe_fetch.py` | 阅读器 SSRF 校验、限流式抓取和惰性 HTML 清洗 |
 | `app/llm_client.py` | DeepSeek（OpenAI 兼容）薄封装：`chat_complete` / `chat_stream` |
 | `app/news_alerts.py` | 零 LLM 的重大事件判定：模型发布、API 变更、安全事件、重要开源；近 36 小时去重排序 |
+| `app/summary_feed.py` / `routers/rss.py` | 速报历史归档与公开全文 RSS；稳定 GUID、引用直达、条件缓存 |
 | `app/quality_report.py` / `routers/quality.py` | 零 LLM 覆盖质量体检：来源健康、高影响事件露出、富化积压、发现延迟 |
 | `app/scheduler.py` | APScheduler：分时抓取 + 每 2 分钟翻译 + 分时速报刷新 |
 | `app/routers/ai_news.py` | **核心路由**：articles/tracks/guides/sources/summary/deep-dive/manual-dive，以及 feed 清单与关键词表 |
