@@ -131,6 +131,11 @@ _FAST_SOURCE_NAMES = {
     "Qwen Blog",
     "GitHub Changelog",
     "Cursor Changelog",
+    "Kling AI Product Updates",
+    "Manus Product Updates",
+    "LTX Release Notes",
+    "Runway Changelog",
+    "ElevenLabs Blog",
 }
 
 
@@ -196,6 +201,11 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://api.github.com/repos/huggingface/transformers/releases?per_page=20", "name": "Transformers Releases", "tier": "high", "category": "vendor", "format": "github_releases", "description": "Hugging Face Transformers 官方发布 · 新模型架构、推理与训练能力"},
     {"url": "https://api.github.com/repos/vllm-project/vllm/releases?per_page=20", "name": "vLLM Releases", "tier": "high", "category": "vendor", "format": "github_releases", "description": "vLLM 官方发布 · 高吞吐推理、模型支持与服务端能力"},
     {"url": "https://cursor.com/changelog/rss.xml", "name": "Cursor Changelog", "tier": "high", "category": "vendor", "description": "Cursor 官方更新 · Agent、编辑器、模型接入与开发工作流"},
+    {"url": "https://app.klingai.com/global/blog?tab=product-features", "name": "Kling AI Product Updates", "tier": "high", "category": "vendor", "format": "html_listing", "item_selector": "a.blog-card", "title_selector": "h3.card-title", "date_selector": ".card-meta", "description": "可灵 AI 官方产品更新 · 视频/图像模型、创作能力与工作流发布"},
+    {"url": "https://manus.im/blog?kind=PRODUCT", "name": "Manus Product Updates", "tier": "high", "category": "vendor", "format": "html_listing", "item_selector": "a[href^='/blog/']", "title_selector": "h2[title]", "date_selector": "span:last-child", "description": "Manus 官方产品博客 · 通用 Agent、连接器、自动化与创作能力发布"},
+    {"url": "https://ltx.io/release-notes", "name": "LTX Release Notes", "tier": "high", "category": "vendor", "format": "html_listing", "item_selector": ".release-notes_collection-item-wrapper", "title_selector": "h2", "date_selector": ".release-notes_date-wrapper", "summary_selector": ".release-notes_rich-text p", "link_mode": "fragment", "description": "LTX 官方发布记录 · LTX Video 模型、开源、API 与 Studio 更新"},
+    {"url": "https://runway.com/changelog", "name": "Runway Changelog", "tier": "high", "category": "vendor", "format": "html_listing", "item_selector": "main div.flex.flex-col.lg\\:flex-row.text-offBlack", "title_selector": ".rw-h5", "date_selector": ".rw-bodycopy5", "summary_selector": ".rw-bodycopy2", "link_mode": "fragment", "description": "Runway 官方更新 · 视频生成模型、Agent、编辑与生产工作流"},
+    {"url": "https://elevenlabs.io/blog/rss.xml", "name": "ElevenLabs Blog", "tier": "high", "category": "vendor", "description": "ElevenLabs 官方博客 · 语音、音频模型、Agent 与开发者产品发布"},
     # ── media: AI 媒体
     {"url": "https://arstechnica.com/ai/feed/", "name": "Ars Technica AI", "tier": "high", "category": "media", "description": "Ars Technica AI · 技术深度评测，重视一手数据和复盘"},
     {"url": "https://www.technologyreview.com/topic/artificial-intelligence/feed", "name": "MIT Tech Review AI", "tier": "high", "category": "media", "description": "MIT Tech Review · 长篇深度报道与影响分析"},

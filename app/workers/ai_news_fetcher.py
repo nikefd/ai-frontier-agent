@@ -281,6 +281,71 @@ def _parse_qwen_api_entries(payload: dict) -> list[dict]:
     return entries[:20]
 
 
+def _normalize_html_listing_date(value: str) -> str:
+    """Normalize human-facing dates used by official product update pages."""
+    cleaned = " ".join(value.split())
+    for date_format in ("%B %d, %Y", "%b %d, %Y", "%Y-%m-%d", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(cleaned, date_format).replace(tzinfo=timezone.utc).isoformat()
+        except ValueError:
+            continue
+    return ""
+
+
+def _listing_fragment(date: str, title: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:80]
+    return f"{date[:10]}-{slug}".strip("-")
+
+
+def _parse_html_listing_entries(content: bytes, source_url: str, spec: dict) -> list[dict]:
+    """Parse dated cards from a first-party blog or product changelog.
+
+    Selectors live beside each source in the registry so this adapter remains
+    small and auditable. A source may use its real card link or stable synthetic
+    fragments on a single-page changelog when individual entries have no URL.
+    """
+    soup = BeautifulSoup(content, "lxml")
+    entries: list[dict] = []
+    seen_urls: set[str] = set()
+    for item in soup.select(str(spec.get("item_selector") or "")):
+        title_node = item.select_one(str(spec.get("title_selector") or ""))
+        date_node = item.select_one(str(spec.get("date_selector") or ""))
+        title = _clean_metadata_text(title_node.get("title") or title_node.get_text(" ")) \
+            if title_node else ""
+        date = _normalize_html_listing_date(date_node.get_text(" ") if date_node else "")
+        if not title or not date:
+            continue
+
+        if spec.get("link_mode") == "fragment":
+            link = f"{source_url.split('#', 1)[0]}#{_listing_fragment(date, title)}"
+        else:
+            link_node = item if item.name == "a" and item.get("href") else None
+            if link_node is None and spec.get("link_selector"):
+                link_node = item.select_one(str(spec["link_selector"]))
+            href = str(link_node.get("href") or "").strip() if link_node else ""
+            link = urljoin(source_url, href) if href else ""
+        if not link or link in seen_urls:
+            continue
+
+        summary = ""
+        if spec.get("summary_selector"):
+            summary_node = item.select_one(str(spec["summary_selector"]))
+            summary = _clean_metadata_text(summary_node.get_text(" ") if summary_node else "")
+        if len(summary) > 280:
+            summary = summary[:280] + "…"
+        entries.append({
+            "title": title,
+            "url": link,
+            "date": date,
+            "summary": summary,
+            "tags": [],
+        })
+        seen_urls.add(link)
+
+    entries.sort(key=lambda entry: _parse_ts(entry["date"]), reverse=True)
+    return entries[:20]
+
+
 def _canonical_feed_url(value: str) -> str:
     """Normalize arXiv paper links so curated and category feeds can dedupe."""
     parsed = urlparse(value)
@@ -574,6 +639,10 @@ async def _fetch_feed(
             client, url, r.content, spec.get("include_paths") or [],
         )
         error = None if entries else "sitemap contained no matching parseable pages"
+        return entries, spec.get("name") or url, error
+    if spec.get("format") == "html_listing":
+        entries = _parse_html_listing_entries(r.content, url, spec)
+        error = None if entries else "official HTML listing contained no parseable updates"
         return entries, spec.get("name") or url, error
     if spec.get("format") == "qwen_api":
         try:

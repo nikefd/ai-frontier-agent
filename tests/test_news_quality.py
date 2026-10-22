@@ -24,6 +24,7 @@ from app.workers.ai_news_fetcher import (
     _limit_source_entries,
     _parse_gemini_changelog_entries,
     _parse_github_releases,
+    _parse_html_listing_entries,
     _parse_hf_daily_papers,
     _parse_openai_changelog_entries,
     _parse_page_metadata,
@@ -70,7 +71,7 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
 
     urls = {spec["url"] for spec in DEFAULT_FEED_SPECS}
     by_url = {spec["url"]: spec for spec in DEFAULT_FEED_SPECS}
-    assert len(DEFAULT_FEED_SPECS) == 93
+    assert len(DEFAULT_FEED_SPECS) == 98
     assert len(urls) == len(DEFAULT_FEED_SPECS)
     assert {
         "https://engineering.fb.com/category/ai-research/feed/",
@@ -91,6 +92,11 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "https://api.github.com/repos/xai-org/xai-sdk-python/releases?per_page=20",
         "https://api.github.com/repos/huggingface/transformers/releases?per_page=20",
         "https://api.github.com/repos/vllm-project/vllm/releases?per_page=20",
+        "https://app.klingai.com/global/blog?tab=product-features",
+        "https://manus.im/blog?kind=PRODUCT",
+        "https://ltx.io/release-notes",
+        "https://runway.com/changelog",
+        "https://elevenlabs.io/blog/rss.xml",
     } <= urls
     assert by_url["https://huggingface.co/api/daily_papers?limit=100"]["source_priority"] == 1
     arxiv_urls = {
@@ -104,6 +110,44 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
     assert by_url[
         "https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml"
     ]["snapshot_date_from_feed"] is True
+    assert all(
+        by_url[url].get("format") == "html_listing"
+        for url in {
+            "https://app.klingai.com/global/blog?tab=product-features",
+            "https://manus.im/blog?kind=PRODUCT",
+            "https://ltx.io/release-notes",
+            "https://runway.com/changelog",
+        }
+    )
+
+
+def test_official_html_listing_adapter_handles_linked_and_single_page_updates() -> None:
+    linked_page = b'''<a class="card" href="/blog/new-agent">
+      <h2 title="Introducing New Agent">Introducing New Agent</h2>
+      <span class="date">October 13, 2026</span>
+      <p>Build and run a practical workflow.</p>
+    </a>'''
+    linked = _parse_html_listing_entries(linked_page, "https://startup.test/blog", {
+        "item_selector": "a.card", "title_selector": "h2",
+        "date_selector": ".date", "summary_selector": "p",
+    })
+    assert linked == [{
+        "title": "Introducing New Agent",
+        "url": "https://startup.test/blog/new-agent",
+        "date": "2026-10-13T00:00:00+00:00",
+        "summary": "Build and run a practical workflow.",
+        "tags": [],
+    }]
+
+    changelog = b'''<div class="update"><time>Oct 9, 2026</time>
+      <h2>LTX Desktop</h2><p>Local video creation update.</p></div>'''
+    entries = _parse_html_listing_entries(changelog, "https://ltx.io/release-notes", {
+        "item_selector": ".update", "title_selector": "h2",
+        "date_selector": "time", "summary_selector": "p", "link_mode": "fragment",
+    })
+    assert entries[0]["url"] == (
+        "https://ltx.io/release-notes#2026-10-09-ltx-desktop"
+    )
 
 
 @pytest.mark.asyncio
