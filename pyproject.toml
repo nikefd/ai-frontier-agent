@@ -1,7 +1,7 @@
 [project]
 name = "ai-frontier-agent"
 version = "0.1.0"
-description = "可组装的个人 AI 前沿研究 agent — RSS 聚合 (预装 memory) + 对话式追踪 (LLM Harness)。从 zhangyangbin-agents 抽取。"
+description = "可自托管的 AI 前沿信息站：分层信源、中文速报、实践卡与对话式追踪。"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",

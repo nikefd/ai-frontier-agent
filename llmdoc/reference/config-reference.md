@@ -40,7 +40,7 @@
 | `AIF_SMTP_USER` | `smtp_user` | `""` | SMTP 登录用户名。Gmail 填邮箱；SendGrid 固定填 `apikey` |
 | `AIF_SMTP_PASSWORD` | `smtp_password` | `""` | SMTP 密码。**Gmail 用「应用专用密码」非登录密码**；SendGrid 填 API Key。**绝不入 git** |
 | `AIF_SMTP_FROM` | `smtp_from` | `""` | 发件人地址；留空则用 `smtp_user` |
-| `AIF_PUBLIC_BASE_URL` | `public_base_url` | `""` | 站点公开地址（如 `https://ai.zhangyangbin.com`），用于拼验证链接。**留空则不发验证信**（拼不出链接） |
+| `AIF_PUBLIC_BASE_URL` | `public_base_url` | `""` | 站点公开地址（如 `https://ai.example.com`），用于拼验证链接和 RSS 自链接。**留空则不发验证信**（拼不出链接） |
 
 ## 非 `AIF_` 前缀的相关变量
 

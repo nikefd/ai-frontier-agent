@@ -49,6 +49,10 @@ docker compose up -d --build
 
 GitHub Actions 会在每个 PR、`main` 推送和手动触发时运行确定性 CI：后端在 Python 3.11/3.12 上执行全部测试和字节码编译，前端在 Node 20 上执行锁文件安装、生产构建和高危依赖审计；全部通过后再构建生产 Docker 镜像。详细命令见 [运行指南](llmdoc/guides/how-to-run.md#测试与-ci)。
 
+## 开源状态
+
+仓库正在做公开前准备，目前尚未选择许可证，也没有开放外部贡献。示例配置和种子数据已经匿名化，贡献与安全报告规范已补齐；公开前仍需完成安全的管理员初始化、专业历史密钥扫描并在 AGPL-3.0 与 Apache-2.0 之间确认许可证。详见[开源准备清单](llmdoc/reference/open-source-readiness.md)。
+
 ## 文档导航（llmdoc）
 
 第一次接手这个项目，**先读 [llmdoc/index.md](llmdoc/index.md)**，那里有完整的快速导航表。常用入口：

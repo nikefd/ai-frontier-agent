@@ -4,7 +4,7 @@
 
 - **是什么:** 一个个人「AI 前沿信息站」。后端是 FastAPI 单应用，定时从 93 个分层 RSS、官方 sitemap/API/changelog 源抓取 AI 资讯，经相关性过滤、跨源去重、分类配额和质量排序后做中英翻译、生成每日速报、按需生成单篇深度解读，并提供一个 sparrow 驱动的对话式 ReAct agent。
 - **目标:** 一个人每天打开一个页面，就能跟住 AI 前沿：官方实验室发布、专家博客、X/Twitter 大 V、社区周刊、arXiv 论文、GitHub 风向；不想读英文有双语，想深挖有深度解读和对话助手。
-- **出身:** 从 `zhangyangbin-agents`（即 openclaw-deploy 体系）抽取的「AI 前沿 agent」骨架，砍掉了 finance / climbing 模块，LLM 默认改用 DeepSeek（自包含，不再依赖内网网关 / token 窃取）。代码注释和部分 logger 名仍残留 `zyb` / `zhangyangbin` 字样，属历史遗留（见 [known-issues](../reference/known-issues.md)）。
+- **形态:** 从个人助手体系中拆出的独立、自托管应用；LLM 默认使用 DeepSeek 的 OpenAI-compatible API，不依赖私有网关。仓库示例配置与种子数据保持中性，不包含生产账号、域名或用户数据。
 
 ## 2. 总体描述
 
@@ -66,7 +66,7 @@
 | `app/workers/ai_news_translator.py` | 翻译 worker：批量把 pending 文章译成中文 |
 | `agent/` | 占位包（`__init__.py` 一行注释，预留「LLM Harness 下个里程碑填充」，当前未用） |
 | `frontend/` | 前端源码：`index.html` + `src/`（ES module）+ `style.css` + `public/sparrow-chat.js`；Vite 构建到 `static/dist/` |
-| `seed-data/ai-news/` | 镜像内种子数据，首次启动卷为空时灌入（`articles.json` / `tracks.json` / 示例 guides + deep-dives） |
+| `seed-data/ai-news/` | 镜像内中性初始数据，首次启动卷为空时灌入；文章/速报为空，保留默认追踪主题 |
 | `Dockerfile` / `docker-compose.yml` / `docker-entrypoint.sh` | 容器化：单镜像 + app/rsshub/redis 三服务 + 种子灌入逻辑 |
 | `.github/workflows/ci.yml` | PR/main 的确定性质量门禁；后端、前端通过后构建生产镜像 |
 | `deploy/` | 当前为空目录（部署托管给 Coolify，无 systemd/nginx 配置入库） |

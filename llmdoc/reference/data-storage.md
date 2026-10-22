@@ -49,7 +49,7 @@
 
 > `users/_legacy/` 是迁移哨兵目录：启动时老单用户产物先搬到这里，首个注册账号（或 `AIF_ADMIN_EMAIL` 指定者）注册时改名成其 uid 目录继承。详见 [认证架构](../architecture/auth-architecture.md) 与 [已知问题](known-issues.md) 第 14 条。
 
-> 种子数据 `seed-data/ai-news/` 是镜像内的演示数据，首次启动卷为空时由 `docker-entrypoint.sh` 灌入。注意种子里的 `sources.json` 是 `{}`（空），所以首次部署后数据源页全显示「尚未抓取」，跑一轮 fetch 后才有健康数据。
+> 种子数据 `seed-data/ai-news/` 是镜像内的中性初始数据，首次启动卷为空时由 `docker-entrypoint.sh` 灌入。`articles.json`、`summary_today.json` 与 `sources.json` 默认均为空，只保留通用追踪主题；首次部署后需要由 admin 跑一轮 fetch 才会出现真实文章和来源健康数据。仓库不分发抓取文章、LLM 速报或个人产物样例。
 
 ## 3. 数据结构
 
