@@ -22,7 +22,7 @@
 
 ## 4. X 来源仍依赖自建 RSSHub
 
-98 个源里仍有 21 个 X 来源，其中多数路由走 RSSHub；公共实例可能 404/限流，依赖 RSSHub 的 X 路由还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS、Anthropic/Cohere/DeepSeek/LangChain/Mistral sitemap、可灵/Manus/LTX/Runway 官网更新、xAI/PyTorch/Transformers/vLLM GitHub Releases、Qwen/HF 官方 API 与 OpenAI/Gemini changelog 仍可工作。Mistral sitemap 若在部署网络超时，只会记录该源失败，不阻塞其它来源。详见 [部署指南](../guides/how-to-deploy.md)。
+107 个源里仍有 21 个 X 来源，其中多数路由走 RSSHub；公共实例可能 404/限流，依赖 RSSHub 的 X 路由还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS、Anthropic/Cerebras/Cohere/DeepSeek/Fireworks/LangChain/MiniMax/Modal/Mistral sitemap、可灵/Kimi/Manus/Runway 官网更新、LiblibAI/Qwen/HF 官方 API、xAI/PyTorch/Transformers/vLLM GitHub Releases 与 OpenAI/Gemini changelog 仍可工作。Mistral sitemap 若在部署网络超时，只会记录该源失败，不阻塞其它来源。详见 [部署指南](../guides/how-to-deploy.md)。
 
 ## 5. tier 与分类配额已恢复生效
 
@@ -47,7 +47,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 pytest/pytest-asyncio。当前 110 项测试覆盖内容质量配额、官方 sitemap/index、官网更新列表与页面元数据补全、GitHub Releases/Trending 快照适配与 arXiv 同域限流、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、Qwen/HF API、OpenAI/Gemini changelog、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹与 RSS 归档、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前 112 项测试覆盖内容质量配额、官方 sitemap/index、官网更新列表与页面元数据补全、GitHub Releases/Trending 快照适配与 arXiv 同域限流、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、LiblibAI/Qwen/HF API、OpenAI/Gemini changelog、RSS 原站乱序修复、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹与 RSS 归档、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 
@@ -115,3 +115,7 @@
 ## 22. GitHub Trending 曾长期没有新数据（已修复）
 
 > ✅ `GH Trending · All` 的每日 Feed 只在频道级声明当天 `pubDate`，各仓库 item 没有独立发布时间。可信日期规则上线后，相关条目因此被记入 `last_invalid_date` 而没有入库；来源运输层仍成功，所以数据源页显示健康。现在只对这个明确的每日榜单源使用频道日期作为榜单快照时间，不放宽其它 RSS 的 item 日期要求。
+
+## 23. 官方源候选仍需按生产可抓取性筛选
+
+2026-10-22 的扩源验证中，Perplexity Changelog 在浏览器可见但服务端请求反复超时；Luma 与 Ideogram sitemap 也未能在限时内稳定完成，暂不接入。Higgsfield Changelog 混有促销和故障恢复等高频噪声，Groq sitemap 的文章时间又存在批量改版污染，因此也没有为凑数量加入。后续重试这些候选时，仍须同时满足：生产出口稳定、每条有可信发布日期、能生成永久官方链接、不会把促销/运维噪声当成模型前沿。

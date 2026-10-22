@@ -26,6 +26,7 @@ from app.workers.ai_news_fetcher import (
     _parse_github_releases,
     _parse_html_listing_entries,
     _parse_hf_daily_papers,
+    _parse_liblib_articles,
     _parse_openai_changelog_entries,
     _parse_page_metadata,
     _parse_qwen_api_entries,
@@ -71,7 +72,7 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
 
     urls = {spec["url"] for spec in DEFAULT_FEED_SPECS}
     by_url = {spec["url"]: spec for spec in DEFAULT_FEED_SPECS}
-    assert len(DEFAULT_FEED_SPECS) == 98
+    assert len(DEFAULT_FEED_SPECS) == 107
     assert len(urls) == len(DEFAULT_FEED_SPECS)
     assert {
         "https://engineering.fb.com/category/ai-research/feed/",
@@ -85,6 +86,11 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "https://platform.claude.com/docs/en/release-notes/feed.xml",
         "https://ai.google.dev/gemini-api/docs/changelog",
         "https://cursor.com/changelog/rss.xml",
+        "https://blog.replit.com/feed.xml",
+        "https://lovable.dev/blog/rss.xml",
+        "https://www.minimax.io/sitemap.xml",
+        "https://www.kimi.com/en/blog/",
+        "https://docs.cohere.com/v1/changelog",
         "https://huggingface.co/api/daily_papers?limit=100",
         "https://api-docs.deepseek.com/sitemap.xml",
         "https://www.langchain.com/sitemap.xml",
@@ -93,10 +99,14 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "https://api.github.com/repos/huggingface/transformers/releases?per_page=20",
         "https://api.github.com/repos/vllm-project/vllm/releases?per_page=20",
         "https://app.klingai.com/global/blog?tab=product-features",
+        "https://api2.liblib.art/api/www/community/article/list?page=1&pageSize=20&type=5",
         "https://manus.im/blog?kind=PRODUCT",
-        "https://ltx.io/release-notes",
         "https://runway.com/changelog",
         "https://elevenlabs.io/blog/rss.xml",
+        "https://stability.ai/news-updates?format=rss",
+        "https://www.cerebras.ai/sitemap.xml",
+        "https://fireworks.ai/sitemap.xml",
+        "https://modal.com/sitemap.xml",
     } <= urls
     assert by_url["https://huggingface.co/api/daily_papers?limit=100"]["source_priority"] == 1
     arxiv_urls = {
@@ -115,10 +125,12 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         for url in {
             "https://app.klingai.com/global/blog?tab=product-features",
             "https://manus.im/blog?kind=PRODUCT",
-            "https://ltx.io/release-notes",
             "https://runway.com/changelog",
+            "https://www.kimi.com/en/blog/",
+            "https://docs.cohere.com/v1/changelog",
         }
     )
+    assert "https://ltx.io/release-notes" not in urls
 
 
 def test_official_html_listing_adapter_handles_linked_and_single_page_updates() -> None:
@@ -140,14 +152,32 @@ def test_official_html_listing_adapter_handles_linked_and_single_page_updates() 
     }]
 
     changelog = b'''<div class="update"><time>Oct 9, 2026</time>
-      <h2>LTX Desktop</h2><p>Local video creation update.</p></div>'''
-    entries = _parse_html_listing_entries(changelog, "https://ltx.io/release-notes", {
+      <h2>Studio Desktop</h2><p>Local video creation update.</p></div>'''
+    entries = _parse_html_listing_entries(changelog, "https://studio.test/release-notes", {
         "item_selector": ".update", "title_selector": "h2",
         "date_selector": "time", "summary_selector": "p", "link_mode": "fragment",
     })
     assert entries[0]["url"] == (
-        "https://ltx.io/release-notes#2026-10-09-ltx-desktop"
+        "https://studio.test/release-notes#2026-10-09-studio-desktop"
     )
+
+
+def test_liblib_official_api_adapter_keeps_truthful_dates_and_links() -> None:
+    entries = _parse_liblib_articles({"data": [{
+        "uuid": "abc123",
+        "title": "LiblibAI 上线新模型",
+        "description": "官方产品更新",
+        "createTime": 1792371600,
+        "updateTime": 1792458000,
+    }]})
+
+    assert entries == [{
+        "title": "LiblibAI 上线新模型",
+        "url": "https://www.liblib.art/teaching/abc123",
+        "date": "2026-10-19T01:00:00+00:00",
+        "summary": "官方产品更新",
+        "tags": [],
+    }]
 
 
 @pytest.mark.asyncio
@@ -169,6 +199,25 @@ async def test_daily_trending_uses_truthful_channel_snapshot_date() -> None:
 
     assert error is None
     assert entries[0]["date"] == "Thu, 22 Oct 2026 05:37:43 GMT"
+
+
+@pytest.mark.asyncio
+async def test_unsorted_rss_is_normalized_to_newest_first() -> None:
+    url = "https://blog.replit.com/feed.xml"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=b'''<rss><channel><title>Replit</title>
+          <item><title>Older</title><link>https://replit.com/blog/older</link>
+          <pubDate>Wed, 26 Mar 2025 19:11:36 GMT</pubDate></item>
+          <item><title>Newest</title><link>https://replit.com/blog/newest</link>
+          <pubDate>Fri, 16 Oct 2026 09:30:00 GMT</pubDate></item>
+        </channel></rss>''')
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        entries, _, error = await _fetch_feed(client, url)
+
+    assert error is None
+    assert [entry["title"] for entry in entries] == ["Newest", "Older"]
 
 
 def test_unstable_sources_use_verified_replacements_and_scoped_headers() -> None:
@@ -487,6 +536,7 @@ def test_official_page_metadata_reads_leading_visible_publication_date() -> None
     </article></body></html>'''
     parsed = _parse_page_metadata(page)
 
+    assert parsed["title"] == "DeepSeek-R1-Lite Release"
     assert parsed["date"].startswith("2024-11-20")
 
 

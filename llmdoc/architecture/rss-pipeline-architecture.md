@@ -11,7 +11,7 @@
 flowchart TD
   cron[APScheduler 分层刷新<br/>官方 1h / 常规 4h / 发现 12h] --> fetch
   manual[管理员点「立即抓取」 POST /fetch] --> fetch
-  fetch[fetch_once：异步拉取 98 个 RSS/sitemap/API/changelog/官网更新页/GitHub Releases 源]
+  fetch[fetch_once：异步拉取 107 个 RSS/sitemap/API/changelog/官网更新页/GitHub Releases 源]
   fetch --> parse[feedparser 解析 RSS/Atom<br/>BS4 解析官方 sitemap/changelog<br/>适配官方 JSON API]
   parse --> gate[tier/category 相关性门槛<br/>high/paper/显式精选源接受，med/low 需关键词]
   gate --> rounds[每源分 4 轮取候选<br/>先各源 1 条，再各源第 2 条]
@@ -33,8 +33,8 @@ flowchart TD
 ### 2.1 触发方式
 
 - **定时**：`scheduler.py` 按 `cadence` 把来源拆成互斥三组，时区 Asia/Shanghai：
-  - `fast`：17 个高时效官方源，每小时第 10 分钟检查；覆盖核心实验室新闻、模型/API 更新日志、重要 AI 初创公司和关键开发工具 changelog。
-  - `standard`：54 个媒体、博客、社区及普通官方工程源，默认在 01/05/09/13/17/21 点（每 4 小时）检查。
+  - `fast`：23 个高时效官方源，每小时第 10 分钟检查；覆盖核心实验室新闻、模型/API 更新日志、重要 AI 初创公司和关键开发工具 changelog。
+  - `standard`：57 个媒体、博客、社区及普通官方工程源，默认在 01/05/09/13/17/21 点（每 4 小时）检查。
   - `slow`：27 个 paper、X 与 Trending 发现型源，默认在 05:20/17:20（每 12 小时）检查。
 - **手动**：admin-only 的 `POST /api/ai-news/fetch` 即时跑一轮（普通用户看不到按钮，直接调用返回 403）。
 
@@ -42,7 +42,7 @@ flowchart TD
 
 ### 2.2 feed 清单与分类
 
-98 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；加载时再根据 `_FAST_SOURCE_NAMES` 与 category 赋 `cadence=fast/standard/slow`。无稳定 RSS 的官方站可设置专用 format。当前 Anthropic、Cohere、DeepSeek、LangChain、Mistral 读取官方 sitemap；xAI Python SDK、PyTorch、Transformers 与 vLLM 读取所属官方 GitHub 仓库的 Releases API；Qwen 读取官方文章 API；OpenAI API 的 Markdown changelog 与 Gemini API 的 HTML release notes 会拆成带真实日期和官方落地链接的独立发布项，Claude Platform、Cursor 与 ElevenLabs 直接读取 RSS。`html_listing` 适配器用每源声明的 CSS selector 解析可灵 Product Features、Manus Product Blog、LTX Release Notes 与 Runway Changelog；缺标题或可信日期的卡片被拒绝，单页 changelog 用日期和标题生成稳定条目 URL。论文侧使用 Hugging Face Daily Papers 策展接口，结合社区票数、代码可用性和 GitHub stars 排序；四路原始 arXiv 各限最新 2 篇，只承担长尾发现。开放研究和工程侧还覆盖 Ai2、Meta Engineering、Google Cloud AI、Cloudflare AI、Together AI、Ollama 与 MLflow。
+107 个来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；加载时再根据 `_FAST_SOURCE_NAMES` 与 category 赋 `cadence=fast/standard/slow`。无稳定 RSS 的官方站可设置专用 format。当前 Anthropic、Cerebras、DeepSeek、Fireworks AI、LangChain、MiniMax、Modal 与 Mistral 读取官方 sitemap；xAI Python SDK、PyTorch、Transformers 与 vLLM 读取所属官方 GitHub 仓库的 Releases API；LiblibAI、Qwen 与 HF Daily Papers 读取官方 API；OpenAI API 的 Markdown changelog 与 Gemini API 的 HTML release notes 会拆成带真实日期和官方落地链接的独立发布项，Claude Platform、Cursor、ElevenLabs、Lovable、Replit 与 Stability AI 直接读取 RSS。`html_listing` 适配器用每源声明的 CSS selector 解析可灵、Kimi、Manus、Runway 与 Cohere Release Notes；缺标题或可信日期的卡片被拒绝，单页 changelog 用日期和标题生成稳定条目 URL。普通 RSS 在截取最新 20 条前统一按发布日期重排，避免 Replit 这类原站混排 feed 漏掉新内容。论文侧使用 Hugging Face Daily Papers 策展接口，结合社区票数、代码可用性和 GitHub stars 排序；四路原始 arXiv 各限最新 2 篇，只承担长尾发现。开放研究和工程侧还覆盖 Ai2、Meta Engineering、Google Cloud AI、Cloudflare AI、Together AI、Ollama 与 MLflow。
 
 `category` 同时驱动前端分组、tier 归一化与抓取配额，共 8 类：
 

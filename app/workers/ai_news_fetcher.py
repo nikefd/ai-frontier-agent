@@ -197,6 +197,14 @@ def _parse_page_metadata(content: bytes) -> dict[str, str]:
 
     if not result["title"] and soup.title:
         result["title"] = _clean_metadata_text(soup.title.get_text(" ", strip=True))
+    # Some marketing sites publish only the company name in og:title while
+    # the article's real headline is the first h1.
+    heading = soup.find("h1")
+    heading_text = _clean_metadata_text(heading.get_text(" ", strip=True)) if heading else ""
+    if heading_text and (not result["title"] or (
+        len(result["title"].split()) == 1 and len(heading_text) > len(result["title"])
+    )):
+        result["title"] = heading_text
     if not result["date"]:
         article = soup.find("article") or soup.find("main")
         leading_text = (
@@ -278,6 +286,41 @@ def _parse_qwen_api_entries(payload: dict) -> list[dict]:
             "tags": [],
         })
     entries.sort(key=lambda e: _parse_ts(e.get("date") or ""), reverse=True)
+    return entries[:20]
+
+
+def _parse_liblib_articles(payload: dict) -> list[dict]:
+    """Convert LiblibAI's first-party tutorial API into feed-like entries."""
+    articles = payload.get("data") or []
+    if not isinstance(articles, list):
+        return []
+    entries: list[dict] = []
+    for article in articles:
+        if not isinstance(article, dict):
+            continue
+        title = _clean_metadata_text(article.get("title"))
+        article_id = str(article.get("uuid") or "").strip()
+        # Editing an old tutorial must not make it look newly published.
+        timestamp = article.get("releaseDate") or article.get("createTime")
+        try:
+            published = datetime.fromtimestamp(float(timestamp), tz=timezone.utc).isoformat()
+        except (TypeError, ValueError, OSError):
+            published = ""
+        if not title or not article_id or not published:
+            continue
+        summary = _clean_metadata_text(
+            article.get("description") or article.get("content"),
+        )
+        if len(summary) > 280:
+            summary = summary[:280] + "…"
+        entries.append({
+            "title": title,
+            "url": f"https://www.liblib.art/teaching/{article_id}",
+            "date": published,
+            "summary": summary,
+            "tags": [],
+        })
+    entries.sort(key=lambda entry: _parse_ts(entry["date"]), reverse=True)
     return entries[:20]
 
 
@@ -626,7 +669,7 @@ async def _fetch_feed(
             )
         )
         r = await _get_source(
-            client, url, source_url=url, timeout=15.0,
+            client, url, source_url=url, timeout=float(spec.get("timeout") or 15.0),
             accept=accept,
         )
         r.raise_for_status()
@@ -650,6 +693,13 @@ async def _fetch_feed(
         except ValueError as e:
             return [], spec.get("name") or url, f"invalid Qwen API JSON: {e}"
         error = None if entries else "Qwen API contained no parseable articles"
+        return entries, spec.get("name") or url, error
+    if spec.get("format") == "liblib_articles":
+        try:
+            entries = _parse_liblib_articles(r.json())
+        except ValueError as e:
+            return [], spec.get("name") or url, f"invalid LiblibAI API JSON: {e}"
+        error = None if entries else "LiblibAI API contained no parseable articles"
         return entries, spec.get("name") or url, error
     if spec.get("format") == "hf_daily_papers":
         try:
@@ -689,7 +739,7 @@ async def _fetch_feed(
     feed_snapshot_date = ""
     if spec.get("snapshot_date_from_feed") and feed.feed:
         feed_snapshot_date = feed.feed.get("published") or feed.feed.get("updated") or ""
-    for ent in feed.entries[:20]:
+    for ent in feed.entries:
         link = _canonical_feed_url(ent.get("link") or "")
         title = (ent.get("title") or "").strip()
         if not link or not title:
@@ -708,6 +758,8 @@ async def _fetch_feed(
                 "tags": [],
             }
         )
+    entries.sort(key=lambda entry: _parse_ts(entry.get("date") or ""), reverse=True)
+    entries = entries[:20]
     if not entries:
         parser_error = str(getattr(feed, "bozo_exception", "") or "").strip()
         detail = f": {parser_error[:180]}" if parser_error else ""

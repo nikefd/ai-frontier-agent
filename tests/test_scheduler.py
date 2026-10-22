@@ -25,4 +25,4 @@ def test_source_cadences_are_disjoint_and_cover_registry() -> None:
     assert not (groups["fast"] & groups["standard"])
     assert not (groups["fast"] & groups["slow"])
     assert not (groups["standard"] & groups["slow"])
-    assert sum(map(len, groups.values())) == 98
+    assert sum(map(len, groups.values())) == 107
