@@ -74,6 +74,11 @@ def test_digest_endpoint_supports_reader_discovery_cache(monkeypatch) -> None:
     assert response.headers["content-type"].startswith("application/rss+xml")
     assert response.headers["cache-control"] == "public, max-age=300"
     assert response.headers["etag"]
+    head = client.head("/rss/digest.xml")
+    assert head.status_code == 200
+    assert head.headers["content-type"].startswith("application/rss+xml")
+    assert head.headers["etag"] == response.headers["etag"]
+    assert not head.content
     cached = client.get(
         "/rss/digest.xml",
         headers={"If-None-Match": response.headers["etag"]},

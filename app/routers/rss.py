@@ -98,8 +98,7 @@ def build_digest_rss(summaries: list[dict], base_url: str) -> bytes:
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
-@router.get("/rss/digest.xml")
-def digest_feed(request: Request) -> Response:
+def _digest_response(request: Request, *, head_only: bool = False) -> Response:
     configured = str(settings.public_base_url or "").strip()
     base_url = configured or str(request.base_url)
     summaries = load_public_summaries()
@@ -116,4 +115,20 @@ def digest_feed(request: Request) -> Response:
         )
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers=headers)
-    return Response(payload, media_type="application/rss+xml", headers=headers)
+    if head_only:
+        headers["Content-Length"] = str(len(payload))
+    return Response(
+        b"" if head_only else payload,
+        media_type="application/rss+xml",
+        headers=headers,
+    )
+
+
+@router.get("/rss/digest.xml")
+def digest_feed(request: Request) -> Response:
+    return _digest_response(request)
+
+
+@router.head("/rss/digest.xml")
+def digest_feed_head(request: Request) -> Response:
+    return _digest_response(request, head_only=True)
