@@ -142,6 +142,10 @@ _FAST_SOURCE_NAMES = {
     "Kimi Research",
     "Cohere Release Notes",
     "Stability AI News",
+    "ByteDance Seed",
+    "Physical Intelligence",
+    "StepFun News",
+    "Z.ai Open Source",
 }
 
 
@@ -221,6 +225,12 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://www.cerebras.ai/sitemap.xml", "name": "Cerebras Blog", "tier": "high", "category": "vendor", "format": "sitemap", "include_paths": ["/blog/"], "description": "Cerebras 官方博客 · 大模型训练、超高速推理、芯片与系统工程"},
     {"url": "https://fireworks.ai/sitemap.xml", "name": "Fireworks AI Blog", "tier": "high", "category": "vendor", "format": "sitemap", "include_paths": ["/blog/"], "description": "Fireworks AI 官方博客 · 开源模型、微调、强化学习与推理平台"},
     {"url": "https://modal.com/sitemap.xml", "name": "Modal Blog", "tier": "high", "category": "vendor", "format": "sitemap", "include_paths": ["/blog/"], "description": "Modal 官方博客 · GPU 云、训练、推理、沙箱与 Agent 基础设施"},
+    {"url": "https://seed.bytedance.com/sitemap.xml", "name": "ByteDance Seed", "tier": "high", "category": "vendor", "format": "sitemap", "include_paths": ["/blog/"], "exclude_paths": ["/blog/bytedance-seed-2027-foundation-model-campus-recruitment", "/blog/seed-alignment-preparedness-team-looking-for-global-talents"], "description": "字节跳动 Seed 官方博客 · 基础、多模态、语音、视频与 AI Infra 模型发布"},
+    {"url": "https://www.pi.website/blog", "name": "Physical Intelligence", "tier": "high", "category": "vendor", "format": "html_listing", "item_selector": "a[href^='/blog/']", "title_selector": "div[title]", "date_selector": ".shrink-0.ml-1", "summary_selector": "p.text-muted-foreground.no-underline", "description": "Physical Intelligence 官方博客 · 机器人基础模型、VLA、开放权重与部署能力"},
+    {"url": "https://www.stepfun.com/news", "name": "StepFun News", "tier": "high", "category": "vendor", "format": "stepfun_news", "description": "阶跃星辰官方动态 · 基础模型、Agent、语音、图像与端侧模型发布"},
+    {"url": "https://api.github.com/orgs/zai-org/repos?sort=created&direction=desc&per_page=20", "name": "Z.ai Open Source", "tier": "high", "category": "vendor", "format": "github_repositories", "description": "Z.ai 官方 GitHub 组织 · GLM 模型、Agent、评测与开源实现发布"},
+    {"url": "https://openrouter.ai/api/v1/models", "name": "OpenRouter New Models", "tier": "high", "category": "community", "format": "openrouter_models", "curated": True, "description": "OpenRouter 官方模型目录 · 新模型 API 可用性、上下文长度与调用入口"},
+    {"url": "https://api.github.com/repos/sgl-project/sglang/releases?per_page=20", "name": "SGLang Releases", "tier": "high", "category": "vendor", "format": "github_releases", "description": "SGLang 官方版本发布 · 高性能推理、模型支持、并行与服务端能力"},
     # ── media: AI 媒体
     {"url": "https://arstechnica.com/ai/feed/", "name": "Ars Technica AI", "tier": "high", "category": "media", "description": "Ars Technica AI · 技术深度评测，重视一手数据和复盘"},
     {"url": "https://www.technologyreview.com/topic/artificial-intelligence/feed", "name": "MIT Tech Review AI", "tier": "high", "category": "media", "description": "MIT Tech Review · 长篇深度报道与影响分析"},
@@ -263,6 +273,8 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://www.wheresyoured.at/rss/", "name": "wheresyoured.at", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
     {"url": "https://worksonmymachine.ai/feed", "name": "worksonmymachine.substack.com", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
     {"url": "https://s.baoyu.io/feed.xml", "name": "宝玉的分享", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
+    {"url": "https://artificialanalysis.ai/articles", "name": "Artificial Analysis", "tier": "high", "category": "expert", "format": "html_listing", "item_selector": "a[href^='/articles/']", "title_selector": "h3", "date_selector": "p", "curated": True, "description": "独立 AI 基准与实测 · 模型、Agent、多模态、价格和推理性能对比"},
+    {"url": "https://metr.org/blog/", "name": "METR", "tier": "high", "category": "expert", "format": "html_listing", "item_selector": "a[href^='/blog/']", "title_selector": ".card-title", "date_selector": ".card-date", "summary_selector": ".card-description", "timeout": 30, "curated": True, "description": "METR 前沿 AI 评测 · 长任务能力、Agent 风险、安全政策与独立预部署评估"},
     # ── x-ai: X 上的 AI 大V
     {"url": "https://api.xgo.ing/rss/user/341f7b9f8d9b477e8bb200caa7f32c6e", "name": "AK(@_akhaliq)", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
     {"url": "https://rsshub.app/twitter/user/aaditsh", "name": "Aadit Sheth", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},

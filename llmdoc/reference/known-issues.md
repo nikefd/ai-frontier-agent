@@ -22,7 +22,7 @@
 
 ## 4. X 来源仍依赖自建 RSSHub
 
-107 个源里仍有 21 个 X 来源，其中多数路由走 RSSHub；公共实例可能 404/限流，依赖 RSSHub 的 X 路由还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS、Anthropic/Cerebras/Cohere/DeepSeek/Fireworks/LangChain/MiniMax/Modal/Mistral sitemap、可灵/Kimi/Manus/Runway 官网更新、LiblibAI/Qwen/HF 官方 API、xAI/PyTorch/Transformers/vLLM GitHub Releases 与 OpenAI/Gemini changelog 仍可工作。Mistral sitemap 若在部署网络超时，只会记录该源失败，不阻塞其它来源。详见 [部署指南](../guides/how-to-deploy.md)。
+115 个源里仍有 21 个 X 来源，其中多数路由走 RSSHub；公共实例可能 404/限流，依赖 RSSHub 的 X 路由还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS、各实验室 sitemap/API、官网更新页、GitHub Releases/组织新仓库、OpenRouter 模型目录与 OpenAI/Gemini changelog 仍可工作。Mistral sitemap 若在部署网络超时，只会记录该源失败，不阻塞其它来源。详见 [部署指南](../guides/how-to-deploy.md)。
 
 ## 5. tier 与分类配额已恢复生效
 
@@ -47,7 +47,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 pytest/pytest-asyncio。当前 112 项测试覆盖内容质量配额、官方 sitemap/index、官网更新列表与页面元数据补全、GitHub Releases/Trending 快照适配与 arXiv 同域限流、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、LiblibAI/Qwen/HF API、OpenAI/Gemini changelog、RSS 原站乱序修复、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹与 RSS 归档、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前测试覆盖内容质量配额、官方 sitemap/index（含非严格 XML 恢复与路径排除）、官网更新列表与页面元数据补全、OpenRouter 模型目录、GitHub Releases/组织仓库/Trending 快照、StepFun SPA 新闻适配与 arXiv 同域限流、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、LiblibAI/Qwen/HF API、OpenAI/Gemini changelog、RSS 原站乱序修复、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹与 RSS 归档、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 
@@ -57,7 +57,11 @@
 
 `agent/__init__.py` 只有占位注释。对话 agent 实际实现在 `app/agent_chat.py` + `app/agent_runtime/`（sparrow 运行时已内联），`agent/` 当前未被使用。
 
-## 13. 多用户鉴权：安全要点与约束
+## 13. 候选数据源需先证明“可持续抓取”
+
+来源扩充以可验证日期、一手链接和长期信号密度为门槛，不以数量为目标。当前暂不接入 Figure（官网混入公司/融资/合作噪声）、llama.cpp Releases（高频构建噪声）和 Epoch AI sitemap（条目缺稳定 `lastmod`，现有适配器无法可靠判断最新）；Perplexity、Luma、Ideogram 曾出现服务端不稳定，Higgsfield 与 Groq sitemap 也分别存在内容噪声和日期污染，保留为后续复查候选。站点结构稳定或有更可靠官方 API/RSS 后再接入。
+
+## 14. 多用户鉴权：安全要点与约束
 
 鉴权实现在 `app/auth.py`（用户存储 `auth/users.json`、bcrypt 哈希、itsdangerous 签名 cookie、`require_user`/`current_user_optional` 依赖）。几条必须知道的点：
 

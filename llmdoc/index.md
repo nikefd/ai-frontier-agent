@@ -1,6 +1,6 @@
 # AI Frontier Agent — 文档索引
 
-个人 AI 前沿信息站：FastAPI 单应用，定时从 107 个分层 RSS、官方 sitemap/API/changelog/官网更新页抓取 AI 资讯，经相关性过滤、跨源去重、分类配额和质量排序后生成双语文章流与每日速报，外加按需深度解读、结构化实验卡和 ReAct agent。论文侧以 Hugging Face Daily Papers 策展信号为主、arXiv 长尾发现为辅。文件型主存储、Vite 构建前端、单进程一体化。
+个人 AI 前沿信息站：FastAPI 单应用，定时从 115 个分层 RSS、官方 sitemap/API/changelog/官网更新页抓取 AI 资讯，经相关性过滤、跨源去重、分类配额和质量排序后生成双语文章流与每日速报，外加按需深度解读、结构化实验卡和 ReAct agent。来源同时覆盖官方发布、独立基准、安全评测、具身智能、模型 API 可用性与开源工程；论文侧以 Hugging Face Daily Papers 策展信号为主、arXiv 长尾发现为辅。文件型主存储、Vite 构建前端、单进程一体化。
 
 ---
 

@@ -107,7 +107,11 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _parse_sitemap_entries(content: bytes, include_paths: list[str]) -> list[dict]:
+def _parse_sitemap_entries(
+    content: bytes,
+    include_paths: list[str],
+    exclude_paths: list[str] | None = None,
+) -> list[dict]:
     """Convert selected official sitemap URLs into feed-like entries.
 
     Some frontier labs publish no RSS but do maintain a dated sitemap. Keeping
@@ -115,6 +119,12 @@ def _parse_sitemap_entries(content: bytes, include_paths: list[str]) -> list[dic
     on a third-party social mirror.
     """
     soup = BeautifulSoup(content, "xml")
+    # A few official generators emit malformed XML after an otherwise valid
+    # prefix.  BeautifulSoup's strict XML backend silently stops there, so
+    # recover with the tolerant lxml HTML parser when URL nodes were lost.
+    raw_url_count = len(re.findall(br"<url(?:\s|>)", content, flags=re.IGNORECASE))
+    if len(soup.find_all("url")) < raw_url_count:
+        soup = BeautifulSoup(content, "lxml")
     entries: list[dict] = []
     for node in soup.find_all("url"):
         loc_node = node.find("loc")
@@ -123,6 +133,8 @@ def _parse_sitemap_entries(content: bytes, include_paths: list[str]) -> list[dic
         link = loc_node.get_text(strip=True)
         path = urlparse(link).path
         if include_paths and not any(path.startswith(prefix) for prefix in include_paths):
+            continue
+        if exclude_paths and any(path.startswith(prefix) for prefix in exclude_paths):
             continue
         slug = unquote(path.rstrip("/").rsplit("/", 1)[-1])
         if not slug:
@@ -320,6 +332,102 @@ def _parse_liblib_articles(payload: dict) -> list[dict]:
             "summary": summary,
             "tags": [],
         })
+    entries.sort(key=lambda entry: _parse_ts(entry["date"]), reverse=True)
+    return entries[:20]
+
+
+def _parse_openrouter_models(payload: dict) -> list[dict]:
+    """Convert OpenRouter's model catalog into dated availability signals."""
+    models = payload.get("data") or []
+    if not isinstance(models, list):
+        return []
+    entries: list[dict] = []
+    for model in models:
+        if not isinstance(model, dict):
+            continue
+        model_id = str(model.get("id") or "").strip()
+        name = _clean_metadata_text(model.get("name") or model_id)
+        try:
+            published = datetime.fromtimestamp(
+                float(model.get("created")), tz=timezone.utc,
+            ).isoformat()
+        except (TypeError, ValueError, OSError):
+            published = ""
+        if not model_id or not name or not published:
+            continue
+        try:
+            context = int(model.get("context_length") or 0)
+        except (TypeError, ValueError):
+            context = 0
+        description = _clean_metadata_text(model.get("description"))
+        signal = f"OpenRouter API availability; context window {context:,} tokens."
+        summary = f"{signal} {description}" if description else signal
+        if len(summary) > 280:
+            summary = summary[:280] + "…"
+        entries.append({
+            "title": f"Available on OpenRouter: {name}",
+            "url": f"https://openrouter.ai/{model_id}",
+            "date": published,
+            "summary": summary,
+            "tags": ["模型"],
+        })
+    entries.sort(key=lambda entry: _parse_ts(entry["date"]), reverse=True)
+    return entries[:20]
+
+
+def _parse_github_repositories(payload: list[dict]) -> list[dict]:
+    """Convert newly created first-party repositories into release signals."""
+    entries: list[dict] = []
+    for repository in payload:
+        if not isinstance(repository, dict) or repository.get("fork") or repository.get("archived"):
+            continue
+        full_name = _clean_metadata_text(repository.get("full_name") or repository.get("name"))
+        link = str(repository.get("html_url") or "").strip()
+        published = str(repository.get("created_at") or "").strip()
+        if not full_name or not link or not published:
+            continue
+        summary = _clean_metadata_text(repository.get("description"))
+        if len(summary) > 280:
+            summary = summary[:280] + "…"
+        entries.append({
+            "title": full_name,
+            "url": link,
+            "date": published,
+            "summary": summary,
+            "tags": ["开源"],
+        })
+    entries.sort(key=lambda entry: _parse_ts(entry["date"]), reverse=True)
+    return entries[:20]
+
+
+def _parse_stepfun_news_bundle(content: bytes) -> list[dict]:
+    """Extract dated StepFun articles embedded in its versioned SPA bundle."""
+    source = content.decode("utf-8", errors="replace")
+    pattern = re.compile(
+        r'\{slug:"(?P<slug>[^"]+)",date:"(?P<date>20\d{2}-\d{2}-\d{2})",'
+        r'dateLabel:"[^"]*",title:"(?P<title>(?:\\.|[^"])*)"',
+    )
+    entries: list[dict] = []
+    seen_urls: set[str] = set()
+    for match in pattern.finditer(source):
+        slug = match.group("slug")
+        try:
+            title = json.loads(f'"{match.group("title")}"')
+        except json.JSONDecodeError:
+            title = match.group("title")
+        title = _clean_metadata_text(title)
+        date = _normalize_html_listing_date(match.group("date"))
+        link = f"https://www.stepfun.com/news/{slug}"
+        if not title or not date or link in seen_urls:
+            continue
+        entries.append({
+            "title": title,
+            "url": link,
+            "date": date,
+            "summary": "",
+            "tags": [],
+        })
+        seen_urls.add(link)
     entries.sort(key=lambda entry: _parse_ts(entry["date"]), reverse=True)
     return entries[:20]
 
@@ -619,11 +727,12 @@ async def _entries_from_sitemap(
     root_url: str,
     content: bytes,
     include_paths: list[str],
+    exclude_paths: list[str] | None = None,
 ) -> list[dict]:
     """Parse a urlset or one level of same-host sitemap-index children."""
     child_urls = _parse_sitemap_index(content)
     if not child_urls:
-        entries = _parse_sitemap_entries(content, include_paths)
+        entries = _parse_sitemap_entries(content, include_paths, exclude_paths)
         return await _hydrate_sitemap_entries(client, root_url, entries)
 
     root_host = urlparse(root_url).hostname
@@ -646,7 +755,7 @@ async def _entries_from_sitemap(
     for payload in payloads:
         if not payload:
             continue
-        for entry in _parse_sitemap_entries(payload, include_paths):
+        for entry in _parse_sitemap_entries(payload, include_paths, exclude_paths):
             by_url[entry["url"]] = entry
     entries = list(by_url.values())
     entries.sort(key=lambda e: _parse_ts(e.get("date") or ""), reverse=True)
@@ -662,10 +771,14 @@ async def _fetch_feed(
         spec = FEED_SPEC_BY_URL.get(url, {})
         accept = (
             "application/vnd.github+json"
-            if spec.get("format") == "github_releases"
+            if spec.get("format") in {"github_releases", "github_repositories"}
             else (
-                "application/rss+xml,application/atom+xml,application/xml,"
-                "text/xml;q=0.9,*/*;q=0.5"
+                "application/json"
+                if spec.get("format") in {"openrouter_models"}
+                else (
+                    "application/rss+xml,application/atom+xml,application/xml,"
+                    "text/xml;q=0.9,*/*;q=0.5"
+                )
             )
         )
         r = await _get_source(
@@ -680,12 +793,30 @@ async def _fetch_feed(
     if spec.get("format") == "sitemap":
         entries = await _entries_from_sitemap(
             client, url, r.content, spec.get("include_paths") or [],
+            spec.get("exclude_paths") or [],
         )
         error = None if entries else "sitemap contained no matching parseable pages"
         return entries, spec.get("name") or url, error
     if spec.get("format") == "html_listing":
         entries = _parse_html_listing_entries(r.content, url, spec)
         error = None if entries else "official HTML listing contained no parseable updates"
+        return entries, spec.get("name") or url, error
+    if spec.get("format") == "stepfun_news":
+        soup = BeautifulSoup(r.content, "lxml")
+        script = soup.select_one("script[type='module'][src*='/assets/index-']")
+        bundle_url = urljoin(url, str(script.get("src") or "")) if script else ""
+        if not bundle_url or urlparse(bundle_url).hostname != urlparse(url).hostname:
+            return [], spec.get("name") or url, "StepFun page exposed no same-host news bundle"
+        try:
+            bundle = await _get_source(
+                client, bundle_url, source_url=url, timeout=30.0,
+                accept="application/javascript,text/javascript;q=0.9,*/*;q=0.5",
+            )
+            bundle.raise_for_status()
+        except (httpx.HTTPError, asyncio.TimeoutError) as e:
+            return [], spec.get("name") or url, f"StepFun news bundle failed: {e}"
+        entries = _parse_stepfun_news_bundle(bundle.content)
+        error = None if entries else "StepFun bundle contained no parseable news"
         return entries, spec.get("name") or url, error
     if spec.get("format") == "qwen_api":
         try:
@@ -700,6 +831,13 @@ async def _fetch_feed(
         except ValueError as e:
             return [], spec.get("name") or url, f"invalid LiblibAI API JSON: {e}"
         error = None if entries else "LiblibAI API contained no parseable articles"
+        return entries, spec.get("name") or url, error
+    if spec.get("format") == "openrouter_models":
+        try:
+            entries = _parse_openrouter_models(r.json())
+        except ValueError as e:
+            return [], spec.get("name") or url, f"invalid OpenRouter model JSON: {e}"
+        error = None if entries else "OpenRouter API contained no dated models"
         return entries, spec.get("name") or url, error
     if spec.get("format") == "hf_daily_papers":
         try:
@@ -720,6 +858,16 @@ async def _fetch_feed(
         except ValueError as e:
             return [], spec.get("name") or url, f"invalid GitHub releases JSON: {e}"
         error = None if entries else "GitHub releases contained no parseable releases"
+        return entries, spec.get("name") or url, error
+    if spec.get("format") == "github_repositories":
+        try:
+            payload = r.json()
+            if not isinstance(payload, list):
+                raise ValueError("expected a JSON list")
+            entries = _parse_github_repositories(payload)
+        except ValueError as e:
+            return [], spec.get("name") or url, f"invalid GitHub repositories JSON: {e}"
+        error = None if entries else "GitHub organization contained no parseable repositories"
         return entries, spec.get("name") or url, error
     if spec.get("format") == "openai_changelog":
         entries = _parse_openai_changelog_entries(r.content)

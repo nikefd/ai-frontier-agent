@@ -25,7 +25,7 @@ flowchart LR
 
 ## 2. 为什么要自建 RSSHub
 
-107 个来源里仍有不少 X 路由写的是公共 `https://rsshub.app`。但公共实例：
+115 个来源里仍有不少 X 路由写的是公共 `https://rsshub.app`。但公共实例：
 
 - 对 **Twitter 路由 404**
 - 对部分路由 **403/限流**

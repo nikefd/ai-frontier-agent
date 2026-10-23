@@ -23,15 +23,18 @@ from app.workers.ai_news_fetcher import (
     _canonical_feed_url,
     _limit_source_entries,
     _parse_gemini_changelog_entries,
+    _parse_github_repositories,
     _parse_github_releases,
     _parse_html_listing_entries,
     _parse_hf_daily_papers,
     _parse_liblib_articles,
     _parse_openai_changelog_entries,
+    _parse_openrouter_models,
     _parse_page_metadata,
     _parse_qwen_api_entries,
     _parse_sitemap_index,
     _parse_sitemap_entries,
+    _parse_stepfun_news_bundle,
     _request_headers,
     _select_candidates,
 )
@@ -72,7 +75,7 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
 
     urls = {spec["url"] for spec in DEFAULT_FEED_SPECS}
     by_url = {spec["url"]: spec for spec in DEFAULT_FEED_SPECS}
-    assert len(DEFAULT_FEED_SPECS) == 107
+    assert len(DEFAULT_FEED_SPECS) == 115
     assert len(urls) == len(DEFAULT_FEED_SPECS)
     assert {
         "https://engineering.fb.com/category/ai-research/feed/",
@@ -107,6 +110,14 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "https://www.cerebras.ai/sitemap.xml",
         "https://fireworks.ai/sitemap.xml",
         "https://modal.com/sitemap.xml",
+        "https://seed.bytedance.com/sitemap.xml",
+        "https://www.pi.website/blog",
+        "https://www.stepfun.com/news",
+        "https://api.github.com/orgs/zai-org/repos?sort=created&direction=desc&per_page=20",
+        "https://openrouter.ai/api/v1/models",
+        "https://api.github.com/repos/sgl-project/sglang/releases?per_page=20",
+        "https://artificialanalysis.ai/articles",
+        "https://metr.org/blog/",
     } <= urls
     assert by_url["https://huggingface.co/api/daily_papers?limit=100"]["source_priority"] == 1
     arxiv_urls = {
@@ -486,6 +497,80 @@ def test_official_sitemap_adapter_filters_and_sorts_paths() -> None:
     entries = _parse_sitemap_entries(xml, ["/news/", "/research/"])
     assert [e["title"] for e in entries] == ["New Safety Work", "Older Model"]
     assert all("careers" not in e["url"] for e in entries)
+
+
+def test_official_sitemap_adapter_excludes_known_non_product_paths() -> None:
+    xml = b"""<?xml version="1.0"?><urlset>
+      <url><loc>https://lab.test/blog/model-release</loc><lastmod>2026-10-15</lastmod></url>
+      <url><loc>https://lab.test/blog/campus-recruitment</loc><lastmod>2026-10-16</lastmod></url>
+    </urlset>"""
+    entries = _parse_sitemap_entries(
+        xml, ["/blog/"], ["/blog/campus-recruitment"],
+    )
+
+    assert [entry["title"] for entry in entries] == ["Model Release"]
+
+
+def test_official_sitemap_adapter_recovers_entries_after_malformed_xml() -> None:
+    xml = b"""<?xml version="1.0"?><urlset>
+      <url><loc>https://lab.test/about?one=1&amp;two=2</loc></url>
+      <broken>&unescaped</broken>
+      <url><loc>https://lab.test/blog/model-release</loc><lastmod>2026-10-15</lastmod></url>
+    </urlset>"""
+
+    entries = _parse_sitemap_entries(xml, ["/blog/"])
+
+    assert [entry["title"] for entry in entries] == ["Model Release"]
+
+
+def test_openrouter_model_catalog_becomes_dated_availability_signals() -> None:
+    entries = _parse_openrouter_models({"data": [
+        {
+            "id": "lab/model-new", "name": "Model New", "created": 1792108800,
+            "context_length": 200000, "description": "A practical frontier model.",
+        },
+        {
+            "id": "lab/model-old", "name": "Model Old", "created": 1760572800,
+            "context_length": 32000,
+        },
+    ]})
+
+    assert [entry["title"] for entry in entries] == [
+        "Available on OpenRouter: Model New",
+        "Available on OpenRouter: Model Old",
+    ]
+    assert entries[0]["url"] == "https://openrouter.ai/lab/model-new"
+    assert "200,000 tokens" in entries[0]["summary"]
+    assert entries[0]["date"].startswith("2026-10-16")
+
+
+def test_github_organization_adapter_ignores_forks_and_archived_repositories() -> None:
+    entries = _parse_github_repositories([
+        {"full_name": "lab/new", "html_url": "https://github.com/lab/new",
+         "created_at": "2026-10-16T12:00:00Z", "description": "New model tools."},
+        {"full_name": "lab/fork", "html_url": "https://github.com/lab/fork",
+         "created_at": "2026-10-17T12:00:00Z", "fork": True},
+        {"full_name": "lab/archived", "html_url": "https://github.com/lab/archived",
+         "created_at": "2026-10-18T12:00:00Z", "archived": True},
+        {"full_name": "lab/old", "html_url": "https://github.com/lab/old",
+         "created_at": "2026-10-15T12:00:00Z"},
+    ])
+
+    assert [entry["title"] for entry in entries] == ["lab/new", "lab/old"]
+    assert entries[0]["tags"] == ["开源"]
+
+
+def test_stepfun_bundle_adapter_extracts_dated_news_and_decodes_titles() -> None:
+    bundle = (
+        b'const n=[{slug:"step-older",date:"2026-10-14",dateLabel:"Oct 14",'
+        b'title:"Older"},{slug:"step-new",date:"2026-10-16",dateLabel:"Oct 16",'
+        b'title:"New \\u6a21\\u578b"}]'
+    )
+    entries = _parse_stepfun_news_bundle(bundle)
+
+    assert [entry["title"] for entry in entries] == ["New 模型", "Older"]
+    assert entries[0]["url"] == "https://www.stepfun.com/news/step-new"
+    assert entries[0]["date"].startswith("2026-10-16")
 
 
 def test_deepseek_sitemap_dates_are_inferred_from_official_news_paths() -> None:
