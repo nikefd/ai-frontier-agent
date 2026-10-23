@@ -296,6 +296,7 @@ function renderQualityReport(report) {
   const source = report.source_health || {};
   const content = report.content_coverage || {};
   const pipeline = report.pipeline || {};
+  const value = report.source_value || {};
   const statusLabel = { healthy: '正常', watch: '需关注', critical: '有缺口' }[report.status] || '未知';
   const latency = pipeline.latency_sample_size
     ? `${pipeline.median_discovery_minutes ?? '—'} / ${pipeline.p90_discovery_minutes ?? '—'} 分钟`
@@ -307,11 +308,36 @@ function renderQualityReport(report) {
       <div><b>${pct(content.visible_rate)}</b><span>高影响事件露出</span></div>
       <div><b>${pipeline.pending_enrichment ?? 0}</b><span>待翻译 / 评分</span></div>
       <div><b>${escapeHtml(latency)}</b><span>发现延迟 P50 / P90</span></div>
+      <div><b>${value.high_value_sources ?? 0}</b><span>高价值源（${value.window_days || 30} 天）</span></div>
     </div>
     <div class="quality-findings">${(report.findings || []).map(item =>
       `<div class="qf-${escapeHtml(item.level || '')}"><b>${escapeHtml(item.title || '')}</b><span>${escapeHtml(item.detail || '')}</span></div>`
     ).join('')}</div>
+    ${renderSourceValue(value)}
   </section>`;
+}
+
+function renderSourceValue(value) {
+  const top = value.top_sources || [];
+  const review = value.review_candidates || [];
+  if (!top.length) {
+    return `<div class="source-value-empty">来源价值评分等待更多样本（当前滚动库 ${value.sample_articles || 0} 篇、覆盖 ${value.observed_span_days ?? 0} 天；每源至少需要 3 个不同事件）。</div>`;
+  }
+  const topRows = top.slice(0, 6).map(item => {
+    const detail = `${item.event_count || 0} 个事件 · 独家 ${item.exclusive_events || 0} · 首发现 ${item.first_seen_events || 0}`;
+    return `<span class="source-value-chip" title="${escapeHtml(detail)}"><b>${escapeHtml(item.name || '')}</b><em>${item.score ?? '—'}</em></span>`;
+  }).join('');
+  const reviewRow = review.length
+    ? `<div class="source-review"><b>待复核低信号源</b><span>${review.map(item => {
+      const repeated = item.duplicate_rate == null ? '—' : `${Math.round(item.duplicate_rate * 100)}%`;
+      return `${escapeHtml(item.name || '')}（${item.score} 分，重复 ${repeated}）`;
+    }).join('、')}</span></div>`
+    : '';
+  return `<div class="source-value">
+    <div class="source-value-head"><b>近 ${value.window_days || 30} 天来源贡献</b><span>滚动库 ${value.sample_articles || 0} 篇 / 覆盖 ${value.observed_span_days ?? 0} 天 · 已评估 ${value.evaluated_sources || 0} · 样本不足 ${value.insufficient_sources || 0}</span></div>
+    <div class="source-value-list">${topRows}</div>
+    ${reviewRow}
+  </div>`;
 }
 
 function sourceCard(s) {

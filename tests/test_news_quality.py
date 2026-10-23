@@ -74,9 +74,11 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
     from app.routers.ai_news import DEFAULT_FEED_SPECS
 
     urls = {spec["url"] for spec in DEFAULT_FEED_SPECS}
+    names = {spec["name"] for spec in DEFAULT_FEED_SPECS}
     by_url = {spec["url"]: spec for spec in DEFAULT_FEED_SPECS}
     assert len(DEFAULT_FEED_SPECS) == 115
     assert len(urls) == len(DEFAULT_FEED_SPECS)
+    assert len(names) == len(DEFAULT_FEED_SPECS)
     assert {
         "https://engineering.fb.com/category/ai-research/feed/",
         "https://engineering.fb.com/category/ml-applications/feed/",

@@ -279,7 +279,7 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://api.xgo.ing/rss/user/341f7b9f8d9b477e8bb200caa7f32c6e", "name": "AK(@_akhaliq)", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
     {"url": "https://rsshub.app/twitter/user/aaditsh", "name": "Aadit Sheth", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
     {"url": "https://rsshub.app/twitter/user/alexalbert__", "name": "Alex Albert", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
-    {"url": "https://rsshub.app/twitter/user/karpathy", "name": "Andrej Karpathy", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
+    {"url": "https://rsshub.app/twitter/user/karpathy", "name": "Andrej Karpathy on X", "tier": "high", "category": "x-ai", "description": "Andrej Karpathy 的 X 动态 · 一线研究与工程短观点"},
     {"url": "https://api.xgo.ing/rss/user/08b5488b20bc437c8bfc317a52e5c26d", "name": "Andrew Ng(@AndrewYNg)", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
     {"url": "https://rsshub.app/twitter/user/heybarsee", "name": "Barsee 🐶", "tier": "high", "category": "x-ai", "description": "X(Twitter) AI 大V · 一线从业者短观点"},
     {"url": "https://www.oneusefulthing.org/feed", "name": "Ethan Mollick (@emollick)", "tier": "high", "category": "expert", "description": "Ethan Mollick 官方 One Useful Thing 通讯 · AI 应用、教育与组织实践"},
@@ -811,7 +811,9 @@ def list_sources() -> list[dict]:
     for spec in DEFAULT_FEED_SPECS:
         url = spec["url"]
         m = meta.get(url, {})
-        name = m.get("name") or spec.get("name") or url
+        # The registry is authoritative: renamed sources must not remain stuck
+        # on a stale name persisted by an earlier fetch.
+        name = spec.get("name") or m.get("name") or url
         out.append({
             "url": url,
             "name": name,
