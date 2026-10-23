@@ -371,9 +371,12 @@ function renderBenchmarkCoverage(benchmark, candidates) {
     const title = sourceUrl
       ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(item.title || '')}</a>`
       : escapeHtml(item.title || '');
+    const evidence = (item.corroborating_sources || []).length > 1
+      ? ` · ${item.corroborating_sources.length} 源佐证`
+      : '';
     return `<div class="benchmark-candidate-row">
       <span>${escapeHtml(item.label || '候选')}</span>
-      <div><b>${title}</b><small>${escapeHtml(item.reason || '')} · ${escapeHtml(item.source || '')} · ${escapeHtml(fmtDate(item.occurred_at))} · 发现用时 ${item.discovery_minutes ?? '—'} 分钟</small></div>
+      <div><b>${title}</b><small>${escapeHtml(item.reason || '')}${escapeHtml(evidence)} · ${escapeHtml(item.source || '')} · ${escapeHtml(fmtDate(item.occurred_at))} · 发现用时 ${item.discovery_minutes ?? '—'} 分钟</small></div>
       <button class="ghost sm" data-benchmark-candidate="${index}">加入基准</button>
     </div>`;
   }).join('');
@@ -382,7 +385,7 @@ function renderBenchmarkCoverage(benchmark, candidates) {
     ${issueRows}
     <div class="benchmark-admin admin-only">
       <div class="benchmark-candidates">
-        <div class="source-value-head"><b>自动发现候选（${candidateItems.length}）</b><span>近 ${candidates?.window_days || 7} 天官方高影响事件 · 人工确认后才计入召回率</span></div>
+        <div class="source-value-head"><b>自动发现候选（${candidateItems.length}）</b><span>近 ${candidates?.window_days || 7} 天官方或多源佐证事件 · 人工确认后才计入召回率</span></div>
         ${candidateRows || '<div class="source-value-empty">暂无未登记候选。</div>'}
       </div>
       <div class="benchmark-form">

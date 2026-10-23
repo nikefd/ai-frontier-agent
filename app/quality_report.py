@@ -73,6 +73,7 @@ _CANDIDATE_META = {
     "model_release": ("模型发布", "官方高影响模型或版本发布", 12, 1),
     "open_source": ("重要开源", "官方开放可实践模型或权重", 24, 1),
     "high_impact": ("高影响官方事件", "重要性评分达到高影响阈值", 24, 2),
+    "corroborated": ("多源佐证", "多个独立可信来源共同报道，建议检查官方源是否漏抓", 24, 2),
 }
 
 
@@ -84,7 +85,7 @@ def build_benchmark_candidates(
     lookback_days: int = 7,
     limit: int = 12,
 ) -> dict:
-    """Suggest observed official events for human-confirmed benchmark registration."""
+    """Suggest official or independently corroborated events for human review."""
     cutoff = now - timedelta(days=lookback_days)
     registered_urls = {
         url for item in benchmarks if (url := _normalized_url(item.get("source_url")))
@@ -93,35 +94,72 @@ def build_benchmark_candidates(
         str(item.get("event_key") or "").strip() for item in benchmarks
         if str(item.get("event_key") or "").strip()
     }
-    ranked: list[tuple[int, int, float, str, dict]] = []
+    grouped: dict[str, list[tuple[dict, datetime, str, str | None]]] = {}
     for article in articles:
         published = _parse_date(article.get("date"))
         url = _normalized_url(article.get("url"))
         event_key = str(article.get("event_key") or "").strip()
+        official = article.get("category") == "vendor" and article.get("tier") == "high"
+        trusted_secondary = (
+            article.get("category") in {"media", "expert", "blog"}
+            and article.get("tier") in {"high", "med"}
+        )
+        importance = _importance_value(article)
+        kind = classify_alert(article)
         if (
             not published or published < cutoff or published > now + timedelta(hours=1)
-            or not url or article.get("category") != "vendor" or article.get("tier") != "high"
+            or not url or not (official or trusted_secondary)
             or url in registered_urls or (event_key and event_key in registered_keys)
+            or (official and not (kind or importance >= 8))
+            or (trusted_secondary and importance < 8)
         ):
             continue
-        importance = _importance_value(article)
-        kind = classify_alert(article) or ("high_impact" if importance >= 8 else None)
-        if not kind:
+        title = article.get("title_zh") or article.get("title") or ""
+        group_key = event_key or (_normalized_match_text(title) if official else "")
+        if not group_key:
             continue
+        grouped.setdefault(group_key, []).append((article, published, url, kind))
+
+    ranked: list[tuple[int, int, float, str, dict]] = []
+    for group_key, group in grouped.items():
+        official_rows = [
+            row for row in group
+            if row[0].get("category") == "vendor" and row[0].get("tier") == "high"
+        ]
+        source_names = {
+            str(article.get("source") or urlsplit(url).netloc).strip()
+            for article, _, url, _ in group
+        }
+        if not official_rows and len(source_names) < 2:
+            continue
+        detected_kinds = [row[3] for row in group if row[3]]
+        kind = (
+            min(detected_kinds, key=lambda value: _CANDIDATE_META[value][3])
+            if detected_kinds else ("high_impact" if official_rows else "corroborated")
+        )
+        representative_pool = official_rows or [row for row in group if row[3] == kind] or group
+        representative = max(
+            representative_pool,
+            key=lambda row: (_importance_value(row[0]), -row[1].timestamp()),
+        )
+        article, _, _, _ = representative
+        importance = max(_importance_value(row[0]) for row in group)
         label, reason, deadline_hours, priority = _CANDIDATE_META[kind]
+        if not official_rows:
+            reason = "多个独立可信来源共同报道，建议检查官方源是否漏抓"
         title = " ".join(str(
             article.get("title_zh") or article.get("title") or "（无标题）"
         ).split())[:200]
         if len(title) < 3:
             continue
-        discovered = _parse_date(article.get("ingested_at")) or published
-        dedupe_key = event_key or _normalized_match_text(title)
+        occurred = min(row[1] for row in group)
+        discovered = min(_parse_date(row[0].get("ingested_at")) or row[1] for row in group)
         item = {
             "article_id": article.get("id"),
             "title": title,
-            "occurred_at": published.isoformat(),
+            "occurred_at": occurred.isoformat(),
             "source_url": article.get("url") or "",
-            "event_key": event_key,
+            "event_key": str(article.get("event_key") or "").strip(),
             "match_terms": [],
             "deadline_hours": deadline_hours,
             "source": article.get("source") or "",
@@ -129,9 +167,11 @@ def build_benchmark_candidates(
             "label": label,
             "reason": reason,
             "importance": importance,
-            "discovery_minutes": round(max(0, (discovered - published).total_seconds() / 60), 1),
+            "discovery_mode": "official" if official_rows else "corroborated",
+            "corroborating_sources": sorted(source_names, key=str.casefold),
+            "discovery_minutes": round(max(0, (discovered - occurred).total_seconds() / 60), 1),
         }
-        ranked.append((priority, -importance, -published.timestamp(), dedupe_key, item))
+        ranked.append((priority, -importance, -occurred.timestamp(), group_key, item))
 
     seen: set[str] = set()
     items: list[dict] = []

@@ -220,6 +220,46 @@ def test_benchmark_candidates_find_official_events_and_exclude_registered() -> N
     assert result["items"][1]["kind"] == "high_impact"
 
 
+def test_benchmark_candidates_require_two_trusted_sources_without_official_item() -> None:
+    articles = [
+        _article(
+            "media-a", title="Agent benchmark reveals major capability jump",
+            source="Tech Wire", url="https://wire.test/agent-benchmark",
+            category="media", tier="high", event_key="agent-benchmark-jump",
+        ),
+        _article(
+            "expert-a", title="Independent analysis of the new agent benchmark",
+            source="AI Researcher", url="https://expert.test/agent-benchmark",
+            category="expert", tier="med", event_key="agent-benchmark-jump",
+            ingested_at="2026-10-18T10:45:00+00:00",
+        ),
+        _article(
+            "single", title="Unconfirmed model rumor", source="Another Wire",
+            url="https://another.test/rumor", category="media", tier="high",
+            event_key="unconfirmed-model-rumor",
+        ),
+        _article(
+            "low-a", title="CVE-2026-1000 vulnerability", source="Security Wire",
+            url="https://security.test/cve", category="media", tier="high",
+            event_key="low-impact-security", importance=7,
+        ),
+        _article(
+            "low-b", title="CVE-2026-1000 security incident", source="Tech Blog",
+            url="https://blog.test/cve", category="blog", tier="med",
+            event_key="low-impact-security", importance=7,
+        ),
+    ]
+
+    result = build_benchmark_candidates(articles, [], now=NOW)
+
+    assert result["total"] == 1
+    candidate = result["items"][0]
+    assert candidate["kind"] == "corroborated"
+    assert candidate["discovery_mode"] == "corroborated"
+    assert candidate["corroborating_sources"] == ["AI Researcher", "Tech Wire"]
+    assert candidate["reason"].startswith("多个独立可信来源")
+
+
 def test_new_articles_record_ingestion_time(tmp_path, monkeypatch) -> None:
     import app.routers.ai_news as news
 
