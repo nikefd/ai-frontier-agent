@@ -1346,7 +1346,7 @@ body[data-agent="ai-news"] .article-item.is-active {
 .quality-card.is-critical { border-left-color: var(--danger); }
 .quality-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .quality-head span { color: var(--text-faint); font-size: 12px; }
-.quality-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.quality-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
 .quality-metrics > div { padding: 9px; border-radius: var(--r-sm); background: var(--bg-elev-2); }
 .quality-metrics b { display: block; font-size: 15px; }
 .quality-metrics span { display: block; margin-top: 2px; color: var(--text-faint); font-size: 11px; }
@@ -1355,6 +1355,16 @@ body[data-agent="ai-news"] .article-item.is-active {
 .quality-findings span { color: var(--text-dim); }
 .quality-findings .qf-critical b { color: var(--danger); }
 .quality-findings .qf-watch b { color: var(--warning, #b45309); }
+.source-value { margin-top: 12px; padding-top: 11px; border-top: 1px dashed var(--border); }
+.source-value-head { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; }
+.source-value-head span, .source-value-empty { color: var(--text-faint); font-size: 11px; }
+.source-value-empty { margin-top: 11px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.source-value-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.source-value-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px; border-radius: 999px; background: var(--bg-elev-2); font-size: 11px; }
+.source-value-chip b { font-weight: 550; }
+.source-value-chip em { color: var(--success, #15803d); font-style: normal; font-weight: 700; }
+.source-review { display: flex; gap: 7px; margin-top: 9px; color: var(--warning, #b45309); font-size: 11px; line-height: 1.5; }
+.source-review span { color: var(--text-dim); }
 .src-health-stats {
   display: flex;
   flex-wrap: wrap;
@@ -1475,6 +1485,7 @@ body[data-agent="ai-news"] .article-item.is-active {
   .quality-head { align-items: flex-start; flex-direction: column; gap: 2px; }
   .quality-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .quality-findings > div { flex-direction: column; gap: 1px; }
+  .source-value-head, .source-review { flex-direction: column; gap: 2px; }
   #view-sources .card-head {
     align-items: flex-start;
     flex-direction: column;
