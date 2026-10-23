@@ -1379,6 +1379,13 @@ body[data-agent="ai-news"] .article-item.is-active {
 .benchmark-form input, .benchmark-form select { min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-elev-1); color: var(--text); font-size: 11px; }
 .benchmark-admin-list { display: grid; gap: 4px; }
 .benchmark-admin-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text-dim); font-size: 11px; }
+.benchmark-candidates { display: grid; gap: 6px; margin-bottom: 3px; }
+.benchmark-candidate-row { display: grid; grid-template-columns: 70px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 8px; border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 11px; }
+.benchmark-candidate-row > span { color: var(--accent); }
+.benchmark-candidate-row > div { min-width: 0; display: grid; gap: 2px; }
+.benchmark-candidate-row b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550; }
+.benchmark-candidate-row a { color: inherit; }
+.benchmark-candidate-row small { color: var(--text-faint); }
 .src-health-stats {
   display: flex;
   flex-wrap: wrap;
@@ -1503,6 +1510,8 @@ body[data-agent="ai-news"] .article-item.is-active {
   .benchmark-row { grid-template-columns: 45px minmax(0, 1fr); }
   .benchmark-row small { grid-column: 2; }
   .benchmark-form { grid-template-columns: 1fr; }
+  .benchmark-candidate-row { grid-template-columns: 1fr auto; }
+  .benchmark-candidate-row > span { grid-column: 1 / -1; }
   #view-sources .card-head {
     align-items: flex-start;
     flex-direction: column;

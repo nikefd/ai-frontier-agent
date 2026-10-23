@@ -48,11 +48,13 @@ def test_admin_can_create_and_delete_benchmark_but_regular_user_cannot() -> None
     benchmark = created.json()
     assert benchmark["match_terms"] == ["GPT-6", "OpenAI"]
     assert client.get("/api/ai-news/quality/benchmarks").json()["total"] == 1
+    assert client.get("/api/ai-news/quality/benchmark-candidates").status_code == 200
     assert client.get("/api/ai-news/quality/report").json()["benchmark_coverage"]["total"] == 1
 
     client.post("/api/auth/logout")
     _register(client, "reader@example.test")
     assert client.get("/api/ai-news/quality/benchmarks").status_code == 403
+    assert client.get("/api/ai-news/quality/benchmark-candidates").status_code == 403
     assert client.post("/api/ai-news/quality/benchmarks", json=payload).status_code == 403
     assert client.delete(f"/api/ai-news/quality/benchmarks/{benchmark['id']}").status_code == 403
 

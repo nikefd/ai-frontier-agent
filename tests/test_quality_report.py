@@ -1,7 +1,11 @@
 """Coverage, latency and blind-spot audit regressions."""
 from datetime import datetime, timezone
 
-from app.quality_report import build_benchmark_coverage, build_quality_report
+from app.quality_report import (
+    build_benchmark_candidates,
+    build_benchmark_coverage,
+    build_quality_report,
+)
 from app.models import Article
 from app.storage import read_json
 
@@ -173,6 +177,47 @@ def test_must_not_miss_benchmarks_distinguish_on_time_late_missed_and_pending() 
     assert coverage["on_time_recall_rate"] == 0.333
     assert coverage["coverage_rate"] == 0.667
     assert coverage["missed_items"][0]["id"] == "b3"
+
+
+def test_benchmark_candidates_find_official_events_and_exclude_registered() -> None:
+    articles = [
+        _article(
+            "release", title="Introducing GPT-6", source="OpenAI",
+            url="https://openai.com/news/gpt-6", importance=9,
+        ),
+        _article(
+            "duplicate", title="GPT-6 is now available", source="OpenAI",
+            url="https://openai.com/news/gpt-6-details", importance=9,
+            event_key="lab-release-release",
+        ),
+        _article(
+            "important", title="New developer platform", source="Lab",
+            url="https://lab.test/platform", importance=8,
+        ),
+        _article(
+            "community", title="Introducing GPT-7", source="Forum",
+            url="https://forum.test/gpt-7", category="community", importance=10,
+        ),
+        _article(
+            "registered", title="Claude 5 released", source="Anthropic",
+            url="https://anthropic.test/claude-5", event_key="claude-5", importance=9,
+        ),
+        _article(
+            "old", title="Introducing GPT-5", source="OpenAI",
+            url="https://openai.com/news/gpt-5", date="2026-10-01T10:00:00Z",
+        ),
+    ]
+    result = build_benchmark_candidates(
+        articles,
+        [{"source_url": "https://anthropic.test/claude-5", "event_key": "claude-5"}],
+        now=NOW,
+    )
+
+    assert [item["article_id"] for item in result["items"]] == ["release", "important"]
+    assert result["items"][0]["kind"] == "model_release"
+    assert result["items"][0]["deadline_hours"] == 12
+    assert result["items"][0]["discovery_minutes"] == 30.0
+    assert result["items"][1]["kind"] == "high_impact"
 
 
 def test_new_articles_record_ingestion_time(tmp_path, monkeypatch) -> None:

@@ -67,6 +67,84 @@ def _normalized_url(value: object) -> str:
     return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), parts.path.rstrip("/"), "", ""))
 
 
+_CANDIDATE_META = {
+    "api_change": ("API 变更", "需要及时处理兼容性或迁移", 6, 0),
+    "security": ("安全事件", "可能影响现有系统与数据安全", 6, 0),
+    "model_release": ("模型发布", "官方高影响模型或版本发布", 12, 1),
+    "open_source": ("重要开源", "官方开放可实践模型或权重", 24, 1),
+    "high_impact": ("高影响官方事件", "重要性评分达到高影响阈值", 24, 2),
+}
+
+
+def build_benchmark_candidates(
+    articles: list[dict],
+    benchmarks: list[dict],
+    *,
+    now: datetime,
+    lookback_days: int = 7,
+    limit: int = 12,
+) -> dict:
+    """Suggest observed official events for human-confirmed benchmark registration."""
+    cutoff = now - timedelta(days=lookback_days)
+    registered_urls = {
+        url for item in benchmarks if (url := _normalized_url(item.get("source_url")))
+    }
+    registered_keys = {
+        str(item.get("event_key") or "").strip() for item in benchmarks
+        if str(item.get("event_key") or "").strip()
+    }
+    ranked: list[tuple[int, int, float, str, dict]] = []
+    for article in articles:
+        published = _parse_date(article.get("date"))
+        url = _normalized_url(article.get("url"))
+        event_key = str(article.get("event_key") or "").strip()
+        if (
+            not published or published < cutoff or published > now + timedelta(hours=1)
+            or not url or article.get("category") != "vendor" or article.get("tier") != "high"
+            or url in registered_urls or (event_key and event_key in registered_keys)
+        ):
+            continue
+        importance = _importance_value(article)
+        kind = classify_alert(article) or ("high_impact" if importance >= 8 else None)
+        if not kind:
+            continue
+        label, reason, deadline_hours, priority = _CANDIDATE_META[kind]
+        title = " ".join(str(
+            article.get("title_zh") or article.get("title") or "（无标题）"
+        ).split())[:200]
+        if len(title) < 3:
+            continue
+        discovered = _parse_date(article.get("ingested_at")) or published
+        dedupe_key = event_key or _normalized_match_text(title)
+        item = {
+            "article_id": article.get("id"),
+            "title": title,
+            "occurred_at": published.isoformat(),
+            "source_url": article.get("url") or "",
+            "event_key": event_key,
+            "match_terms": [],
+            "deadline_hours": deadline_hours,
+            "source": article.get("source") or "",
+            "kind": kind,
+            "label": label,
+            "reason": reason,
+            "importance": importance,
+            "discovery_minutes": round(max(0, (discovered - published).total_seconds() / 60), 1),
+        }
+        ranked.append((priority, -importance, -published.timestamp(), dedupe_key, item))
+
+    seen: set[str] = set()
+    items: list[dict] = []
+    for _, _, _, key, item in sorted(ranked, key=lambda row: row[:3]):
+        if key in seen:
+            continue
+        seen.add(key)
+        items.append(item)
+        if len(items) >= limit:
+            break
+    return {"window_days": lookback_days, "total": len(items), "items": items}
+
+
 def build_benchmark_coverage(
     articles: list[dict],
     benchmarks: list[dict],

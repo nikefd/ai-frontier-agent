@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from ..auth import require_admin
 from ..models import UserPublic
-from ..quality_report import build_quality_report
+from ..quality_report import build_benchmark_candidates, build_quality_report
 from ..storage import read_json, update_json_atomic
 from .ai_news import AINEWS_DIR, SUMMARY_FILE, _load_articles, list_sources
 
@@ -48,6 +48,15 @@ def quality_report() -> dict:
 def list_benchmarks(_admin: UserPublic = Depends(require_admin)) -> dict:
     items = _load_benchmarks()
     return {"items": items, "total": len(items)}
+
+
+@router.get("/quality/benchmark-candidates")
+def list_benchmark_candidates(_admin: UserPublic = Depends(require_admin)) -> dict:
+    return build_benchmark_candidates(
+        _load_articles(),
+        _load_benchmarks(),
+        now=datetime.now(timezone.utc),
+    )
 
 
 @router.post("/quality/benchmarks", status_code=201)

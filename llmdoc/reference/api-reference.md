@@ -182,6 +182,7 @@ agent 主动提议（B2）：基于用户行为信号给「下一步」建议。
 | GET | `/sources` | — | 列当前配置 feed 及健康度（抓取元数据 + 当前库文章数/最新内容时间；已移除源的历史元数据不再混入列表）。每项带 `cadence=fast/standard/slow`、`health_status=healthy/error/stale/never`、`last_invalid_date`、抓取年龄、连续失败与最近成功/恢复；按所属 cadence 超过 3 个调度间隔未抓取即 `stale`，HTTP 200 但无可解析条目也算 `error`。全局共享 |
 | GET | `/quality/report` | — | 零新增 LLM 的质量体检：近 30 小时来源/fast 健康率、高影响事件露出率、富化积压和发现延迟；近 30 天 `source_value` 评估有效事件、独家贡献、首发现、重要性和时效；`benchmark_coverage` 将管理员登记的必达事件区分为 `on_time/late/missed/pending`，返回准时召回率、最终覆盖率、发现延迟和漏报清单。只读、全局共享 |
 | GET | `/quality/benchmarks` | admin | 列出完整必达事件基准（含内部创建元数据） |
+| GET | `/quality/benchmark-candidates` | admin | 从近 7 天已抓取的 `vendor/high` 官方高影响事件中按事件去重，排除已登记项并返回最多 12 个可解释候选及建议期限；只读，候选不计入召回率 |
 | POST | `/quality/benchmarks` | admin | 登记必达事件：`{title, occurred_at, source_url?, event_key?, match_terms?, deadline_hours=24}`；来源链接、事件键、匹配词至少提供一种，期限限制 1–168 小时 |
 | DELETE | `/quality/benchmarks/{id}` | admin | 删除误录或不再需要的基准事件 |
 | POST | `/fetch` | admin | 立即跑一轮全局抓取：相关性过滤 → 每源分轮 → 分类硬配额 → 全局 150 条上限，返回 `{ok, added}` |

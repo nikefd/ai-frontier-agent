@@ -1,6 +1,7 @@
 // Secondary views: today's summary, source health.
 import { $, $$, escapeHtml, fmtDate, catBadge, safeExternalUrl } from './util.js';
 import { api, renderMermaidInside } from './api.js';
+import { getUser } from './auth.js';
 import { renderMarkdown } from './markdown.js';
 
 // ── Today's summary ──────────────────────────────────────────────────
@@ -234,11 +235,15 @@ const SRC_ORDER = ['vendor', 'blog', 'expert', 'media', 'paper', 'x-ai', 'trendi
 
 export async function loadSources() {
   try {
-    const [r, quality] = await Promise.all([
+    const candidateRequest = getUser()?.role === 'admin'
+      ? api('GET', '/api/ai-news/quality/benchmark-candidates').catch(() => null)
+      : Promise.resolve(null);
+    const [r, quality, candidates] = await Promise.all([
       api('GET', '/api/ai-news/sources'),
       api('GET', '/api/ai-news/quality/report').catch(() => null),
+      candidateRequest,
     ]);
-    renderQualityReport(quality);
+    renderQualityReport(quality, candidates);
     $('#cnt-sources').textContent = r.length;
     const groups = {};
     for (const s of r) (groups[s.category || 'other'] = groups[s.category || 'other'] || []).push(s);
@@ -286,7 +291,7 @@ function pct(value) {
   return value == null ? '—' : `${Math.round(value * 100)}%`;
 }
 
-function renderQualityReport(report) {
+function renderQualityReport(report, candidates = null) {
   const root = $('#quality-report');
   if (!root) return;
   if (!report) {
@@ -316,9 +321,9 @@ function renderQualityReport(report) {
       `<div class="qf-${escapeHtml(item.level || '')}"><b>${escapeHtml(item.title || '')}</b><span>${escapeHtml(item.detail || '')}</span></div>`
     ).join('')}</div>
     ${renderSourceValue(value)}
-    ${renderBenchmarkCoverage(benchmark)}
+    ${renderBenchmarkCoverage(benchmark, candidates)}
   </section>`;
-  bindBenchmarkControls(root);
+  bindBenchmarkControls(root, candidates?.items || []);
 }
 
 function renderSourceValue(value) {
@@ -344,7 +349,7 @@ function renderSourceValue(value) {
   </div>`;
 }
 
-function renderBenchmarkCoverage(benchmark) {
+function renderBenchmarkCoverage(benchmark, candidates) {
   const items = benchmark.items || [];
   const issues = items.filter(item => ['missed', 'late', 'pending'].includes(item.status)).slice(0, 6);
   const labels = { on_time: '准时', late: '迟到', missed: '漏报', pending: '观察中' };
@@ -360,10 +365,26 @@ function renderBenchmarkCoverage(benchmark) {
   const adminRows = items.slice(0, 10).map(item =>
     `<div class="benchmark-admin-row"><span>${labels[item.status] || item.status} · ${escapeHtml(item.title || '')}</span><button class="ghost sm" data-benchmark-delete="${escapeHtml(item.id || '')}">删除</button></div>`
   ).join('');
+  const candidateItems = candidates?.items || [];
+  const candidateRows = candidateItems.map((item, index) => {
+    const sourceUrl = safeExternalUrl(item.source_url);
+    const title = sourceUrl
+      ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(item.title || '')}</a>`
+      : escapeHtml(item.title || '');
+    return `<div class="benchmark-candidate-row">
+      <span>${escapeHtml(item.label || '候选')}</span>
+      <div><b>${title}</b><small>${escapeHtml(item.reason || '')} · ${escapeHtml(item.source || '')} · ${escapeHtml(fmtDate(item.occurred_at))} · 发现用时 ${item.discovery_minutes ?? '—'} 分钟</small></div>
+      <button class="ghost sm" data-benchmark-candidate="${index}">加入基准</button>
+    </div>`;
+  }).join('');
   return `<div class="benchmark-panel">
     <div class="source-value-head"><b>必达事件基准</b><span>近 ${benchmark.window_days || 30} 天 · 准时 ${benchmark.on_time || 0} / 迟到 ${benchmark.late || 0} / 漏报 ${benchmark.missed || 0} / 观察中 ${benchmark.pending || 0}</span></div>
     ${issueRows}
     <div class="benchmark-admin admin-only">
+      <div class="benchmark-candidates">
+        <div class="source-value-head"><b>自动发现候选（${candidateItems.length}）</b><span>近 ${candidates?.window_days || 7} 天官方高影响事件 · 人工确认后才计入召回率</span></div>
+        ${candidateRows || '<div class="source-value-empty">暂无未登记候选。</div>'}
+      </div>
       <div class="benchmark-form">
         <input id="benchmark-title" maxlength="200" placeholder="事件标题，如：GPT-6 正式发布" />
         <input id="benchmark-time" type="datetime-local" title="事件发生时间" />
@@ -381,7 +402,7 @@ function renderBenchmarkCoverage(benchmark) {
   </div>`;
 }
 
-function bindBenchmarkControls(root) {
+function bindBenchmarkControls(root, candidates = []) {
   const timeInput = root.querySelector('#benchmark-time');
   if (timeInput && !timeInput.value) {
     const local = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
@@ -423,6 +444,27 @@ function bindBenchmarkControls(root) {
     } catch (error) {
       const msg = root.querySelector('#benchmark-msg');
       if (msg) msg.textContent = error.message || '删除失败';
+      button.disabled = false;
+    }
+  }));
+  root.querySelectorAll('[data-benchmark-candidate]').forEach(button => button.addEventListener('click', async () => {
+    const item = candidates[Number(button.dataset.benchmarkCandidate)];
+    if (!item) return;
+    const msg = root.querySelector('#benchmark-msg');
+    button.disabled = true;
+    if (msg) msg.textContent = `正在登记「${item.title}」…`;
+    try {
+      await api('POST', '/api/ai-news/quality/benchmarks', {
+        title: item.title,
+        occurred_at: item.occurred_at,
+        source_url: item.source_url,
+        event_key: item.event_key,
+        match_terms: item.match_terms || [],
+        deadline_hours: item.deadline_hours,
+      });
+      await loadSources();
+    } catch (error) {
+      if (msg) msg.textContent = error.message || '登记失败';
       button.disabled = false;
     }
   }));
