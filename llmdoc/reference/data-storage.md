@@ -62,7 +62,7 @@
 |---|---|---|
 | `id` | str | `a_` + url 的 sha1 前 12 位 |
 | `title` / `url` / `source` | str | 原始标题 / 链接 / 来源名 |
-| `date` | str? | 来源提供或可确定推导的发布时间；绝不再用入库时间回填。无可信日期的抓取条目不会入库，手动写入可为 null |
+| `date` | str? | 来源提供或可确定推导的发布时间；绝不使用入库时间或 sitemap `lastmod`（页面修改时间）回填。无可信日期的抓取条目不会入库，手动写入可为 null |
 | `ingested_at` | str? | 首次写入 `articles.json` 的 UTC 时间；用于发现延迟评测。老文章无此字段，不回填也不纳入延迟样本 |
 | `summary` | str | 去标签后截断的英文摘要 |
 | `tags` | list | 受控词表标签（富化 worker 从 `TAG_VOCAB` 选，最多 3 个） |

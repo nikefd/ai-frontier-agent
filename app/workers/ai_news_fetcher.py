@@ -140,15 +140,22 @@ def _parse_sitemap_entries(
         if not slug:
             continue
         lastmod_node = node.find("lastmod")
-        published = lastmod_node.get_text(strip=True) if lastmod_node else ""
+        modified = lastmod_node.get_text(strip=True) if lastmod_node else ""
         entries.append({
             "title": slug.replace("-", " ").strip().title(),
             "url": link,
-            "date": published or publication_date_from_url(link),
+            # Sitemap lastmod means the page changed, not that the article was
+            # published then.  Keep it only as a discovery-order hint; a page
+            # without trusted publication metadata must remain undated.
+            "date": publication_date_from_url(link),
             "summary": "",
             "tags": [],
+            "_sitemap_lastmod": modified,
         })
-    entries.sort(key=lambda e: _parse_ts(e.get("date") or ""), reverse=True)
+    entries.sort(
+        key=lambda e: _parse_ts(e.get("_sitemap_lastmod") or e.get("date") or ""),
+        reverse=True,
+    )
     return entries[:20]
 
 
@@ -253,10 +260,9 @@ async def _hydrate_sitemap_entries(
         if parsed.scheme not in {"http", "https"} or parsed.hostname != root_host:
             return entry
         try:
-            response = await client.get(
-                link,
-                timeout=10.0,
-                headers=_request_headers(root_url, accept="text/html"),
+            response = await _get_source(
+                client, link, source_url=root_url, timeout=15.0,
+                accept="text/html",
             )
             response.raise_for_status()
             metadata = _parse_page_metadata(response.content)
@@ -272,8 +278,16 @@ async def _hydrate_sitemap_entries(
     limit = min(len(entries), _SITEMAP_METADATA_LIMIT)
     hydrated = await asyncio.gather(*(hydrate(entry) for entry in entries[:limit]))
     result = [*hydrated, *entries[limit:]]
-    result.sort(key=lambda entry: _parse_ts(entry.get("date") or ""), reverse=True)
-    return result
+    result.sort(
+        key=lambda entry: _parse_ts(
+            entry.get("date") or entry.get("_sitemap_lastmod") or "",
+        ),
+        reverse=True,
+    )
+    return [
+        {key: value for key, value in entry.items() if key != "_sitemap_lastmod"}
+        for entry in result
+    ]
 
 
 def _parse_qwen_api_entries(payload: dict) -> list[dict]:
@@ -758,7 +772,10 @@ async def _entries_from_sitemap(
         for entry in _parse_sitemap_entries(payload, include_paths, exclude_paths):
             by_url[entry["url"]] = entry
     entries = list(by_url.values())
-    entries.sort(key=lambda e: _parse_ts(e.get("date") or ""), reverse=True)
+    entries.sort(
+        key=lambda e: _parse_ts(e.get("_sitemap_lastmod") or e.get("date") or ""),
+        reverse=True,
+    )
     return await _hydrate_sitemap_entries(client, root_url, entries[:20])
 
 

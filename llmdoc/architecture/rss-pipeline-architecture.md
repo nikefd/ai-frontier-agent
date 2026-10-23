@@ -109,10 +109,10 @@ flowchart TD
 - 单 feed 失败（HTTP 错误/超时/解析异常）只记进该源的 `last_error` 并累加 `consecutive_failures`，**绝不阻塞其它源**（`asyncio.gather(..., return_exceptions=True)`）。下一次成功会归零并记录 `last_recovered_at`。
 - 429、500、502、503、504 会做一次 0.1–1 秒的有界退避重试；VentureBeat 等明确需要普通浏览器请求头的源通过 `request_profile="browser"` 单独启用，不全局伪装浏览器。四路 arXiv 使用 HTTPS，并通过同一个异步锁串行抓取、每次间隔 1 秒，避免同时下载四个约 1 MB feed 时被上游返回空内容。
 - HTTP 200 不等于健康：普通 RSS/Atom、sitemap 与官方 API 若没有任何可解析条目，会返回明确解析错误并显示在数据源页，不再把登录页、拦截页或空 feed 记成成功。
-- 发布时间必须可追溯：RSS 使用 `published/updated`，sitemap 使用 `lastmod`、官方 URL 中明确编码的日期或文章正文开头日期。缺少日期或时间超过当前 6 小时的条目不入库，并累计到 `last_invalid_date`；`add_article` 不再用抓取时间填充 `date`。
+- 发布时间必须可追溯：RSS 使用 `published/updated`；sitemap 的 `lastmod` **只代表页面修改时间，只用于决定优先补全哪些页面，绝不写入 Article.date**。sitemap 条目必须从页面 meta/JSON-LD/正文明确日期或可信 URL 日期取得真实发布时间。缺少日期或时间超过当前 6 小时的条目不入库，并累计到 `last_invalid_date`；`add_article` 不再用抓取时间填充 `date`。
 - GitHub Trending 是按天发布的一张榜单快照：频道有当天 `pubDate`，但仓库 item 没有独立时间。该源显式启用 `snapshot_date_from_feed`，把频道发布日期作为榜单内条目的快照时间；普通 RSS 不会使用频道时间兜底，仍严格要求 item 自带可信日期。
 - 每个 RSS/Atom 只取前 20 个 entry；官方 sitemap 支持单层同站 sitemap index（最多展开 12 个子 sitemap），按 `lastmod` 排序、包含/排除路径过滤后取前 20 个 URL。若官方 sitemap 在有效前缀后出现非严格 XML，解析器会切换到容错模式，避免静默丢失后半段更新。
-- sitemap 最新 6 条会并发读取同站文章页，从 Open Graph、HTML meta、JSON-LD 或正文开头的明确日期补全真实标题、摘要和发布时间，补全后再次按日期排序；页面失败时保留 slug/lastmod 降级结果，不影响该源其余条目。DeepSeek 的官方 news URL 另按其已确认的 MMDD/YYMMDD 规则推导日期，避免无 `lastmod` 的 sitemap 把旧文当新文。限制补全为 6 页是为了覆盖 `_PER_FEED_CAP=4` 的正常候选并控制额外请求量。
+- sitemap 按 `lastmod` 选出的最新 6 条会并发读取同站文章页，从 Open Graph、HTML meta、JSON-LD 或正文开头的明确日期补全真实标题、摘要和发布时间，补全请求复用瞬时错误重试；页面失败时可保留 slug 供诊断，但没有可信日期就不会入库。DeepSeek 的官方 news URL 另按其已确认的 MMDD/YYMMDD 规则推导日期；已审计的特定污染记录可在 `publication_dates.py` 中做窄范围幂等修复。限制补全为 6 页是为了覆盖 `_PER_FEED_CAP=4` 的正常候选并控制额外请求量。
 - Qwen 的 `qwen_api` 适配器读取官方 JSON、清理简介 HTML、按时间取最新 20 条。
 - OpenAI 的 `openai_changelog` 适配器按 Markdown 月份/日期标题拆分最新 20 条 API 更新，优先链接到对应功能文档；Gemini 的 `gemini_changelog` 适配器按日期和顶层列表项拆分模型发布、弃用与迁移提醒。两者都使用页面声明的日期，不以抓取时间冒充发布时间。
 - `hf_daily_papers` 读取 HF 官方公开 JSON，按策展日期优先，再结合 upvotes、代码仓库与 GitHub stars 排出最新 20 篇；摘要携带这些可解释信号供富化模型判断，但热度不直接等同重要性。文章链接指向 HF 论文页以便查看代码与讨论，内部 `_dedupe_url` 统一成无版本号的 arXiv URL，因此同篇原始 arXiv 条目不会重复占位。四路 arXiv 的 `max_per_fetch=2` 是硬上限，且共享 `host_throttle=arxiv` 串行下载。
@@ -173,7 +173,7 @@ worker 名义上叫翻译，实际**一次批量 LLM 调用同时做五件事**�
 
 速报不再直接取“最新 25 条”。`_articles_for_today()` 只取最近 30 小时且不晚于当前 1 小时的文章；候选不足也不会用旧文或无日期文章填满版面。之后由 `_select_summary_cohort()` 做两阶段合并：先以 NFKC/casefold/去标点后的标题键兼容旧数据，再用非空 `event_key` 合并不同标题的同一事件；两层都优先官方与高质量类别，并把其它报道保存为 `related_articles`。之后按 importance → 来源类别质量 → tier → 时效排序：
 
-启动时 `publication_dates.repair_known_publication_dates()` 会幂等修正已落库的 DeepSeek 官方新闻日期；若缓存速报引用了被修正文章，会删除该缓存，等待下一轮定时任务用真实候选重建，避免继续展示污染正文。
+启动时 `publication_dates.repair_known_publication_dates()` 会幂等修正已落库的 DeepSeek 官方新闻日期和少量已核验的 sitemap 修改时间污染；若缓存速报引用了被修正文章，会删除该缓存，等待下一轮定时任务用真实候选重建，避免继续展示污染正文。
 
 - 首轮同一来源最多 2 条，避免单一厂商/媒体包场。
 - 分类候选上限为 vendor 8、media 5、blog 4、paper 5、community 4、expert 4、x-ai 3、trending 2。

@@ -498,6 +498,8 @@ def test_official_sitemap_adapter_filters_and_sorts_paths() -> None:
     </urlset>"""
     entries = _parse_sitemap_entries(xml, ["/news/", "/research/"])
     assert [e["title"] for e in entries] == ["New Safety Work", "Older Model"]
+    assert [e["date"] for e in entries] == ["", ""]
+    assert [e["_sitemap_lastmod"] for e in entries] == ["2026-10-14", "2026-10-13"]
     assert all("careers" not in e["url"] for e in entries)
 
 
@@ -688,6 +690,45 @@ async def test_sitemap_entries_are_hydrated_from_official_pages() -> None:
         "summary": "First-party release details.",
         "tags": [],
     }]
+
+
+@pytest.mark.asyncio
+async def test_sitemap_lastmod_is_not_used_when_page_metadata_fails() -> None:
+    sitemap = b'''<urlset><url>
+      <loc>https://lab.test/news/old-post</loc><lastmod>2026-10-23T03:55:38Z</lastmod>
+    </url></urlset>'''
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(503, content=b"temporarily unavailable")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        entries = await _entries_from_sitemap(
+            client, "https://lab.test/sitemap.xml", sitemap, ["/news/"],
+        )
+
+    assert entries[0]["title"] == "Old Post"
+    assert entries[0]["date"] == ""
+    assert "_sitemap_lastmod" not in entries[0]
+
+
+def test_fireworks_modified_old_post_has_audited_publication_date() -> None:
+    url = "https://fireworks.ai/blog/deepseek-v4-pro-production-validation"
+    assert publication_date_from_url(url) == "2026-04-27T00:00:00+00:00"
+
+
+def test_stored_fireworks_date_is_repaired_and_stale_summary_invalidated(tmp_path) -> None:
+    articles_file = tmp_path / "articles.json"
+    summary_file = tmp_path / "summary_today.json"
+    write_json_atomic(articles_file, [{
+        "id": "a_fireworks", "source": "Fireworks AI Blog",
+        "url": "https://fireworks.ai/blog/deepseek-v4-pro-production-validation",
+        "date": "2026-10-23T03:55:38Z",
+    }])
+    write_json_atomic(summary_file, {"cohort": [{"id": "a_fireworks"}], "body": "stale"})
+
+    assert repair_known_publication_dates(articles_file, summary_file) == 1
+    assert read_json(articles_file, [])[0]["date"] == "2026-04-27T00:00:00+00:00"
+    assert not summary_file.exists()
 
 
 def test_qwen_api_adapter_cleans_sorts_and_limits_entries() -> None:

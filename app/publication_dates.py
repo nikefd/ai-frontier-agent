@@ -10,6 +10,13 @@ from .settings import settings
 from .storage import read_json, write_json_atomic
 
 _DEEPSEEK_NEWS_PATH = re.compile(r"^/news/news(?P<stamp>\d{4}|\d{6})/?$")
+_KNOWN_PUBLICATION_DATES = {
+    # Fireworks republished this old page in its sitemap via dateModified,
+    # which was briefly mistaken for datePublished in production.
+    "https://fireworks.ai/blog/deepseek-v4-pro-production-validation": (
+        "2026-04-27T00:00:00+00:00"
+    ),
+}
 
 
 def publication_date_from_url(url: str) -> str:
@@ -19,7 +26,11 @@ def publication_date_from_url(url: str) -> str:
     YYMMDD. Restricting the rule to the official host prevents accidental date
     guesses for unrelated numeric URLs.
     """
-    parsed = urlparse(str(url or ""))
+    raw_url = str(url or "").strip().rstrip("/")
+    known = _KNOWN_PUBLICATION_DATES.get(raw_url)
+    if known:
+        return known
+    parsed = urlparse(raw_url)
     if parsed.hostname != "api-docs.deepseek.com":
         return ""
     match = _DEEPSEEK_NEWS_PATH.fullmatch(parsed.path)
@@ -41,7 +52,8 @@ def repair_known_publication_dates(
     """Repair known deterministic dates and invalidate summaries that used them.
 
     This startup repair is idempotent. It intentionally touches only official
-    DeepSeek news URLs whose path encodes the publication date.
+    URLs with deterministic dates: encoded DeepSeek paths and audited incident
+    mappings whose publisher metadata was verified directly.
     """
     articles_path = articles_file or (
         settings.data_dir / "ai-news" / "articles.json"
