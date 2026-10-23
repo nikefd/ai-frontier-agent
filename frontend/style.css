@@ -1346,7 +1346,7 @@ body[data-agent="ai-news"] .article-item.is-active {
 .quality-card.is-critical { border-left-color: var(--danger); }
 .quality-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .quality-head span { color: var(--text-faint); font-size: 12px; }
-.quality-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.quality-metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
 .quality-metrics > div { padding: 9px; border-radius: var(--r-sm); background: var(--bg-elev-2); }
 .quality-metrics b { display: block; font-size: 15px; }
 .quality-metrics span { display: block; margin-top: 2px; color: var(--text-faint); font-size: 11px; }
@@ -1365,6 +1365,20 @@ body[data-agent="ai-news"] .article-item.is-active {
 .source-value-chip em { color: var(--success, #15803d); font-style: normal; font-weight: 700; }
 .source-review { display: flex; gap: 7px; margin-top: 9px; color: var(--warning, #b45309); font-size: 11px; line-height: 1.5; }
 .source-review span { color: var(--text-dim); }
+.benchmark-panel { margin-top: 12px; padding-top: 11px; border-top: 1px dashed var(--border); }
+.benchmark-issues { display: grid; gap: 5px; margin-top: 8px; }
+.benchmark-row { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: baseline; gap: 7px; font-size: 11px; }
+.benchmark-row > span { color: var(--text-faint); }
+.benchmark-row > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550; }
+.benchmark-row a { color: inherit; }
+.benchmark-row small { color: var(--text-faint); }
+.benchmark-row.is-missed > span { color: var(--danger); }
+.benchmark-row.is-late > span { color: var(--warning, #b45309); }
+.benchmark-admin { flex-direction: column; gap: 7px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.benchmark-form { display: grid; grid-template-columns: 1.2fr 1fr 1.2fr 1.2fr auto auto; gap: 6px; }
+.benchmark-form input, .benchmark-form select { min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-elev-1); color: var(--text); font-size: 11px; }
+.benchmark-admin-list { display: grid; gap: 4px; }
+.benchmark-admin-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text-dim); font-size: 11px; }
 .src-health-stats {
   display: flex;
   flex-wrap: wrap;
@@ -1486,6 +1500,9 @@ body[data-agent="ai-news"] .article-item.is-active {
   .quality-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .quality-findings > div { flex-direction: column; gap: 1px; }
   .source-value-head, .source-review { flex-direction: column; gap: 2px; }
+  .benchmark-row { grid-template-columns: 45px minmax(0, 1fr); }
+  .benchmark-row small { grid-column: 2; }
+  .benchmark-form { grid-template-columns: 1fr; }
   #view-sources .card-head {
     align-items: flex-start;
     flex-direction: column;

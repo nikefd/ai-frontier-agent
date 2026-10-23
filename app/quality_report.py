@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlsplit, urlunsplit
 
 from .news_alerts import build_breaking_alerts, classify_alert
 
@@ -45,6 +47,127 @@ def _importance_value(article: dict) -> int:
         return max(0, min(10, int(value))) if value is not None else 5
     except (TypeError, ValueError):
         return 5
+
+
+def _normalized_match_text(value: object) -> str:
+    text = unicodedata.normalize("NFKC", str(value or "")).casefold()
+    return re.sub(r"[^a-z0-9\u4e00-\u9fff]+", "", text)
+
+
+def _normalized_url(value: object) -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    try:
+        parts = urlsplit(raw)
+    except ValueError:
+        return ""
+    if parts.scheme not in {"http", "https"} or not parts.netloc:
+        return ""
+    return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), parts.path.rstrip("/"), "", ""))
+
+
+def build_benchmark_coverage(
+    articles: list[dict],
+    benchmarks: list[dict],
+    *,
+    now: datetime,
+    window_days: int = 30,
+) -> dict:
+    """Evaluate must-not-miss events against the current article library."""
+    cutoff = now - timedelta(days=window_days)
+    results: list[dict] = []
+    for benchmark in benchmarks:
+        occurred = _parse_date(benchmark.get("occurred_at"))
+        if not occurred or occurred < cutoff or occurred > now + timedelta(hours=1):
+            continue
+        try:
+            deadline_hours = int(benchmark.get("deadline_hours") or 24)
+        except (TypeError, ValueError):
+            deadline_hours = 24
+        deadline_hours = max(1, min(168, deadline_hours))
+        deadline = occurred + timedelta(hours=deadline_hours)
+        source_url = _normalized_url(benchmark.get("source_url"))
+        event_key = str(benchmark.get("event_key") or "").strip()
+        terms = [
+            normalized for term in (benchmark.get("match_terms") or [])
+            if (normalized := _normalized_match_text(term))
+        ]
+        candidates: list[tuple[datetime, dict, str]] = []
+        for article in articles:
+            published = _parse_date(article.get("date"))
+            if not published or not (occurred - timedelta(hours=24) <= published <= now + timedelta(hours=1)):
+                continue
+            method = ""
+            if source_url and _normalized_url(article.get("url")) == source_url:
+                method = "source_url"
+            elif event_key and str(article.get("event_key") or "").strip() == event_key:
+                method = "event_key"
+            elif terms:
+                haystack = _normalized_match_text(" ".join(str(article.get(field) or "") for field in (
+                    "title", "title_zh", "summary", "summary_zh",
+                )))
+                if all(term in haystack for term in terms):
+                    method = "match_terms"
+            if not method:
+                continue
+            discovered = _parse_date(article.get("ingested_at")) or published
+            candidates.append((discovered, article, method))
+
+        matched_at: datetime | None = None
+        matched_article: dict | None = None
+        match_method = ""
+        if candidates:
+            matched_at, matched_article, match_method = min(candidates, key=lambda item: item[0])
+            status = "on_time" if matched_at <= deadline else "late"
+        else:
+            status = "pending" if now <= deadline else "missed"
+        latency = (
+            round(max(0.0, (matched_at - occurred).total_seconds() / 60), 1)
+            if matched_at else None
+        )
+        results.append({
+            "id": benchmark.get("id"),
+            "title": benchmark.get("title") or "（无标题）",
+            "occurred_at": occurred.isoformat(),
+            "deadline_at": deadline.isoformat(),
+            "deadline_hours": deadline_hours,
+            "source_url": str(benchmark.get("source_url") or ""),
+            "match_terms": benchmark.get("match_terms") or [],
+            "status": status,
+            "matched_article": ({
+                "id": matched_article.get("id"),
+                "title": matched_article.get("title_zh") or matched_article.get("title") or "（无标题）",
+                "url": matched_article.get("url") or "",
+                "source": matched_article.get("source") or "",
+            } if matched_article else None),
+            "match_method": match_method or None,
+            "discovery_minutes": latency,
+        })
+
+    results.sort(key=lambda item: _parse_date(item["occurred_at"]) or cutoff, reverse=True)
+    settled = [item for item in results if item["status"] != "pending"]
+    covered = [item for item in settled if item["status"] in {"on_time", "late"}]
+    on_time = [item for item in settled if item["status"] == "on_time"]
+    latencies = [
+        float(item["discovery_minutes"]) for item in covered
+        if item.get("discovery_minutes") is not None
+    ]
+    denominator = len(settled)
+    return {
+        "window_days": window_days,
+        "total": len(results),
+        "settled": denominator,
+        "on_time": len(on_time),
+        "late": sum(item["status"] == "late" for item in settled),
+        "missed": sum(item["status"] == "missed" for item in settled),
+        "pending": sum(item["status"] == "pending" for item in results),
+        "on_time_recall_rate": round(len(on_time) / denominator, 3) if denominator else None,
+        "coverage_rate": round(len(covered) / denominator, 3) if denominator else None,
+        "median_discovery_minutes": _percentile(latencies, 0.5),
+        "items": results,
+        "missed_items": [item for item in results if item["status"] == "missed"][:8],
+    }
 
 
 def _source_value_report(
@@ -211,6 +334,7 @@ def build_quality_report(
     articles: list[dict],
     sources: list[dict],
     summary: dict | None,
+    benchmarks: list[dict] | None = None,
     *,
     now: datetime | None = None,
     window_hours: int = 30,
@@ -293,6 +417,19 @@ def build_quality_report(
         add("watch", "高影响事件覆盖可提升", f"速报或重大提醒覆盖 {covered_events}/{event_total} 个高影响事件。")
     if pending > 8:
         add("watch", "富化队列积压", f"近 {window_hours} 小时仍有 {pending} 篇等待翻译与评分。")
+    benchmark_coverage = build_benchmark_coverage(
+        articles, benchmarks or [], now=current,
+    )
+    if benchmark_coverage["missed"]:
+        add(
+            "critical", "基准事件存在漏报",
+            f"近 {benchmark_coverage['window_days']} 天有 {benchmark_coverage['missed']} 个必达事件超过期限仍未命中。",
+        )
+    elif benchmark_coverage["late"]:
+        add(
+            "watch", "基准事件发现偏慢",
+            f"有 {benchmark_coverage['late']} 个必达事件在期限后才被发现。",
+        )
     if not findings:
         findings.append({"level": "healthy", "title": "覆盖链路正常", "detail": "暂未发现明显的来源、漏出或富化积压问题。"})
 
@@ -322,5 +459,6 @@ def build_quality_report(
             "p90_discovery_minutes": _percentile(latencies, 0.9),
         },
         "source_value": _source_value_report(articles, sources, now=current),
+        "benchmark_coverage": benchmark_coverage,
         "findings": findings,
     }

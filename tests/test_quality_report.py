@@ -1,7 +1,7 @@
 """Coverage, latency and blind-spot audit regressions."""
 from datetime import datetime, timezone
 
-from app.quality_report import build_quality_report
+from app.quality_report import build_benchmark_coverage, build_quality_report
 from app.models import Article
 from app.storage import read_json
 
@@ -139,6 +139,40 @@ def test_source_value_flags_only_sampled_healthy_low_signal_sources() -> None:
     assert [item["name"] for item in report["source_value"]["review_candidates"]] == [
         "Repeater",
     ]
+
+
+def test_must_not_miss_benchmarks_distinguish_on_time_late_missed_and_pending() -> None:
+    articles = [
+        _article(
+            "on-time", title="OpenAI releases GPT-6", source="OpenAI",
+            date="2026-10-18T08:00:00+00:00",
+            ingested_at="2026-10-18T09:00:00+00:00",
+        ),
+        _article(
+            "late", title="Anthropic launches Claude 5", source="Anthropic",
+            date="2026-10-18T08:00:00+00:00",
+            ingested_at="2026-10-18T10:00:00+00:00",
+        ),
+    ]
+    benchmarks = [
+        {"id": "b1", "title": "GPT-6 发布", "occurred_at": "2026-10-18T08:00:00Z",
+         "match_terms": ["GPT-6", "OpenAI"], "deadline_hours": 2},
+        {"id": "b2", "title": "Claude 5 发布", "occurred_at": "2026-10-18T08:00:00Z",
+         "match_terms": ["Claude 5", "Anthropic"], "deadline_hours": 1},
+        {"id": "b3", "title": "重要安全事故", "occurred_at": "2026-10-18T08:00:00Z",
+         "match_terms": ["Safety Incident"], "deadline_hours": 1},
+        {"id": "b4", "title": "刚刚发布的模型", "occurred_at": "2026-10-18T11:30:00Z",
+         "match_terms": ["Fresh Model"], "deadline_hours": 2},
+    ]
+
+    coverage = build_benchmark_coverage(articles, benchmarks, now=NOW)
+    statuses = {item["id"]: item["status"] for item in coverage["items"]}
+
+    assert statuses == {"b1": "on_time", "b2": "late", "b3": "missed", "b4": "pending"}
+    assert coverage["settled"] == 3
+    assert coverage["on_time_recall_rate"] == 0.333
+    assert coverage["coverage_rate"] == 0.667
+    assert coverage["missed_items"][0]["id"] == "b3"
 
 
 def test_new_articles_record_ingestion_time(tmp_path, monkeypatch) -> None:

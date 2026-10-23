@@ -19,6 +19,7 @@
 |---|---|---|
 | `articles.json` | list | 文章主存储，上限 400（被任一用户 pin 的不淘汰）。每项是 `Article`。**不含 per-user 的 `pinned`/`deep_dive_status`** |
 | `sources.json` | dict（按 url 为 key） | 每个 feed 的抓取元数据 |
+| `coverage-benchmarks.json` | list | 管理员登记的必达事件基准；用于计算准时召回、迟到和漏报 |
 | `summary_today.json` | dict | 缓存的「今日速报」 |
 | `summary_history.json` | list | 已生成速报的公开 RSS 历史；最近 30 天、最多 180 个不同 cohort |
 | `reader-cache/*.html` | 每文件一篇 | 经白名单清洗后的安全阅读副本；旧原始缓存命中时自动迁移 |
@@ -92,6 +93,12 @@
 ### 3.2 sources.json（按 feed url 为 key）
 
 每个值是该源的抓取状态：`last_fetch` / `last_ok` / `last_error` / `last_error_at` / `last_recovered_at` / `consecutive_failures` / `eligible` / `last_added` / `last_filtered` / `last_invalid_date` / `name` / `tier` / `category`。`last_invalid_date` 是最近一轮因缺失/异常发布时间而拒绝的条目数。`GET /sources` 把元数据和 `DEFAULT_FEED_SPECS` 合并，再动态叠加当前滚动库的每源文章计数与 `newest_article_at`，并计算 `health_status` / `health_reason` / `fetch_age_hours` / `stale_after_hours`；这些派生健康字段不回写 JSON。
+
+### 3.2a coverage-benchmarks.json（必达事件基准）
+
+list，每项由管理员登记：`{id, title, occurred_at, source_url, event_key, match_terms[], deadline_hours, created_at, created_by}`。`source_url`、`event_key`、`match_terms` 至少提供一种匹配信号；`deadline_hours` 限 1–168 小时。
+
+评测状态 `on_time / late / missed / pending` 不持久化，而是由当前文章库的 URL、事件键或关键词确定性匹配后实时计算。准时召回率只以已到截止时间的事件为分母；最近 30 天之外的基准不参与当前报告。这个人工维护集合用于衡量已知关键事件的绝对召回，不代表对整个互联网的完整召回率。
 
 ### 3.3 deep-dives/{aid}.json
 

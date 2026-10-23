@@ -47,7 +47,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 pytest/pytest-asyncio。当前测试覆盖内容质量配额、官方 sitemap/index（含非严格 XML 恢复与路径排除）、官网更新列表与页面元数据补全、OpenRouter 模型目录、GitHub Releases/组织仓库/Trending 快照、StepFun SPA 新闻适配与 arXiv 同域限流、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、LiblibAI/Qwen/HF API、OpenAI/Gemini changelog、RSS 原站乱序修复、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、来源价值评分和小样本保护、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹与 RSS 归档、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前测试覆盖内容质量配额、官方 sitemap/index（含非严格 XML 恢复与路径排除）、官网更新列表与页面元数据补全、OpenRouter 模型目录、GitHub Releases/组织仓库/Trending 快照、StepFun SPA 新闻适配与 arXiv 同域限流、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、LiblibAI/Qwen/HF API、OpenAI/Gemini changelog、RSS 原站乱序修复、arXiv 规范化与论文去重、URL/标题/事件去重及多源佐证、来源价值评分和小样本保护、必达事件准时/迟到/漏报判定及 admin CRUD、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹与 RSS 归档、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 

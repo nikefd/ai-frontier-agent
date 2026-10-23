@@ -297,6 +297,7 @@ function renderQualityReport(report) {
   const content = report.content_coverage || {};
   const pipeline = report.pipeline || {};
   const value = report.source_value || {};
+  const benchmark = report.benchmark_coverage || {};
   const statusLabel = { healthy: '正常', watch: '需关注', critical: '有缺口' }[report.status] || '未知';
   const latency = pipeline.latency_sample_size
     ? `${pipeline.median_discovery_minutes ?? '—'} / ${pipeline.p90_discovery_minutes ?? '—'} 分钟`
@@ -309,12 +310,15 @@ function renderQualityReport(report) {
       <div><b>${pipeline.pending_enrichment ?? 0}</b><span>待翻译 / 评分</span></div>
       <div><b>${escapeHtml(latency)}</b><span>发现延迟 P50 / P90</span></div>
       <div><b>${value.high_value_sources ?? 0}</b><span>高价值源（${value.window_days || 30} 天）</span></div>
+      <div><b>${pct(benchmark.on_time_recall_rate)}</b><span>必达事件准时召回</span></div>
     </div>
     <div class="quality-findings">${(report.findings || []).map(item =>
       `<div class="qf-${escapeHtml(item.level || '')}"><b>${escapeHtml(item.title || '')}</b><span>${escapeHtml(item.detail || '')}</span></div>`
     ).join('')}</div>
     ${renderSourceValue(value)}
+    ${renderBenchmarkCoverage(benchmark)}
   </section>`;
+  bindBenchmarkControls(root);
 }
 
 function renderSourceValue(value) {
@@ -338,6 +342,90 @@ function renderSourceValue(value) {
     <div class="source-value-list">${topRows}</div>
     ${reviewRow}
   </div>`;
+}
+
+function renderBenchmarkCoverage(benchmark) {
+  const items = benchmark.items || [];
+  const issues = items.filter(item => ['missed', 'late', 'pending'].includes(item.status)).slice(0, 6);
+  const labels = { on_time: '准时', late: '迟到', missed: '漏报', pending: '观察中' };
+  const issueRows = issues.length
+    ? `<div class="benchmark-issues">${issues.map(item => {
+      const sourceUrl = safeExternalUrl(item.source_url);
+      const title = sourceUrl
+        ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(item.title || '')}</a>`
+        : escapeHtml(item.title || '');
+      return `<div class="benchmark-row is-${escapeHtml(item.status || '')}"><span>${labels[item.status] || item.status}</span><b>${title}</b><small>${escapeHtml(fmtDate(item.occurred_at))}</small></div>`;
+    }).join('')}</div>`
+    : `<div class="source-value-empty">${items.length ? '当前必达事件均已准时命中。' : '尚未登记必达事件；管理员可添加真实事件作为漏报基准。'}</div>`;
+  const adminRows = items.slice(0, 10).map(item =>
+    `<div class="benchmark-admin-row"><span>${labels[item.status] || item.status} · ${escapeHtml(item.title || '')}</span><button class="ghost sm" data-benchmark-delete="${escapeHtml(item.id || '')}">删除</button></div>`
+  ).join('');
+  return `<div class="benchmark-panel">
+    <div class="source-value-head"><b>必达事件基准</b><span>近 ${benchmark.window_days || 30} 天 · 准时 ${benchmark.on_time || 0} / 迟到 ${benchmark.late || 0} / 漏报 ${benchmark.missed || 0} / 观察中 ${benchmark.pending || 0}</span></div>
+    ${issueRows}
+    <div class="benchmark-admin admin-only">
+      <div class="benchmark-form">
+        <input id="benchmark-title" maxlength="200" placeholder="事件标题，如：GPT-6 正式发布" />
+        <input id="benchmark-time" type="datetime-local" title="事件发生时间" />
+        <input id="benchmark-terms" maxlength="400" placeholder="匹配词，逗号分隔，如：GPT-6, OpenAI" />
+        <input id="benchmark-url" type="url" maxlength="500" placeholder="官方来源链接（可选）" />
+        <select id="benchmark-deadline" title="最长发现时间">
+          <option value="6">6 小时内</option><option value="12">12 小时内</option>
+          <option value="24" selected>24 小时内</option><option value="48">48 小时内</option>
+        </select>
+        <button class="primary sm" id="benchmark-add">登记必达事件</button>
+      </div>
+      <div id="benchmark-msg" class="text-xs text-faint"></div>
+      ${adminRows ? `<div class="benchmark-admin-list">${adminRows}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function bindBenchmarkControls(root) {
+  const timeInput = root.querySelector('#benchmark-time');
+  if (timeInput && !timeInput.value) {
+    const local = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
+    timeInput.value = local.toISOString().slice(0, 16);
+  }
+  root.querySelector('#benchmark-add')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    const msg = root.querySelector('#benchmark-msg');
+    const title = root.querySelector('#benchmark-title')?.value.trim() || '';
+    const occurredValue = timeInput?.value || '';
+    const matchTerms = (root.querySelector('#benchmark-terms')?.value || '')
+      .split(/[,，\n]/).map(term => term.trim()).filter(Boolean);
+    if (!title || !occurredValue || (!matchTerms.length && !root.querySelector('#benchmark-url')?.value.trim())) {
+      msg.textContent = '请填写标题、事件时间，并至少提供匹配词或官方链接。';
+      return;
+    }
+    button.disabled = true;
+    msg.textContent = '正在登记…';
+    try {
+      await api('POST', '/api/ai-news/quality/benchmarks', {
+        title,
+        occurred_at: new Date(occurredValue).toISOString(),
+        source_url: root.querySelector('#benchmark-url')?.value.trim() || '',
+        match_terms: matchTerms,
+        deadline_hours: Number(root.querySelector('#benchmark-deadline')?.value || 24),
+      });
+      await loadSources();
+    } catch (error) {
+      msg.textContent = error.message || '登记失败';
+      button.disabled = false;
+    }
+  });
+  root.querySelectorAll('[data-benchmark-delete]').forEach(button => button.addEventListener('click', async () => {
+    if (!window.confirm('删除这个必达事件基准？')) return;
+    button.disabled = true;
+    try {
+      await api('DELETE', `/api/ai-news/quality/benchmarks/${encodeURIComponent(button.dataset.benchmarkDelete)}`);
+      await loadSources();
+    } catch (error) {
+      const msg = root.querySelector('#benchmark-msg');
+      if (msg) msg.textContent = error.message || '删除失败';
+      button.disabled = false;
+    }
+  }));
 }
 
 function sourceCard(s) {
