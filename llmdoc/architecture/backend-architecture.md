@@ -108,7 +108,7 @@ main.py ──┬─> routers/ai_news.py ──┬─> models.py
 
 ## 4b. 阅读器安全边界（`app/safe_fetch.py`）
 
-公开的 `/reader/{aid}` 不再回传原站原始 HTML。服务端只接受公共 `http(s)` URL，拒绝凭据、localhost、私网/回环/链路本地/保留地址；每次重定向都重新解析 DNS，响应必须是 HTML 且最多 2 MB。抓到的文档经标签/属性白名单清洗后才同源返回并缓存，脚本、表单、iframe、图片、事件属性和危险链接全部移除；历史原始缓存首次命中时会自动清洗重写。
+公开的 `/reader/{aid}` 不再回传原站原始 HTML。服务端只接受公共 `http(s)` URL，拒绝凭据、localhost、私网/回环/链路本地/保留地址；每次重定向都重新解析 DNS。底层 `fetch_public_document` 只接受 HTML、RSS、Atom、XML 和纯文本并限制体积；阅读器的 `fetch_public_html` 再收紧为 HTML、最多 2 MB。抓到的阅读器文档经标签/属性白名单清洗后才同源返回并缓存，脚本、表单、iframe、图片、事件属性和危险链接全部移除；历史原始缓存首次命中时会自动清洗重写。管理员触发的未接入来源发现复用同一安全边界，但限制为 1 MB，并在重定向后再次要求最终域名仍属同站；候选按最终 URL 去重，同时排除评论 Feed 和重定向后不再属于更新路径的泛化页面。
 
 ## 5. LLM 客户端（`app/llm_client.py`）
 

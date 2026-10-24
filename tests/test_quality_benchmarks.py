@@ -61,6 +61,9 @@ def test_admin_can_create_and_delete_benchmark_but_regular_user_cannot() -> None
         json={"action": "start"},
     ).status_code == 403
     assert client.post(f"/api/ai-news/quality/benchmarks/{benchmark['id']}/recheck").status_code == 403
+    assert client.post(
+        f"/api/ai-news/quality/benchmarks/{benchmark['id']}/discover-sources"
+    ).status_code == 403
     assert client.delete(f"/api/ai-news/quality/benchmarks/{benchmark['id']}").status_code == 403
 
     client.post("/api/auth/logout")
@@ -123,3 +126,36 @@ def test_admin_can_track_close_and_recheck_remediation(monkeypatch) -> None:
     public_item = client.get("/api/ai-news/quality/report").json()["benchmark_coverage"]["items"][0]
     assert public_item["remediation"]["outcome"] == "accepted"
     assert "note" not in public_item["remediation"]
+
+
+def test_admin_can_discover_and_persist_unconfigured_source_candidates(monkeypatch) -> None:
+    client = _fresh_client()
+    _register(client, "admin@example.test")
+    created = client.post("/api/ai-news/quality/benchmarks", json={
+        "title": "Missing Lab 模型发布",
+        "occurred_at": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat(),
+        "source_url": "https://missing-lab.test/news/model",
+        "deadline_hours": 6,
+    }).json()
+
+    candidate = {
+        "url": "https://missing-lab.test/feed.xml", "kind": "rss", "ready": True,
+        "entry_count": 8, "dated_entries": 8, "latest_at": datetime.now(timezone.utc).isoformat(),
+        "evidence": "页面声明的 RSS；可解析 8 条", "next_step": "可按 fast 官方源接入",
+    }
+
+    async def fake_discovery(source_url: str):
+        assert source_url == "https://missing-lab.test/news/model"
+        return [candidate]
+
+    import app.source_discovery as discovery
+    monkeypatch.setattr(discovery, "discover_official_sources", fake_discovery)
+    response = client.post(f"/api/ai-news/quality/benchmarks/{created['id']}/discover-sources")
+    assert response.status_code == 200
+    assert response.json()["items"] == [candidate]
+
+    stored = client.get("/api/ai-news/quality/benchmarks").json()["items"][0]
+    assert stored["remediation"]["status"] == "in_progress"
+    assert stored["remediation"]["source_candidates"] == [candidate]
+    public_item = client.get("/api/ai-news/quality/report").json()["benchmark_coverage"]["items"][0]
+    assert "source_candidates" not in public_item["remediation"]

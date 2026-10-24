@@ -12,6 +12,10 @@ from bs4 import BeautifulSoup
 
 MAX_REDIRECTS = 5
 MAX_HTML_BYTES = 2_000_000
+PUBLIC_DOCUMENT_TYPES = {
+    "application/atom+xml", "application/rss+xml", "application/xhtml+xml",
+    "application/xml", "text/html", "text/plain", "text/xml",
+}
 
 
 class UnsafeUrl(ValueError):
@@ -66,8 +70,11 @@ async def validate_public_http_url(url: str) -> str:
     return parsed.geturl()
 
 
-async def fetch_public_html(url: str) -> tuple[str, str]:
-    """Fetch bounded HTML, revalidating every redirect target."""
+async def fetch_public_document(
+    url: str,
+    max_bytes: int = MAX_HTML_BYTES,
+) -> tuple[bytes, str, str, str]:
+    """Fetch a bounded public HTML/feed/XML document and revalidate redirects."""
     current = url
     timeout = httpx.Timeout(15.0, connect=7.0)
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=False, trust_env=False) as client:
@@ -86,21 +93,29 @@ async def fetch_public_html(url: str) -> tuple[str, str]:
                     continue
                 response.raise_for_status()
                 content_type = response.headers.get("content-type", "").split(";", 1)[0].strip().lower()
-                if content_type not in {"text/html", "application/xhtml+xml"}:
-                    raise UnsafeUrl("reader only accepts HTML documents")
+                if content_type not in PUBLIC_DOCUMENT_TYPES:
+                    raise UnsafeUrl("unsupported document type")
                 declared = response.headers.get("content-length")
-                if declared and declared.isdigit() and int(declared) > MAX_HTML_BYTES:
+                if declared and declared.isdigit() and int(declared) > max_bytes:
                     raise UnsafeUrl("document is too large")
                 chunks: list[bytes] = []
                 size = 0
                 async for chunk in response.aiter_bytes():
                     size += len(chunk)
-                    if size > MAX_HTML_BYTES:
+                    if size > max_bytes:
                         raise UnsafeUrl("document is too large")
                     chunks.append(chunk)
                 encoding = response.charset_encoding or "utf-8"
-                return b"".join(chunks).decode(encoding, errors="replace"), current
+                return b"".join(chunks), current, content_type, encoding
         raise UnsafeUrl("too many redirects")
+
+
+async def fetch_public_html(url: str) -> tuple[str, str]:
+    """Fetch bounded HTML, revalidating every redirect target."""
+    content, final_url, content_type, encoding = await fetch_public_document(url)
+    if content_type not in {"text/html", "application/xhtml+xml"}:
+        raise UnsafeUrl("reader only accepts HTML documents")
+    return content.decode(encoding, errors="replace"), final_url
 
 
 _DROP_TAGS = {

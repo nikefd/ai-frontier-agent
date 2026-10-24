@@ -1381,6 +1381,11 @@ body[data-agent="ai-news"] .article-item.is-active {
 .benchmark-remediation > span { margin-right: auto; color: var(--accent); font-weight: 600; }
 .benchmark-remediation small { flex-basis: 100%; overflow-wrap: anywhere; color: var(--text-dim); }
 .benchmark-remediation select { padding: 4px 6px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-elev-1); color: var(--text); font-size: 11px; }
+.source-discovery-results { flex-basis: 100%; display: grid; gap: 5px; margin-top: 3px; }
+.source-discovery-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 7px; padding: 6px 7px; border-radius: var(--r-sm); background: var(--bg-elev-2); }
+.source-discovery-row > span { color: var(--accent); font-weight: 600; }
+.source-discovery-row > a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.source-discovery-row > small { grid-column: 1 / -1; }
 .benchmark-admin { flex-direction: column; gap: 7px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
 .benchmark-form { display: grid; grid-template-columns: 1.2fr 1fr 1.2fr 1.2fr auto auto; gap: 6px; }
 .benchmark-form input, .benchmark-form select { min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-elev-1); color: var(--text); font-size: 11px; }

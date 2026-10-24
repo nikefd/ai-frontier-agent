@@ -212,6 +212,41 @@ async def recheck_benchmark(
     return {"ok": True, "added": added, "item": _coverage_item(benchmark_id)}
 
 
+@router.post("/quality/benchmarks/{benchmark_id}/discover-sources")
+async def discover_benchmark_sources(
+    benchmark_id: str,
+    admin: UserPublic = Depends(require_admin),
+) -> dict:
+    current = _coverage_item(benchmark_id)
+    if not current:
+        raise HTTPException(status_code=404, detail="基准事件不存在或不在当前评测窗口")
+    if (current.get("diagnosis") or {}).get("code") != "source_not_configured":
+        raise HTTPException(status_code=409, detail="仅未接入官方来源的诊断可以自动发现入口")
+    from ..source_discovery import discover_official_sources
+
+    candidates = await discover_official_sources(str(current.get("source_url") or ""))
+    now = datetime.now(timezone.utc).isoformat()
+
+    def record(items: list[dict]) -> list[dict]:
+        for item in items if isinstance(items, list) else []:
+            if item.get("id") != benchmark_id:
+                continue
+            previous = item.get("remediation") if isinstance(item.get("remediation"), dict) else {}
+            item["remediation"] = {
+                **previous,
+                "status": "in_progress" if previous.get("status") != "closed" else "closed",
+                "source_discovery_at": now,
+                "source_candidates": candidates,
+                "updated_at": now,
+                "updated_by": admin.id,
+            }
+            break
+        return items
+
+    update_json_atomic(BENCHMARKS_FILE, [], record)
+    return {"ok": True, "total": len(candidates), "items": candidates}
+
+
 @router.delete("/quality/benchmarks/{benchmark_id}")
 def delete_benchmark(
     benchmark_id: str,

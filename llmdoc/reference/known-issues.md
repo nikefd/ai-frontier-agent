@@ -38,7 +38,7 @@
 
 ## 8. `/reader/{aid}` SSRF / 原始 HTML（已修复）
 
-现由 `app/safe_fetch.py` 限定公共 http(s)，拒绝私网/回环/metadata/凭据 URL，每次重定向重新校验 DNS，并限制 HTML 类型与 2 MB。返回前白名单清洗，旧缓存也会惰性迁移；不再把远端主动 HTML 放到本站同源执行。全局文章新增/删除同时收紧为 admin-only。
+现由 `app/safe_fetch.py` 限定公共 http(s)，拒绝私网/回环/metadata/凭据 URL，每次重定向重新校验 DNS，并将公共文档类型限定为 HTML/RSS/Atom/XML/纯文本；阅读器再限制为 HTML 与 2 MB。返回前白名单清洗，旧缓存也会惰性迁移；不再把远端主动 HTML 放到本站同源执行。未接入来源发现复用该边界、限制 1 MB，且重定向后仍须同站。全局文章新增/删除同时收紧为 admin-only。
 
 ## 9. 前端小问题
 
@@ -47,7 +47,7 @@
 
 ## 10. tests/ 目录刚起步
 
-`pyproject.toml` 配了 pytest/pytest-asyncio。当前测试覆盖内容质量配额、官方 sitemap/index（含非严格 XML 恢复与路径排除）、官网更新列表与页面元数据补全、OpenRouter 模型目录、GitHub Releases/组织仓库/Trending 快照、StepFun SPA 新闻适配与 arXiv 同域限流、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、LiblibAI/Qwen/HF API、OpenAI/Gemini changelog、RSS 原站乱序修复、arXiv 规范化与论文去重及多源佐证、来源价值评分和小样本保护、官方/多源佐证必达候选发现与单源噪音拒绝、准时/迟到/漏报判定、多类根因诊断、单源复测、处理闭环及 admin CRUD、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹与 RSS 归档、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
+`pyproject.toml` 配了 pytest/pytest-asyncio。当前测试覆盖内容质量配额、官方 sitemap/index（含非严格 XML 恢复与路径排除）、官网更新列表与页面元数据补全、OpenRouter 模型目录、GitHub Releases/组织仓库/Trending 快照、StepFun SPA 新闻适配与 arXiv 同域限流、可信发布时间推导/历史修复、无日期/未来条目拒绝、今日窗口不回退旧文、空/伪 feed 错误识别、瞬时错误重试与分源请求头、LiblibAI/Qwen/HF API、OpenAI/Gemini changelog、RSS 原站乱序修复、arXiv 规范化与论文去重及多源佐证、来源价值评分和小样本保护、官方/多源佐证必达候选发现与单源噪音拒绝、准时/迟到/漏报判定、多类根因诊断、未接入来源发现、单源复测、处理闭环及 admin CRUD、实践建议与事件键清洗/持久化/旧数据回填、分时调度、速报指纹与 RSS 归档、来源健康分类、文章服务端筛选/分页、时间解析、排序、SRS、admin 护栏、认证安全、复盘、学习路径、实验卡清洗和额度。仍不是完整覆盖；用 `pip install -e ".[dev]" && pytest` 运行。
 
 ## 11. `deploy/` 目录为空
 

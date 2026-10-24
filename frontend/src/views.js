@@ -435,11 +435,23 @@ function renderRemediationControls(item) {
   const recheck = sourceUrl
     ? `<button class="ghost sm" data-remediation-recheck data-benchmark-id="${escapeHtml(item.id || '')}">单源复测</button>`
     : '';
+  const discover = item.diagnosis?.code === 'source_not_configured'
+    ? `<button class="ghost sm" data-source-discover data-benchmark-id="${escapeHtml(item.id || '')}">发现官方入口</button>`
+    : '';
   const outcome = remediation.outcome ? ` · ${outcomes[remediation.outcome] || remediation.outcome}` : '';
   const note = remediation.note
     ? `<small title="处理记录">${escapeHtml(remediation.note)}</small>`
     : '';
-  return `<div class="benchmark-remediation admin-only"><span>${labels[status] || status}${escapeHtml(outcome)}</span>${note}${start}${reopen}${recheck}${close}</div>`;
+  const kindLabels = { rss: 'RSS', atom: 'Atom', sitemap: 'Sitemap', update_page: '更新页' };
+  const sourceCandidates = (remediation.source_candidates || []).map(candidate => {
+    const candidateUrl = safeExternalUrl(candidate.url);
+    if (!candidateUrl) return '';
+    return `<div class="source-discovery-row"><span>${candidate.ready ? '可直接接入' : '需适配'} · ${escapeHtml(kindLabels[candidate.kind] || candidate.kind || '入口')}</span><a href="${escapeHtml(candidateUrl)}" target="_blank" rel="noopener">${escapeHtml(candidateUrl)}</a><small>${escapeHtml(candidate.evidence || '')}；${escapeHtml(candidate.next_step || '')}</small></div>`;
+  }).join('');
+  const discoveryResults = sourceCandidates
+    ? `<div class="source-discovery-results">${sourceCandidates}</div>`
+    : (remediation.source_discovery_at ? '<small>本次没有发现通过验证的官方入口。</small>' : '');
+  return `<div class="benchmark-remediation admin-only"><span>${labels[status] || status}${escapeHtml(outcome)}</span>${note}${start}${reopen}${recheck}${discover}${close}${discoveryResults}</div>`;
 }
 
 function bindBenchmarkControls(root, candidates = []) {
@@ -534,6 +546,19 @@ function bindBenchmarkControls(root, candidates = []) {
       if (msg) msg.textContent = error.message || '单源复测失败';
       button.disabled = false;
       button.textContent = '单源复测';
+    }
+  }));
+  root.querySelectorAll('[data-source-discover]').forEach(button => button.addEventListener('click', async () => {
+    button.disabled = true;
+    button.textContent = '探测中…';
+    try {
+      await api('POST', `/api/ai-news/quality/benchmarks/${encodeURIComponent(button.dataset.benchmarkId)}/discover-sources`);
+      await loadSources();
+    } catch (error) {
+      const msg = root.querySelector('#benchmark-msg');
+      if (msg) msg.textContent = error.message || '官方入口发现失败';
+      button.disabled = false;
+      button.textContent = '发现官方入口';
     }
   }));
   root.querySelectorAll('[data-remediation-close]').forEach(button => button.addEventListener('click', async () => {
