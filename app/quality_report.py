@@ -185,11 +185,117 @@ def build_benchmark_candidates(
     return {"window_days": lookback_days, "total": len(items), "items": items}
 
 
+def _benchmark_source(
+    source_url: str,
+    matched_article: dict | None,
+    sources: list[dict],
+) -> dict | None:
+    article_source = str((matched_article or {}).get("source") or "")
+    if article_source:
+        exact = next((item for item in sources if item.get("name") == article_source), None)
+        if exact:
+            return exact
+    target_host = urlsplit(
+        source_url or str((matched_article or {}).get("url") or "")
+    ).hostname
+    if not target_host:
+        return None
+    for source in sources:
+        source_host = urlsplit(str(source.get("url") or "")).hostname
+        if source_host and (
+            source_host == target_host
+            or source_host.endswith(f".{target_host}")
+            or target_host.endswith(f".{source_host}")
+        ):
+            return source
+    return None
+
+
+def _has_partial_term_match(articles: list[dict], context: dict) -> bool:
+    terms = context["terms"]
+    if not terms:
+        return False
+    lower_bound = context["occurred"] - timedelta(hours=24)
+    upper_bound = context["now"] + timedelta(hours=1)
+    return any(
+        lower_bound <= published <= upper_bound
+        and any(term in _normalized_match_text(" ".join(
+            str(article.get(field) or "")
+            for field in ("title", "title_zh", "summary", "summary_zh")
+        )) for term in terms)
+        for article in articles
+        if (published := _parse_date(article.get("date")))
+    )
+
+
+def _benchmark_diagnosis(
+    context: dict,
+    articles: list[dict],
+    sources: list[dict],
+) -> dict | None:
+    status = context["status"]
+    if status not in {"late", "missed"}:
+        return None
+    matched_article = context.get("matched_article")
+    matched_at = context.get("matched_at")
+    deadline = context["deadline"]
+    source_url = context["source_url"]
+    source = _benchmark_source(source_url, matched_article, sources)
+    source_info = ({
+        "name": source.get("name") or "",
+        "health_status": source.get("health_status") or "never",
+        "health_reason": source.get("health_reason") or "",
+        "cadence": source.get("cadence") or "standard",
+    } if source else None)
+    if status == "late":
+        published = _parse_date((matched_article or {}).get("date"))
+        if published and published > deadline:
+            code, label = "source_published_late", "源站晚于期限发布"
+            detail = "匹配文章的发布时间已晚于基准期限，本站在发布后才可能发现。"
+            action = "核对事件发生时间；若时间无误，增加更早的官方或可信旁路来源。"
+        elif source and source.get("health_status") != "healthy":
+            code, label = "source_unhealthy", "来源抓取异常"
+            detail = f"匹配来源当前状态为 {source.get('health_status') or 'never'}：{source.get('health_reason') or '无详细原因'}。"
+            action = "先修复该来源的抓取错误或调度过期，再复测发现延迟。"
+        elif source and source.get("cadence") != "fast":
+            code, label = "cadence_too_slow", "来源刷新层级偏慢"
+            detail = f"文章在期限前已发布，但来源当前按 {source.get('cadence') or 'standard'} 层刷新。"
+            action = "将该来源提升为 fast，或补充一个高时效官方入口。"
+        else:
+            code, label = "fetch_delay", "抓取或解析延迟"
+            delay = round(max(0, ((matched_at or deadline) - deadline).total_seconds() / 60), 1)
+            detail = f"文章在期限前已发布，但入库晚了约 {delay} 分钟。"
+            action = "检查抓取日志、限流、解析器与单轮配额，确认延迟发生在哪一层。"
+    elif source and source.get("health_status") != "healthy":
+        code, label = "source_unhealthy", "来源抓取异常"
+        detail = f"已配置来源当前状态为 {source.get('health_status') or 'never'}：{source.get('health_reason') or '无详细原因'}。"
+        action = "修复来源连通性、解析器或调度后，重新抓取并复核该基准。"
+    elif source:
+        code, label = "parser_or_filter_gap", "解析或过滤漏掉事件"
+        detail = "对应来源已配置且健康，但滚动文章库中没有命中记录。"
+        action = "检查来源原始响应、路径选择器、发布日期识别、关键词过滤和抓取配额。"
+    elif source_url:
+        code, label = "source_not_configured", "官方来源尚未接入"
+        detail = f"基准指向 {urlsplit(source_url).hostname or '未知域名'}，当前来源清单没有对应入口。"
+        action = "验证该站点的 RSS、sitemap、changelog 或 API，并接入高时效来源。"
+    else:
+        if _has_partial_term_match(articles, context):
+            code, label = "match_rule_gap", "匹配规则过严或已漂移"
+            detail = "文章库存在部分关键词命中，但没有记录满足全部匹配条件。"
+            action = "缩减或更新匹配词，优先补充稳定的官方 URL 或 event_key。"
+        else:
+            code, label = "coverage_gap", "当前来源集没有匹配记录"
+            detail = "滚动文章库中没有发现可匹配该事件的文章。"
+            action = "核对基准信号，并补充能持续覆盖该类事件的一手或交叉验证来源。"
+    return {"code": code, "label": label, "detail": detail, "action": action, "source": source_info}
+
+
 def build_benchmark_coverage(
     articles: list[dict],
     benchmarks: list[dict],
     *,
     now: datetime,
+    sources: list[dict] | None = None,
     window_days: int = 30,
 ) -> dict:
     """Evaluate must-not-miss events against the current article library."""
@@ -244,6 +350,20 @@ def build_benchmark_coverage(
             round(max(0.0, (matched_at - occurred).total_seconds() / 60), 1)
             if matched_at else None
         )
+        diagnosis = _benchmark_diagnosis(
+            {
+                "status": status,
+                "matched_article": matched_article,
+                "matched_at": matched_at,
+                "occurred": occurred,
+                "deadline": deadline,
+                "now": now,
+                "source_url": source_url,
+                "terms": terms,
+            },
+            articles,
+            sources or [],
+        )
         results.append({
             "id": benchmark.get("id"),
             "title": benchmark.get("title") or "（无标题）",
@@ -261,6 +381,7 @@ def build_benchmark_coverage(
             } if matched_article else None),
             "match_method": match_method or None,
             "discovery_minutes": latency,
+            "diagnosis": diagnosis,
         })
 
     results.sort(key=lambda item: _parse_date(item["occurred_at"]) or cutoff, reverse=True)
@@ -272,6 +393,11 @@ def build_benchmark_coverage(
         if item.get("discovery_minutes") is not None
     ]
     denominator = len(settled)
+    diagnosis_counts: dict[str, int] = {}
+    for item in settled:
+        code = str((item.get("diagnosis") or {}).get("code") or "")
+        if code:
+            diagnosis_counts[code] = diagnosis_counts.get(code, 0) + 1
     return {
         "window_days": window_days,
         "total": len(results),
@@ -283,6 +409,7 @@ def build_benchmark_coverage(
         "on_time_recall_rate": round(len(on_time) / denominator, 3) if denominator else None,
         "coverage_rate": round(len(covered) / denominator, 3) if denominator else None,
         "median_discovery_minutes": _percentile(latencies, 0.5),
+        "diagnosis_counts": diagnosis_counts,
         "items": results,
         "missed_items": [item for item in results if item["status"] == "missed"][:8],
     }
@@ -536,7 +663,7 @@ def build_quality_report(
     if pending > 8:
         add("watch", "富化队列积压", f"近 {window_hours} 小时仍有 {pending} 篇等待翻译与评分。")
     benchmark_coverage = build_benchmark_coverage(
-        articles, benchmarks or [], now=current,
+        articles, benchmarks or [], now=current, sources=sources,
     )
     if benchmark_coverage["missed"]:
         add(

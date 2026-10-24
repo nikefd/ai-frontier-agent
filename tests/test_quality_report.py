@@ -177,6 +177,56 @@ def test_must_not_miss_benchmarks_distinguish_on_time_late_missed_and_pending() 
     assert coverage["on_time_recall_rate"] == 0.333
     assert coverage["coverage_rate"] == 0.667
     assert coverage["missed_items"][0]["id"] == "b3"
+    by_id = {item["id"]: item for item in coverage["items"]}
+    assert by_id["b2"]["diagnosis"]["code"] == "fetch_delay"
+    assert coverage["missed_items"][0]["diagnosis"]["code"] == "coverage_gap"
+
+
+def test_benchmark_diagnosis_separates_source_cadence_health_and_matching_gaps() -> None:
+    articles = [
+        _article(
+            "late-source", title="Official event appeared late", source="Fast Lab",
+            date="2026-10-18T10:00:00Z", ingested_at="2026-10-18T10:05:00Z",
+        ),
+        _article(
+            "slow-fetch", title="Cadence event", source="Slow Lab",
+            date="2026-10-18T08:20:00Z", ingested_at="2026-10-18T10:00:00Z",
+        ),
+        _article("partial", title="Partial signal appeared"),
+    ]
+    benchmarks = [
+        {"id": "late-source", "title": "源站晚发", "occurred_at": "2026-10-18T08:00:00Z",
+         "match_terms": ["Official event appeared late"], "deadline_hours": 1},
+        {"id": "slow", "title": "刷新太慢", "occurred_at": "2026-10-18T08:00:00Z",
+         "match_terms": ["Cadence event"], "deadline_hours": 1},
+        {"id": "unhealthy", "title": "异常来源", "occurred_at": "2026-10-18T08:00:00Z",
+         "source_url": "https://broken.test/news/item", "deadline_hours": 1},
+        {"id": "parser", "title": "解析缺口", "occurred_at": "2026-10-18T08:00:00Z",
+         "source_url": "https://healthy.test/news/item", "deadline_hours": 1},
+        {"id": "missing-source", "title": "未接入", "occurred_at": "2026-10-18T08:00:00Z",
+         "source_url": "https://missing.test/news/item", "deadline_hours": 1},
+        {"id": "matching", "title": "规则漂移", "occurred_at": "2026-10-18T08:00:00Z",
+         "match_terms": ["Partial", "Absent"], "deadline_hours": 1},
+    ]
+    sources = [
+        {"name": "Fast Lab", "url": "https://fast.test/feed", "health_status": "healthy", "cadence": "fast"},
+        {"name": "Slow Lab", "url": "https://slow.test/feed", "health_status": "healthy", "cadence": "standard"},
+        {"name": "Broken", "url": "https://broken.test/feed", "health_status": "error", "health_reason": "HTTP 500"},
+        {"name": "Healthy", "url": "https://healthy.test/feed", "health_status": "healthy"},
+    ]
+
+    coverage = build_benchmark_coverage(articles, benchmarks, now=NOW, sources=sources)
+    causes = {item["id"]: item["diagnosis"]["code"] for item in coverage["items"]}
+
+    assert causes == {
+        "late-source": "source_published_late",
+        "slow": "cadence_too_slow",
+        "unhealthy": "source_unhealthy",
+        "parser": "parser_or_filter_gap",
+        "missing-source": "source_not_configured",
+        "matching": "match_rule_gap",
+    }
+    assert coverage["diagnosis_counts"]["source_unhealthy"] == 1
 
 
 def test_benchmark_candidates_find_official_events_and_exclude_registered() -> None:

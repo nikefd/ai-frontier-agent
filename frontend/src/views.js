@@ -359,7 +359,10 @@ function renderBenchmarkCoverage(benchmark, candidates) {
       const title = sourceUrl
         ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(item.title || '')}</a>`
         : escapeHtml(item.title || '');
-      return `<div class="benchmark-row is-${escapeHtml(item.status || '')}"><span>${labels[item.status] || item.status}</span><b>${title}</b><small>${escapeHtml(fmtDate(item.occurred_at))}</small></div>`;
+      const diagnosis = item.diagnosis
+        ? `<div class="benchmark-diagnosis"><b>原因：${escapeHtml(item.diagnosis.label || '')}</b><span>${escapeHtml(item.diagnosis.detail || '')}</span><em>建议：${escapeHtml(item.diagnosis.action || '')}</em></div>`
+        : '';
+      return `<div class="benchmark-row is-${escapeHtml(item.status || '')}"><span>${labels[item.status] || item.status}</span><b>${title}</b><small>${escapeHtml(fmtDate(item.occurred_at))}</small>${diagnosis}</div>`;
     }).join('')}</div>`
     : `<div class="source-value-empty">${items.length ? '当前必达事件均已准时命中。' : '尚未登记必达事件；管理员可添加真实事件作为漏报基准。'}</div>`;
   const adminRows = items.slice(0, 10).map(item =>
