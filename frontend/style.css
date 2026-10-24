@@ -1377,6 +1377,10 @@ body[data-agent="ai-news"] .article-item.is-active {
 .benchmark-diagnosis { grid-column: 2 / -1; display: grid; gap: 2px; padding: 5px 7px; border-left: 2px solid var(--border); color: var(--text-dim); line-height: 1.45; }
 .benchmark-diagnosis b { white-space: normal; color: var(--text); font-weight: 600; }
 .benchmark-diagnosis em { color: var(--text-faint); font-style: normal; }
+.benchmark-remediation { align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.benchmark-remediation > span { margin-right: auto; color: var(--accent); font-weight: 600; }
+.benchmark-remediation small { flex-basis: 100%; overflow-wrap: anywhere; color: var(--text-dim); }
+.benchmark-remediation select { padding: 4px 6px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-elev-1); color: var(--text); font-size: 11px; }
 .benchmark-admin { flex-direction: column; gap: 7px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
 .benchmark-form { display: grid; grid-template-columns: 1.2fr 1fr 1.2fr 1.2fr auto auto; gap: 6px; }
 .benchmark-form input, .benchmark-form select { min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-elev-1); color: var(--text); font-size: 11px; }

@@ -96,7 +96,7 @@
 
 ### 3.2a coverage-benchmarks.json（必达事件基准）
 
-list，每项由管理员登记：`{id, title, occurred_at, source_url, event_key, match_terms[], deadline_hours, created_at, created_by}`。`source_url`、`event_key`、`match_terms` 至少提供一种匹配信号；`deadline_hours` 限 1–168 小时。
+list，每项由管理员登记：`{id, title, occurred_at, source_url, event_key, match_terms[], deadline_hours, created_at, created_by, remediation?}`。`source_url`、`event_key`、`match_terms` 至少提供一种匹配信号；`deadline_hours` 限 1–168 小时。`remediation` 按需保存 `status/outcome/note/diagnosis_code/started_at/updated_at/updated_by/last_recheck_at/last_recheck_added`；完整内部说明仅 admin 接口返回，公开质量报告只投影状态、结果和复测摘要。
 
 评测状态 `on_time / late / missed / pending` 不持久化，而是由当前文章库的 URL、事件键或关键词确定性匹配后实时计算。准时召回率只以已到截止时间的事件为分母；最近 30 天之外的基准不参与当前报告。这个人工维护集合用于衡量已知关键事件的绝对召回，不代表对整个互联网的完整召回率。
 

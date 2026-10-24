@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,7 +11,11 @@ from pydantic import BaseModel, Field
 
 from ..auth import require_admin
 from ..models import UserPublic
-from ..quality_report import build_benchmark_candidates, build_quality_report
+from ..quality_report import (
+    build_benchmark_candidates,
+    build_benchmark_coverage,
+    build_quality_report,
+)
 from ..storage import read_json, update_json_atomic
 from .ai_news import AINEWS_DIR, SUMMARY_FILE, _load_articles, list_sources
 
@@ -28,9 +33,22 @@ class BenchmarkCreate(BaseModel):
     deadline_hours: int = Field(default=24, ge=1, le=168)
 
 
+class RemediationUpdate(BaseModel):
+    action: Literal["start", "close", "reopen"]
+    outcome: Literal["fixed", "accepted", "false_positive"] | None = None
+    note: str = Field(default="", max_length=500)
+
+
 def _load_benchmarks() -> list[dict]:
     payload = read_json(BENCHMARKS_FILE, [])
     return payload if isinstance(payload, list) else []
+
+
+def _coverage_item(benchmark_id: str) -> dict | None:
+    coverage = build_benchmark_coverage(
+        _load_articles(), _load_benchmarks(), now=datetime.now(timezone.utc), sources=list_sources(),
+    )
+    return next((item for item in coverage["items"] if item.get("id") == benchmark_id), None)
 
 
 @router.get("/quality/report")
@@ -109,6 +127,89 @@ def create_benchmark(
 
     update_json_atomic(BENCHMARKS_FILE, [], add)
     return item
+
+
+@router.patch("/quality/benchmarks/{benchmark_id}/remediation")
+def update_remediation(
+    benchmark_id: str,
+    request: RemediationUpdate,
+    admin: UserPublic = Depends(require_admin),
+) -> dict:
+    current = _coverage_item(benchmark_id)
+    if not current:
+        raise HTTPException(status_code=404, detail="基准事件不存在或不在当前评测窗口")
+    if not current.get("diagnosis"):
+        raise HTTPException(status_code=409, detail="当前基准没有需要处理的迟到或漏报问题")
+    if request.action == "close" and (not request.outcome or len(request.note.strip()) < 3):
+        raise HTTPException(status_code=400, detail="关闭问题时请选择结果并填写至少 3 个字符的说明")
+    now = datetime.now(timezone.utc).isoformat()
+    updated: dict | None = None
+
+    def change(items: list[dict]) -> list[dict]:
+        nonlocal updated
+        for item in items if isinstance(items, list) else []:
+            if item.get("id") != benchmark_id:
+                continue
+            previous = item.get("remediation") if isinstance(item.get("remediation"), dict) else {}
+            status = "closed" if request.action == "close" else (
+                "in_progress" if request.action == "start" else "open"
+            )
+            remediation = {
+                **previous,
+                "status": status,
+                "outcome": request.outcome if status == "closed" else None,
+                "note": request.note.strip() if status == "closed" else "",
+                "diagnosis_code": (current.get("diagnosis") or {}).get("code"),
+                "updated_at": now,
+                "updated_by": admin.id,
+            }
+            if request.action == "start" and not previous.get("started_at"):
+                remediation["started_at"] = now
+            item["remediation"] = remediation
+            updated = remediation
+            break
+        return items
+
+    update_json_atomic(BENCHMARKS_FILE, [], change)
+    if not updated:
+        raise HTTPException(status_code=404, detail="基准事件不存在")
+    return {"ok": True, "remediation": updated}
+
+
+@router.post("/quality/benchmarks/{benchmark_id}/recheck")
+async def recheck_benchmark(
+    benchmark_id: str,
+    admin: UserPublic = Depends(require_admin),
+) -> dict:
+    current = _coverage_item(benchmark_id)
+    if not current:
+        raise HTTPException(status_code=404, detail="基准事件不存在或不在当前评测窗口")
+    source_url = str(((current.get("diagnosis") or {}).get("source") or {}).get("url") or "")
+    if not source_url:
+        raise HTTPException(status_code=409, detail="当前诊断没有可复测的已配置来源")
+    from ..workers.ai_news_fetcher import fetch_once
+
+    added = await fetch_once([source_url])
+    now = datetime.now(timezone.utc).isoformat()
+
+    def record(items: list[dict]) -> list[dict]:
+        for item in items if isinstance(items, list) else []:
+            if item.get("id") != benchmark_id:
+                continue
+            previous = item.get("remediation") if isinstance(item.get("remediation"), dict) else {}
+            item["remediation"] = {
+                **previous,
+                "status": "in_progress" if previous.get("status") != "closed" else "closed",
+                "last_recheck_at": now,
+                "last_recheck_added": added,
+                "updated_at": now,
+                "updated_by": admin.id,
+            }
+            break
+        return items
+
+    update_json_atomic(BENCHMARKS_FILE, [], record)
+    return {"ok": True, "added": added, "item": _coverage_item(benchmark_id)}
 
 
 @router.delete("/quality/benchmarks/{benchmark_id}")

@@ -238,12 +238,16 @@ export async function loadSources() {
     const candidateRequest = getUser()?.role === 'admin'
       ? api('GET', '/api/ai-news/quality/benchmark-candidates').catch(() => null)
       : Promise.resolve(null);
-    const [r, quality, candidates] = await Promise.all([
+    const benchmarkRequest = getUser()?.role === 'admin'
+      ? api('GET', '/api/ai-news/quality/benchmarks').catch(() => null)
+      : Promise.resolve(null);
+    const [r, quality, candidates, benchmarks] = await Promise.all([
       api('GET', '/api/ai-news/sources'),
       api('GET', '/api/ai-news/quality/report').catch(() => null),
       candidateRequest,
+      benchmarkRequest,
     ]);
-    renderQualityReport(quality, candidates);
+    renderQualityReport(quality, candidates, benchmarks);
     $('#cnt-sources').textContent = r.length;
     const groups = {};
     for (const s of r) (groups[s.category || 'other'] = groups[s.category || 'other'] || []).push(s);
@@ -291,7 +295,7 @@ function pct(value) {
   return value == null ? '—' : `${Math.round(value * 100)}%`;
 }
 
-function renderQualityReport(report, candidates = null) {
+function renderQualityReport(report, candidates = null, benchmarks = null) {
   const root = $('#quality-report');
   if (!root) return;
   if (!report) {
@@ -321,7 +325,7 @@ function renderQualityReport(report, candidates = null) {
       `<div class="qf-${escapeHtml(item.level || '')}"><b>${escapeHtml(item.title || '')}</b><span>${escapeHtml(item.detail || '')}</span></div>`
     ).join('')}</div>
     ${renderSourceValue(value)}
-    ${renderBenchmarkCoverage(benchmark, candidates)}
+    ${renderBenchmarkCoverage(benchmark, candidates, benchmarks)}
   </section>`;
   bindBenchmarkControls(root, candidates?.items || []);
 }
@@ -349,8 +353,9 @@ function renderSourceValue(value) {
   </div>`;
 }
 
-function renderBenchmarkCoverage(benchmark, candidates) {
+function renderBenchmarkCoverage(benchmark, candidates, benchmarks) {
   const items = benchmark.items || [];
+  const adminById = new Map((benchmarks?.items || []).map(item => [item.id, item]));
   const issues = items.filter(item => ['missed', 'late', 'pending'].includes(item.status)).slice(0, 6);
   const labels = { on_time: '准时', late: '迟到', missed: '漏报', pending: '观察中' };
   const issueRows = issues.length
@@ -359,8 +364,12 @@ function renderBenchmarkCoverage(benchmark, candidates) {
       const title = sourceUrl
         ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(item.title || '')}</a>`
         : escapeHtml(item.title || '');
+      const adminItem = adminById.get(item.id);
+      const itemWithAdminState = adminItem?.remediation
+        ? { ...item, remediation: adminItem.remediation }
+        : item;
       const diagnosis = item.diagnosis
-        ? `<div class="benchmark-diagnosis"><b>原因：${escapeHtml(item.diagnosis.label || '')}</b><span>${escapeHtml(item.diagnosis.detail || '')}</span><em>建议：${escapeHtml(item.diagnosis.action || '')}</em></div>`
+        ? `<div class="benchmark-diagnosis"><b>原因：${escapeHtml(item.diagnosis.label || '')}</b><span>${escapeHtml(item.diagnosis.detail || '')}</span><em>建议：${escapeHtml(item.diagnosis.action || '')}</em>${renderRemediationControls(itemWithAdminState)}</div>`
         : '';
       return `<div class="benchmark-row is-${escapeHtml(item.status || '')}"><span>${labels[item.status] || item.status}</span><b>${title}</b><small>${escapeHtml(fmtDate(item.occurred_at))}</small>${diagnosis}</div>`;
     }).join('')}</div>`
@@ -384,7 +393,7 @@ function renderBenchmarkCoverage(benchmark, candidates) {
     </div>`;
   }).join('');
   return `<div class="benchmark-panel">
-    <div class="source-value-head"><b>必达事件基准</b><span>近 ${benchmark.window_days || 30} 天 · 准时 ${benchmark.on_time || 0} / 迟到 ${benchmark.late || 0} / 漏报 ${benchmark.missed || 0} / 观察中 ${benchmark.pending || 0}</span></div>
+    <div class="source-value-head"><b>必达事件基准</b><span>近 ${benchmark.window_days || 30} 天 · 准时 ${benchmark.on_time || 0} / 迟到 ${benchmark.late || 0} / 漏报 ${benchmark.missed || 0} / 待闭环 ${benchmark.open_issue_count || 0}</span></div>
     ${issueRows}
     <div class="benchmark-admin admin-only">
       <div class="benchmark-candidates">
@@ -406,6 +415,31 @@ function renderBenchmarkCoverage(benchmark, candidates) {
       ${adminRows ? `<div class="benchmark-admin-list">${adminRows}</div>` : ''}
     </div>
   </div>`;
+}
+
+function renderRemediationControls(item) {
+  const remediation = item.remediation || { status: 'open' };
+  const status = remediation.status || 'open';
+  const labels = { open: '待处理', in_progress: '处理中', closed: '已关闭' };
+  const outcomes = { fixed: '已修复', accepted: '接受限制', false_positive: '基准误报' };
+  const sourceUrl = safeExternalUrl(item.diagnosis?.source?.url);
+  const start = status === 'open'
+    ? `<button class="ghost sm" data-remediation-action="start" data-benchmark-id="${escapeHtml(item.id || '')}">开始处理</button>`
+    : '';
+  const reopen = status === 'closed'
+    ? `<button class="ghost sm" data-remediation-action="reopen" data-benchmark-id="${escapeHtml(item.id || '')}">重新打开</button>`
+    : '';
+  const close = status !== 'closed'
+    ? `<select data-remediation-outcome><option value="fixed">已修复</option><option value="accepted">接受限制</option><option value="false_positive">基准误报</option></select><button class="ghost sm" data-remediation-close data-benchmark-id="${escapeHtml(item.id || '')}">记录结果</button>`
+    : '';
+  const recheck = sourceUrl
+    ? `<button class="ghost sm" data-remediation-recheck data-benchmark-id="${escapeHtml(item.id || '')}">单源复测</button>`
+    : '';
+  const outcome = remediation.outcome ? ` · ${outcomes[remediation.outcome] || remediation.outcome}` : '';
+  const note = remediation.note
+    ? `<small title="处理记录">${escapeHtml(remediation.note)}</small>`
+    : '';
+  return `<div class="benchmark-remediation admin-only"><span>${labels[status] || status}${escapeHtml(outcome)}</span>${note}${start}${reopen}${recheck}${close}</div>`;
 }
 
 function bindBenchmarkControls(root, candidates = []) {
@@ -471,6 +505,50 @@ function bindBenchmarkControls(root, candidates = []) {
       await loadSources();
     } catch (error) {
       if (msg) msg.textContent = error.message || '登记失败';
+      button.disabled = false;
+    }
+  }));
+  root.querySelectorAll('[data-remediation-action]').forEach(button => button.addEventListener('click', async () => {
+    button.disabled = true;
+    try {
+      await api('PATCH', `/api/ai-news/quality/benchmarks/${encodeURIComponent(button.dataset.benchmarkId)}/remediation`, {
+        action: button.dataset.remediationAction,
+      });
+      await loadSources();
+    } catch (error) {
+      const msg = root.querySelector('#benchmark-msg');
+      if (msg) msg.textContent = error.message || '更新处理状态失败';
+      button.disabled = false;
+    }
+  }));
+  root.querySelectorAll('[data-remediation-recheck]').forEach(button => button.addEventListener('click', async () => {
+    button.disabled = true;
+    button.textContent = '复测中…';
+    try {
+      const result = await api('POST', `/api/ai-news/quality/benchmarks/${encodeURIComponent(button.dataset.benchmarkId)}/recheck`);
+      const msg = root.querySelector('#benchmark-msg');
+      if (msg) msg.textContent = `复测完成，本轮新增 ${result.added || 0} 篇；诊断已刷新。`;
+      await loadSources();
+    } catch (error) {
+      const msg = root.querySelector('#benchmark-msg');
+      if (msg) msg.textContent = error.message || '单源复测失败';
+      button.disabled = false;
+      button.textContent = '单源复测';
+    }
+  }));
+  root.querySelectorAll('[data-remediation-close]').forEach(button => button.addEventListener('click', async () => {
+    const note = window.prompt('请简要记录处理结果（至少 3 个字符）');
+    if (!note) return;
+    const outcome = button.parentElement?.querySelector('[data-remediation-outcome]')?.value || 'fixed';
+    button.disabled = true;
+    try {
+      await api('PATCH', `/api/ai-news/quality/benchmarks/${encodeURIComponent(button.dataset.benchmarkId)}/remediation`, {
+        action: 'close', outcome, note,
+      });
+      await loadSources();
+    } catch (error) {
+      const msg = root.querySelector('#benchmark-msg');
+      if (msg) msg.textContent = error.message || '记录处理结果失败';
       button.disabled = false;
     }
   }));

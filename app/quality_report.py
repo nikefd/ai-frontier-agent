@@ -243,6 +243,7 @@ def _benchmark_diagnosis(
     source = _benchmark_source(source_url, matched_article, sources)
     source_info = ({
         "name": source.get("name") or "",
+        "url": source.get("url") or "",
         "health_status": source.get("health_status") or "never",
         "health_reason": source.get("health_reason") or "",
         "cadence": source.get("cadence") or "standard",
@@ -364,6 +365,9 @@ def build_benchmark_coverage(
             articles,
             sources or [],
         )
+        remediation = benchmark.get("remediation")
+        if not isinstance(remediation, dict):
+            remediation = {}
         results.append({
             "id": benchmark.get("id"),
             "title": benchmark.get("title") or "（无标题）",
@@ -382,6 +386,13 @@ def build_benchmark_coverage(
             "match_method": match_method or None,
             "discovery_minutes": latency,
             "diagnosis": diagnosis,
+            "remediation": ({
+                "status": str(remediation.get("status") or "open"),
+                "outcome": remediation.get("outcome"),
+                "updated_at": remediation.get("updated_at"),
+                "last_recheck_at": remediation.get("last_recheck_at"),
+                "last_recheck_added": remediation.get("last_recheck_added"),
+            } if diagnosis else None),
         })
 
     results.sort(key=lambda item: _parse_date(item["occurred_at"]) or cutoff, reverse=True)
@@ -398,6 +409,7 @@ def build_benchmark_coverage(
         code = str((item.get("diagnosis") or {}).get("code") or "")
         if code:
             diagnosis_counts[code] = diagnosis_counts.get(code, 0) + 1
+    diagnosed = [item for item in settled if item.get("diagnosis")]
     return {
         "window_days": window_days,
         "total": len(results),
@@ -410,6 +422,12 @@ def build_benchmark_coverage(
         "coverage_rate": round(len(covered) / denominator, 3) if denominator else None,
         "median_discovery_minutes": _percentile(latencies, 0.5),
         "diagnosis_counts": diagnosis_counts,
+        "open_issue_count": sum(
+            (item.get("remediation") or {}).get("status") != "closed" for item in diagnosed
+        ),
+        "closed_issue_count": sum(
+            (item.get("remediation") or {}).get("status") == "closed" for item in diagnosed
+        ),
         "items": results,
         "missed_items": [item for item in results if item["status"] == "missed"][:8],
     }

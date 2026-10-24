@@ -180,10 +180,12 @@ agent 主动提议（B2）：基于用户行为信号给「下一步」建议。
 | 方法 | 路径 | 🔒 | 说明 |
 |---|---|---|---|
 | GET | `/sources` | — | 列当前配置 feed 及健康度（抓取元数据 + 当前库文章数/最新内容时间；已移除源的历史元数据不再混入列表）。每项带 `cadence=fast/standard/slow`、`health_status=healthy/error/stale/never`、`last_invalid_date`、抓取年龄、连续失败与最近成功/恢复；按所属 cadence 超过 3 个调度间隔未抓取即 `stale`，HTTP 200 但无可解析条目也算 `error`。全局共享 |
-| GET | `/quality/report` | — | 零新增 LLM 的质量体检：近 30 小时来源/fast 健康率、高影响事件露出率、富化积压和发现延迟；近 30 天 `source_value` 评估有效事件、独家贡献、首发现、重要性和时效；`benchmark_coverage` 将必达事件区分为 `on_time/late/missed/pending`，返回召回率、发现延迟、漏报清单、`diagnosis_counts`，并为每个迟到/漏报项返回 `diagnosis={code,label,detail,action,source}`。只读、全局共享 |
+| GET | `/quality/report` | — | 零新增 LLM 的质量体检：近 30 小时来源/fast 健康率、高影响事件露出率、富化积压和发现延迟；近 30 天 `source_value` 评估有效事件、独家贡献、首发现、重要性和时效；`benchmark_coverage` 将必达事件区分为 `on_time/late/missed/pending`，返回召回率、发现延迟、漏报清单、`diagnosis_counts`、待闭环/已关闭数，并为每个迟到/漏报项返回诊断及脱敏后的处理状态。只读、全局共享 |
 | GET | `/quality/benchmarks` | admin | 列出完整必达事件基准（含内部创建元数据） |
 | GET | `/quality/benchmark-candidates` | admin | 从近 7 天已抓取的官方高影响事件，以及被至少两个独立可信媒体/专家/博客来源用同一 `event_key` 共同佐证的高影响事件中，排除已登记项并返回最多 12 个候选；包含 `discovery_mode`、`corroborating_sources`、解释及建议期限。只读，候选不计入召回率 |
 | POST | `/quality/benchmarks` | admin | 登记必达事件：`{title, occurred_at, source_url?, event_key?, match_terms?, deadline_hours=24}`；来源链接、事件键、匹配词至少提供一种，期限限制 1–168 小时 |
+| PATCH | `/quality/benchmarks/{id}/remediation` | admin | 更新迟到/漏报处理状态：`action=start/reopen`，或 `action=close` 并提供 `outcome=fixed/accepted/false_positive` 与至少 3 字说明；保存诊断快照、时间和操作者 |
+| POST | `/quality/benchmarks/{id}/recheck` | admin | 只重抓当前诊断所关联的已配置来源，记录复测时间和新增数量，再返回刷新后的诊断；没有已配置来源时返回 409 |
 | DELETE | `/quality/benchmarks/{id}` | admin | 删除误录或不再需要的基准事件 |
 | POST | `/fetch` | admin | 立即跑一轮全局抓取：相关性过滤 → 每源分轮 → 分类硬配额 → 全局 150 条上限，返回 `{ok, added}` |
 | POST | `/translate/run` | admin | 手动跑一批全局翻译，返回 `{ok, translated}` |

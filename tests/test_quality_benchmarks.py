@@ -56,6 +56,11 @@ def test_admin_can_create_and_delete_benchmark_but_regular_user_cannot() -> None
     assert client.get("/api/ai-news/quality/benchmarks").status_code == 403
     assert client.get("/api/ai-news/quality/benchmark-candidates").status_code == 403
     assert client.post("/api/ai-news/quality/benchmarks", json=payload).status_code == 403
+    assert client.patch(
+        f"/api/ai-news/quality/benchmarks/{benchmark['id']}/remediation",
+        json={"action": "start"},
+    ).status_code == 403
+    assert client.post(f"/api/ai-news/quality/benchmarks/{benchmark['id']}/recheck").status_code == 403
     assert client.delete(f"/api/ai-news/quality/benchmarks/{benchmark['id']}").status_code == 403
 
     client.post("/api/auth/logout")
@@ -72,3 +77,49 @@ def test_benchmark_requires_a_match_signal() -> None:
         "occurred_at": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
     })
     assert response.status_code == 400
+
+
+def test_admin_can_track_close_and_recheck_remediation(monkeypatch) -> None:
+    client = _fresh_client()
+    _register(client, "admin@example.test")
+    created = client.post("/api/ai-news/quality/benchmarks", json={
+        "title": "OpenAI 关键模型发布",
+        "occurred_at": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat(),
+        "source_url": "https://openai.com/news/model-release",
+        "deadline_hours": 6,
+    }).json()
+    benchmark_id = created["id"]
+
+    started = client.patch(f"/api/ai-news/quality/benchmarks/{benchmark_id}/remediation", json={
+        "action": "start",
+    })
+    assert started.status_code == 200
+    assert started.json()["remediation"]["status"] == "in_progress"
+
+    invalid_close = client.patch(
+        f"/api/ai-news/quality/benchmarks/{benchmark_id}/remediation",
+        json={"action": "close", "outcome": "fixed", "note": "no"},
+    )
+    assert invalid_close.status_code == 400
+    closed = client.patch(
+        f"/api/ai-news/quality/benchmarks/{benchmark_id}/remediation",
+        json={"action": "close", "outcome": "accepted", "note": "源站本身延迟发布"},
+    )
+    assert closed.status_code == 200
+
+    async def fake_fetch(feeds):
+        assert len(feeds) == 1
+        assert "openai.com" in feeds[0]
+        return 2
+
+    import app.workers.ai_news_fetcher as fetcher
+    monkeypatch.setattr(fetcher, "fetch_once", fake_fetch)
+    rechecked = client.post(f"/api/ai-news/quality/benchmarks/{benchmark_id}/recheck")
+    assert rechecked.status_code == 200
+    assert rechecked.json()["added"] == 2
+    assert rechecked.json()["item"]["remediation"]["status"] == "closed"
+    assert rechecked.json()["item"]["remediation"]["last_recheck_added"] == 2
+
+    public_item = client.get("/api/ai-news/quality/report").json()["benchmark_coverage"]["items"][0]
+    assert public_item["remediation"]["outcome"] == "accepted"
+    assert "note" not in public_item["remediation"]
