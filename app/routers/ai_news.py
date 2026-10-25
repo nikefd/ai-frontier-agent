@@ -333,7 +333,7 @@ if settings.rsshub_base and settings.rsshub_base.rstrip("/") != "https://rsshub.
         if _spec["url"].startswith("https://rsshub.app"):
             _spec["url"] = _spec["url"].replace("https://rsshub.app", _rsshub, 1)
 
-DEFAULT_FEEDS: list[str] = [f["url"] for f in DEFAULT_FEED_SPECS]
+DEFAULT_FEEDS: list[str] = [f["url"] for f in DEFAULT_FEED_SPECS if f.get("enabled") is not False]
 # Quick lookup by url
 FEED_SPEC_BY_URL: dict[str, dict] = {f["url"]: f for f in DEFAULT_FEED_SPECS}
 
@@ -352,10 +352,34 @@ def register_custom_feed_spec(spec: dict) -> bool:
         "category": "vendor",
         "cadence": "fast",
         "custom": True,
+        "enabled": spec.get("enabled") is not False,
     }
     DEFAULT_FEED_SPECS.append(normalized)
-    DEFAULT_FEEDS.append(url)
+    if normalized["enabled"]:
+        DEFAULT_FEEDS.append(url)
     FEED_SPEC_BY_URL[url] = normalized
+    return True
+
+
+def set_custom_feed_enabled(url: str, enabled: bool) -> bool:
+    spec = FEED_SPEC_BY_URL.get(url)
+    if not spec or not spec.get("custom"):
+        return False
+    spec["enabled"] = enabled
+    if enabled and url not in DEFAULT_FEEDS:
+        DEFAULT_FEEDS.append(url)
+    elif not enabled:
+        DEFAULT_FEEDS[:] = [item for item in DEFAULT_FEEDS if item != url]
+    return True
+
+
+def remove_custom_feed_spec(url: str) -> bool:
+    spec = FEED_SPEC_BY_URL.get(url)
+    if not spec or not spec.get("custom"):
+        return False
+    DEFAULT_FEED_SPECS[:] = [item for item in DEFAULT_FEED_SPECS if item.get("url") != url]
+    DEFAULT_FEEDS[:] = [item for item in DEFAULT_FEEDS if item != url]
+    FEED_SPEC_BY_URL.pop(url, None)
     return True
 
 
@@ -846,6 +870,16 @@ def list_sources() -> list[dict]:
         # The registry is authoritative: renamed sources must not remain stuck
         # on a stale name persisted by an earlier fetch.
         name = spec.get("name") or m.get("name") or url
+        enabled = spec.get("enabled") is not False
+        health = _source_health(m, interval_hours={
+            "fast": settings.fast_news_interval_hours,
+            "slow": settings.slow_news_interval_hours,
+        }.get(spec.get("cadence"), settings.ai_news_interval_hours)) if enabled else {
+            "health_status": "disabled",
+            "health_reason": "管理员已停用，不再参与自动或全量抓取",
+            "fetch_age_hours": None,
+            "stale_after_hours": None,
+        }
         out.append({
             "url": url,
             "name": name,
@@ -854,7 +888,7 @@ def list_sources() -> list[dict]:
             "cadence": spec.get("cadence", "standard"),
             "description": spec.get("description") or "",
             "custom": bool(spec.get("custom")),
-            "enabled": True,
+            "enabled": enabled,
             "last_fetch": m.get("last_fetch"),
             "last_ok": m.get("last_ok"),
             "last_error": m.get("last_error"),
@@ -866,10 +900,7 @@ def list_sources() -> list[dict]:
             "last_invalid_date": m.get("last_invalid_date", 0),
             "article_count": counts.get(name, 0),
             "newest_article_at": newest.get(name, (0.0, None))[1],
-            **_source_health(m, interval_hours={
-                "fast": settings.fast_news_interval_hours,
-                "slow": settings.slow_news_interval_hours,
-            }.get(spec.get("cadence"), settings.ai_news_interval_hours)),
+            **health,
         })
     return out
 

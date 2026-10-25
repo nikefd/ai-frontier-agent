@@ -45,7 +45,10 @@ def _cron_hours(anchor: int, interval: int) -> str:
 
 
 def _feeds_for_cadence(cadence: str) -> list[str]:
-    return [spec["url"] for spec in DEFAULT_FEED_SPECS if spec.get("cadence") == cadence]
+    return [
+        spec["url"] for spec in DEFAULT_FEED_SPECS
+        if spec.get("cadence") == cadence and spec.get("enabled") is not False
+    ]
 
 
 async def _ai_news_job(cadence: str):

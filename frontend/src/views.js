@@ -256,6 +256,7 @@ export async function loadSources() {
     const errN = r.filter(s => s.health_status === 'error').length;
     const staleN = r.filter(s => s.health_status === 'stale').length;
     const neverN = r.filter(s => s.health_status === 'never').length;
+    const disabledN = r.filter(s => s.health_status === 'disabled').length;
     const attention = r.filter(s => ['error', 'stale'].includes(s.health_status));
     const totalArticles = r.reduce((a, s) => a + (s.article_count || 0), 0);
     const healthBar = `
@@ -265,12 +266,13 @@ export async function loadSources() {
           ${errN ? `<span class="hs-err">⚠ ${errN} 抓取失败</span>` : ''}
           ${staleN ? `<span class="hs-warn">◷ ${staleN} 调度过期</span>` : ''}
           ${neverN ? `<span class="hs-neutral">⊝ ${neverN} 未抓取</span>` : ''}
-          <span class="hs-neutral">· 共 ${r.length} 源 · 当前库 ${totalArticles} 篇</span>
+          ${disabledN ? `<span class="hs-neutral">⏸ ${disabledN} 已停用</span>` : ''}
+          <span class="hs-neutral">· ${r.length - disabledN} 个启用 / 共 ${r.length} 源 · 当前库 ${totalArticles} 篇</span>
         </div>
         ${attention.length ? `<div class="src-attention"><strong>需关注：</strong>${attention.slice(0, 8).map(s => `${escapeHtml(s.name)}（${escapeHtml(s.health_reason || '异常')}）`).join('、')}${attention.length > 8 ? ` 等 ${attention.length} 个源` : ''}</div>` : ''}
       </div>`;
 
-    const healthRank = { error: 0, stale: 1, never: 2, healthy: 3 };
+    const healthRank = { error: 0, stale: 1, never: 2, healthy: 3, disabled: 4 };
     Object.values(groups).forEach(items => items.sort((a, b) =>
       (healthRank[a.health_status] ?? 9) - (healthRank[b.health_status] ?? 9)
       || String(a.name || '').localeCompare(String(b.name || ''))));
@@ -285,6 +287,7 @@ export async function loadSources() {
         </div>`;
     }).join('');
     $('#sources-list').innerHTML = html;
+    bindSourceControls($('#sources-list'));
   } catch (e) {
     renderQualityReport(null);
     $('#sources-list').innerHTML = '<div class="muted-card">❌ ' + escapeHtml(e.message) + '</div>';
@@ -450,7 +453,7 @@ function renderRemediationControls(item) {
       try { return new URL(candidateUrl).hostname.replace(/^www\./, ''); } catch { return '官方更新'; }
     })();
     const activation = candidate.activated_at
-      ? `<div class="source-activation-done">✓ 已接入为 ${escapeHtml(candidate.activated_name || defaultName)} · 试抓新增 ${Number(candidate.activated_added || 0)} 篇</div>`
+      ? `<div class="source-activation-done">${candidate.source_enabled === false ? '⏸ 已停用：' : '✓ 已接入为 '}${escapeHtml(candidate.activated_name || defaultName)} · 试抓新增 ${Number(candidate.activated_added || 0)} 篇</div>`
       : (candidate.ready && ['rss', 'atom'].includes(candidate.kind)
         ? `<div class="source-activation"><input type="text" maxlength="80" value="${escapeHtml(defaultName)}" aria-label="来源名称"><button class="ghost sm" data-source-activate data-benchmark-id="${escapeHtml(item.id || '')}" data-source-url="${escapeHtml(candidateUrl)}">接入并试抓</button></div>`
         : '');
@@ -611,7 +614,8 @@ function bindBenchmarkControls(root, candidates = []) {
 
 function sourceCard(s) {
   let status, statusClass;
-  if (s.health_status === 'error') { status = '⚠️ 抓取失败'; statusClass = 'st-err'; }
+  if (s.health_status === 'disabled') { status = '⏸ 已停用'; statusClass = 'st-disabled'; }
+  else if (s.health_status === 'error') { status = '⚠️ 抓取失败'; statusClass = 'st-err'; }
   else if (s.health_status === 'stale') { status = '◷ 调度过期'; statusClass = 'st-stale'; }
   else if (s.health_status === 'healthy') { status = '✓ 正常'; statusClass = 'st-ok'; }
   else { status = '⊝ 尚未抓取'; statusClass = 'st-neutral'; }
@@ -628,8 +632,11 @@ function sourceCard(s) {
   const linkRow = safeUrl
     ? `<a class="src-link" href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener" title="RSS 订阅地址">${escapeHtml(host)} ↗</a>`
     : '<span class="text-faint">（无 URL）</span>';
+  const controls = s.custom && safeUrl
+    ? `<div class="src-actions admin-only"><button class="ghost sm" data-source-toggle data-source-url="${escapeHtml(safeUrl)}" data-source-enabled="${s.enabled ? 'true' : 'false'}">${s.enabled ? '停用' : '重新启用'}</button><button class="ghost sm danger" data-source-delete data-source-url="${escapeHtml(safeUrl)}" data-source-name="${escapeHtml(s.name || '')}">删除</button></div>`
+    : '';
   return `
-    <div class="src-card">
+    <div class="src-card ${s.enabled === false ? 'is-disabled' : ''}">
       <div class="src-card-head">
         ${catBadge(s.category)}
         <div class="src-name">${escapeHtml(s.name)}</div>
@@ -648,6 +655,39 @@ function sourceCard(s) {
         ${s.consecutive_failures ? `<span class="dot-sep">·</span><span class="hs-err">连续失败 ${s.consecutive_failures} 次</span>` : ''}
       </div>
       <div class="src-stats text-faint"><span title="最近成功抓取">成功 ${lastOk}</span><span class="dot-sep">·</span><span title="当前库中该来源最新文章">最新内容 ${newestArticle}</span></div>
-      <div class="src-foot">${linkRow}</div>
+      <div class="src-foot">${linkRow}${controls}</div>
     </div>`;
+}
+
+function bindSourceControls(root) {
+  root?.querySelectorAll('[data-source-toggle]').forEach(button => button.addEventListener('click', async () => {
+    const enable = button.dataset.sourceEnabled !== 'true';
+    button.disabled = true;
+    button.textContent = enable ? '启用中…' : '停用中…';
+    try {
+      await api('PATCH', '/api/ai-news/sources/custom', {
+        url: button.dataset.sourceUrl,
+        enabled: enable,
+      });
+      await loadSources();
+    } catch (error) {
+      window.alert(error.message || '更新来源状态失败');
+      button.disabled = false;
+      button.textContent = enable ? '重新启用' : '停用';
+    }
+  }));
+  root?.querySelectorAll('[data-source-delete]').forEach(button => button.addEventListener('click', async () => {
+    const name = button.dataset.sourceName || '这个来源';
+    if (!window.confirm(`删除「${name}」的来源配置？已有文章会保留。`)) return;
+    button.disabled = true;
+    button.textContent = '删除中…';
+    try {
+      await api('DELETE', `/api/ai-news/sources/custom?url=${encodeURIComponent(button.dataset.sourceUrl || '')}`);
+      await loadSources();
+    } catch (error) {
+      window.alert(error.message || '删除来源失败');
+      button.disabled = false;
+      button.textContent = '删除';
+    }
+  }));
 }

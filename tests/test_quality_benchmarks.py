@@ -68,6 +68,13 @@ def test_admin_can_create_and_delete_benchmark_but_regular_user_cannot() -> None
         f"/api/ai-news/quality/benchmarks/{benchmark['id']}/activate-source",
         json={"url": "https://openai.com/feed.xml", "name": "OpenAI Feed"},
     ).status_code == 403
+    assert client.patch(
+        "/api/ai-news/sources/custom",
+        json={"url": "https://openai.com/feed.xml", "enabled": False},
+    ).status_code == 403
+    assert client.delete(
+        "/api/ai-news/sources/custom?url=https%3A%2F%2Fopenai.com%2Ffeed.xml"
+    ).status_code == 403
     assert client.delete(f"/api/ai-news/quality/benchmarks/{benchmark['id']}").status_code == 403
 
     client.post("/api/auth/logout")
@@ -198,3 +205,42 @@ def test_admin_can_discover_and_persist_unconfigured_source_candidates(monkeypat
         f"/api/ai-news/quality/benchmarks/{created['id']}/activate-source",
         json={"url": candidate["url"], "name": "Missing Lab Official"},
     ).status_code == 409
+
+    disabled = client.patch("/api/ai-news/sources/custom", json={
+        "url": candidate["url"], "enabled": False,
+    })
+    assert disabled.status_code == 200
+    assert disabled.json()["source"]["enabled"] is False
+    custom = next(item for item in client.get("/api/ai-news/sources").json() if item["url"] == candidate["url"])
+    assert custom["enabled"] is False
+    assert custom["health_status"] == "disabled"
+
+    import app.routers.ai_news as ainews
+    import app.scheduler as scheduler
+    assert candidate["url"] not in ainews.DEFAULT_FEEDS
+    assert candidate["url"] not in scheduler._feeds_for_cadence("fast")
+    stored = client.get("/api/ai-news/quality/benchmarks").json()["items"][0]
+    assert stored["remediation"]["source_candidates"][0]["source_enabled"] is False
+
+    enabled = client.patch("/api/ai-news/sources/custom", json={
+        "url": candidate["url"], "enabled": True,
+    })
+    assert enabled.status_code == 200
+    assert candidate["url"] in ainews.DEFAULT_FEEDS
+
+    deleted = client.delete(
+        "/api/ai-news/sources/custom?url=https%3A%2F%2Fmissing-lab.test%2Ffeed.xml"
+    )
+    assert deleted.status_code == 200
+    assert deleted.json()["articles_preserved"] is True
+    assert not any(
+        item["url"] == candidate["url"] for item in client.get("/api/ai-news/sources").json()
+    )
+    assert candidate["url"] not in ainews.FEED_SPEC_BY_URL
+    stored = client.get("/api/ai-news/quality/benchmarks").json()["items"][0]
+    lifecycle = stored["remediation"]["source_candidates"][0]
+    assert "activated_at" not in lifecycle
+    assert lifecycle["last_deleted_at"]
+    assert client.delete(
+        "/api/ai-news/sources/custom?url=https%3A%2F%2Fmissing-lab.test%2Ffeed.xml"
+    ).status_code == 404

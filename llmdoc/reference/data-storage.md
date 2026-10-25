@@ -103,7 +103,7 @@ list，每项由管理员登记：`{id, title, occurred_at, source_url, event_ke
 
 ### 3.2b custom-sources.json（管理员确认的自定义源）
 
-list，每项是 `{url,name,kind,tier,category,cadence,custom,description,benchmark_id,created_at,created_by}`。目前只允许来源发现流程两次验证通过且带日期条目的 `rss/atom`，运行时强制归一化为 `high/vendor/fast`；额外字段用于追溯来源，不会由公开 `/sources` 返回。写入后同一进程立即注册，重启时由 `app/custom_sources.py` 加载并与内置注册表按 URL/名称去重。
+list，每项是 `{url,name,kind,tier,category,cadence,custom,enabled,description,benchmark_id,created_at,created_by,updated_at?,updated_by?}`。目前只允许来源发现流程两次验证通过且带日期条目的 `rss/atom`，运行时强制归一化为 `high/vendor/fast`；额外字段用于追溯来源，不会由公开 `/sources` 返回。`enabled` 缺失按 true 兼容老数据；false 时配置仍加载并显示，但不会进入默认全量抓取或 cadence 调度。写入后同一进程立即注册，重启时由 `app/custom_sources.py` 加载并与内置注册表按 URL/名称去重；删除只移除此项，不清理 `articles.json` 或 `sources.json`。
 
 ### 3.3 deep-dives/{aid}.json
 

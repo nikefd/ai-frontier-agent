@@ -59,6 +59,7 @@ async def activate_source_candidate(
         "category": "vendor",
         "cadence": "fast",
         "custom": True,
+        "enabled": True,
         "description": f"自动发现的官方来源 · 来自必达事件「{title[:80]}」",
         "benchmark_id": benchmark_id,
         "created_at": now,
@@ -80,11 +81,14 @@ async def activate_source_candidate(
             for source_candidate in remediation.get("source_candidates") or []:
                 updated = dict(source_candidate)
                 if updated.get("url") == candidate_url:
+                    for key in ("last_deleted_at", "last_deleted_by", "source_state_changed_at"):
+                        updated.pop(key, None)
                     updated.update({
                         "activated_at": now,
                         "activated_url": url,
                         "activated_name": normalized_name,
                         "activated_added": added,
+                        "source_enabled": True,
                     })
                 updated_candidates.append(updated)
             item["remediation"] = {

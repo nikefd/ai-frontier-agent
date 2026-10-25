@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from ..auth import require_admin
@@ -42,6 +42,11 @@ class RemediationUpdate(BaseModel):
 class SourceActivation(BaseModel):
     url: str = Field(min_length=8, max_length=500)
     name: str = Field(min_length=2, max_length=80)
+
+
+class SourceStateUpdate(BaseModel):
+    url: str = Field(min_length=8, max_length=500)
+    enabled: bool
 
 
 def _load_benchmarks() -> list[dict]:
@@ -281,6 +286,34 @@ async def activate_benchmark_source(
     except SourceActivationError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
     return {"ok": True, **result}
+
+
+@router.patch("/sources/custom")
+def update_custom_source(
+    request: SourceStateUpdate,
+    admin: UserPublic = Depends(require_admin),
+) -> dict:
+    from ..source_management import SourceManagementError, update_source_state
+
+    try:
+        source = update_source_state(request.url, request.enabled, admin.id, BENCHMARKS_FILE)
+    except SourceManagementError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    return {"ok": True, "source": source}
+
+
+@router.delete("/sources/custom")
+def delete_custom_source_config(
+    url: str = Query(min_length=8, max_length=500),
+    admin: UserPublic = Depends(require_admin),
+) -> dict:
+    from ..source_management import SourceManagementError, remove_source
+
+    try:
+        source = remove_source(url, admin.id, BENCHMARKS_FILE)
+    except SourceManagementError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    return {"ok": True, "source": source, "articles_preserved": True}
 
 
 @router.delete("/quality/benchmarks/{benchmark_id}")

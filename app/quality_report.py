@@ -192,7 +192,10 @@ def _benchmark_source(
 ) -> dict | None:
     article_source = str((matched_article or {}).get("source") or "")
     if article_source:
-        exact = next((item for item in sources if item.get("name") == article_source), None)
+        exact = next((
+            item for item in sources
+            if item.get("name") == article_source and item.get("enabled") is not False
+        ), None)
         if exact:
             return exact
     target_host = urlsplit(
@@ -201,6 +204,8 @@ def _benchmark_source(
     if not target_host:
         return None
     for source in sources:
+        if source.get("enabled") is False:
+            continue
         source_host = urlsplit(str(source.get("url") or "")).hostname
         if source_host and (
             source_host == target_host
@@ -450,7 +455,7 @@ def _source_value_report(
     configured = {
         str(source.get("name") or ""): source
         for source in sources
-        if source.get("name") and not source.get("orphan")
+        if source.get("name") and not source.get("orphan") and source.get("enabled") is not False
     }
     observed = [
         article for article in articles
@@ -611,7 +616,10 @@ def build_quality_report(
         and cutoff <= published <= current + timedelta(hours=1)
     ]
 
-    configured = [source for source in sources if not source.get("orphan")]
+    configured = [
+        source for source in sources
+        if not source.get("orphan") and source.get("enabled") is not False
+    ]
     healthy = [source for source in configured if source.get("health_status") == "healthy"]
     fast = [source for source in configured if source.get("cadence") == "fast"]
     fast_healthy = [source for source in fast if source.get("health_status") == "healthy"]
