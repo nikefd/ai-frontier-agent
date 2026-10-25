@@ -39,6 +39,11 @@ class RemediationUpdate(BaseModel):
     note: str = Field(default="", max_length=500)
 
 
+class SourceActivation(BaseModel):
+    url: str = Field(min_length=8, max_length=500)
+    name: str = Field(min_length=2, max_length=80)
+
+
 def _load_benchmarks() -> list[dict]:
     payload = read_json(BENCHMARKS_FILE, [])
     return payload if isinstance(payload, list) else []
@@ -245,6 +250,37 @@ async def discover_benchmark_sources(
 
     update_json_atomic(BENCHMARKS_FILE, [], record)
     return {"ok": True, "total": len(candidates), "items": candidates}
+
+
+@router.post("/quality/benchmarks/{benchmark_id}/activate-source")
+async def activate_benchmark_source(
+    benchmark_id: str,
+    request: SourceActivation,
+    admin: UserPublic = Depends(require_admin),
+) -> dict:
+    current = _coverage_item(benchmark_id)
+    if not current:
+        raise HTTPException(status_code=404, detail="基准事件不存在或不在当前评测窗口")
+    if (current.get("diagnosis") or {}).get("code") != "source_not_configured":
+        raise HTTPException(status_code=409, detail="仅未接入官方来源的诊断可以接入候选")
+    stored = next((item for item in _load_benchmarks() if item.get("id") == benchmark_id), None)
+    candidates = ((stored or {}).get("remediation") or {}).get("source_candidates") or []
+    from ..source_activation import SourceActivationError, activate_source_candidate
+
+    try:
+        result = await activate_source_candidate(
+            benchmark_id=benchmark_id,
+            candidate_url=request.url,
+            name=request.name,
+            source_url=str(current.get("source_url") or ""),
+            title=str(current.get("title") or ""),
+            candidates=candidates,
+            admin_id=admin.id,
+            benchmarks_file=BENCHMARKS_FILE,
+        )
+    except SourceActivationError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return {"ok": True, **result}
 
 
 @router.delete("/quality/benchmarks/{benchmark_id}")

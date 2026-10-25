@@ -27,6 +27,7 @@ from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
 from ..auth import current_user_optional, require_admin, require_user, require_verified_user, require_llm_quota
+from ..custom_sources import load_custom_source_specs
 from ..llm_client import LLMUnavailable, chat_complete, chat_stream, llm_configured
 from ..models import Article, ChatRequest, Guide, Track, UserPublic
 from ..news_alerts import build_breaking_alerts
@@ -43,6 +44,7 @@ AINEWS_DIR = settings.data_dir / "ai-news"
 # ── Global, shared by everyone ──────────────────────────────────────
 ARTICLES_FILE = AINEWS_DIR / "articles.json"
 SOURCES_FILE = AINEWS_DIR / "sources.json"  # per-feed fetch metadata
+CUSTOM_SOURCES_FILE = AINEWS_DIR / "custom-sources.json"
 SUMMARY_FILE = AINEWS_DIR / "summary_today.json"  # cached "today" summary
 READER_CACHE = AINEWS_DIR / "reader-cache"
 
@@ -313,6 +315,15 @@ for _spec in DEFAULT_FEED_SPECS:
     else:
         _spec["cadence"] = "standard"
 
+_default_urls = {spec["url"] for spec in DEFAULT_FEED_SPECS}
+_default_names = {str(spec.get("name") or "").casefold() for spec in DEFAULT_FEED_SPECS}
+for _spec in load_custom_source_specs(CUSTOM_SOURCES_FILE):
+    if _spec["url"] in _default_urls or _spec["name"].casefold() in _default_names:
+        continue
+    DEFAULT_FEED_SPECS.append(_spec)
+    _default_urls.add(_spec["url"])
+    _default_names.add(_spec["name"].casefold())
+
 # Rewrite the public rsshub.app host to the configured (possibly self-hosted)
 # instance. Done once here so DEFAULT_FEEDS, FEED_SPEC_BY_URL and everything
 # downstream consistently use the resolved host.
@@ -325,6 +336,27 @@ if settings.rsshub_base and settings.rsshub_base.rstrip("/") != "https://rsshub.
 DEFAULT_FEEDS: list[str] = [f["url"] for f in DEFAULT_FEED_SPECS]
 # Quick lookup by url
 FEED_SPEC_BY_URL: dict[str, dict] = {f["url"]: f for f in DEFAULT_FEED_SPECS}
+
+
+def register_custom_feed_spec(spec: dict) -> bool:
+    """Make a persisted custom source available without restarting the process."""
+    url = str(spec.get("url") or "")
+    name = str(spec.get("name") or "").casefold()
+    if url in FEED_SPEC_BY_URL or any(
+        str(item.get("name") or "").casefold() == name for item in DEFAULT_FEED_SPECS
+    ):
+        return False
+    normalized = {
+        **spec,
+        "tier": "high",
+        "category": "vendor",
+        "cadence": "fast",
+        "custom": True,
+    }
+    DEFAULT_FEED_SPECS.append(normalized)
+    DEFAULT_FEEDS.append(url)
+    FEED_SPEC_BY_URL[url] = normalized
+    return True
 
 
 # ── AI relevance keyword allowlist ─────────────────────────────────
@@ -821,6 +853,7 @@ def list_sources() -> list[dict]:
             "category": spec.get("category") or m.get("category"),
             "cadence": spec.get("cadence", "standard"),
             "description": spec.get("description") or "",
+            "custom": bool(spec.get("custom")),
             "enabled": True,
             "last_fetch": m.get("last_fetch"),
             "last_ok": m.get("last_ok"),

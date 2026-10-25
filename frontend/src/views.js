@@ -446,7 +446,15 @@ function renderRemediationControls(item) {
   const sourceCandidates = (remediation.source_candidates || []).map(candidate => {
     const candidateUrl = safeExternalUrl(candidate.url);
     if (!candidateUrl) return '';
-    return `<div class="source-discovery-row"><span>${candidate.ready ? '可直接接入' : '需适配'} · ${escapeHtml(kindLabels[candidate.kind] || candidate.kind || '入口')}</span><a href="${escapeHtml(candidateUrl)}" target="_blank" rel="noopener">${escapeHtml(candidateUrl)}</a><small>${escapeHtml(candidate.evidence || '')}；${escapeHtml(candidate.next_step || '')}</small></div>`;
+    const defaultName = (() => {
+      try { return new URL(candidateUrl).hostname.replace(/^www\./, ''); } catch { return '官方更新'; }
+    })();
+    const activation = candidate.activated_at
+      ? `<div class="source-activation-done">✓ 已接入为 ${escapeHtml(candidate.activated_name || defaultName)} · 试抓新增 ${Number(candidate.activated_added || 0)} 篇</div>`
+      : (candidate.ready && ['rss', 'atom'].includes(candidate.kind)
+        ? `<div class="source-activation"><input type="text" maxlength="80" value="${escapeHtml(defaultName)}" aria-label="来源名称"><button class="ghost sm" data-source-activate data-benchmark-id="${escapeHtml(item.id || '')}" data-source-url="${escapeHtml(candidateUrl)}">接入并试抓</button></div>`
+        : '');
+    return `<div class="source-discovery-row"><span>${candidate.ready ? '可直接接入' : '需适配'} · ${escapeHtml(kindLabels[candidate.kind] || candidate.kind || '入口')}</span><a href="${escapeHtml(candidateUrl)}" target="_blank" rel="noopener">${escapeHtml(candidateUrl)}</a><small>${escapeHtml(candidate.evidence || '')}；${escapeHtml(candidate.next_step || '')}</small>${activation}</div>`;
   }).join('');
   const discoveryResults = sourceCandidates
     ? `<div class="source-discovery-results">${sourceCandidates}</div>`
@@ -559,6 +567,28 @@ function bindBenchmarkControls(root, candidates = []) {
       if (msg) msg.textContent = error.message || '官方入口发现失败';
       button.disabled = false;
       button.textContent = '发现官方入口';
+    }
+  }));
+  root.querySelectorAll('[data-source-activate]').forEach(button => button.addEventListener('click', async () => {
+    const name = button.parentElement?.querySelector('input')?.value.trim() || '';
+    const msg = root.querySelector('#benchmark-msg');
+    if (name.length < 2) {
+      if (msg) msg.textContent = '请填写至少 2 个字符的来源名称。';
+      return;
+    }
+    button.disabled = true;
+    button.textContent = '接入中…';
+    try {
+      const result = await api('POST', `/api/ai-news/quality/benchmarks/${encodeURIComponent(button.dataset.benchmarkId)}/activate-source`, {
+        url: button.dataset.sourceUrl,
+        name,
+      });
+      if (msg) msg.textContent = `来源已接入 fast 层，试抓新增 ${result.added || 0} 篇。`;
+      await loadSources();
+    } catch (error) {
+      if (msg) msg.textContent = error.message || '来源接入失败';
+      button.disabled = false;
+      button.textContent = '接入并试抓';
     }
   }));
   root.querySelectorAll('[data-remediation-close]').forEach(button => button.addEventListener('click', async () => {

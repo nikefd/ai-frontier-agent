@@ -182,3 +182,11 @@ async def discover_official_sources(source_url: str) -> list[dict]:
         candidates,
         key=lambda item: (not item["ready"], {"rss": 0, "atom": 0, "sitemap": 1}.get(item["kind"], 2), item["url"]),
     )[:6]
+
+
+async def validate_discovered_feed(url: str, source_url: str) -> dict | None:
+    """Revalidate a stored RSS/Atom candidate immediately before activation."""
+    item = await _inspect_candidate((url, "feed", "接入前重新验证"), source_url)
+    if not item or item.get("kind") not in {"rss", "atom"} or not item.get("ready"):
+        return None
+    return item

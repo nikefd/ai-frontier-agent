@@ -19,6 +19,7 @@
 |---|---|---|
 | `articles.json` | list | 文章主存储，上限 400（被任一用户 pin 的不淘汰）。每项是 `Article`。**不含 per-user 的 `pinned`/`deep_dive_status`** |
 | `sources.json` | dict（按 url 为 key） | 每个 feed 的抓取元数据 |
+| `custom-sources.json` | list | 管理员从漏报诊断候选确认接入的 RSS/Atom 来源；启动时与 115 个内置源合并 |
 | `coverage-benchmarks.json` | list | 管理员登记的必达事件基准；用于计算准时召回、迟到和漏报 |
 | `summary_today.json` | dict | 缓存的「今日速报」 |
 | `summary_history.json` | list | 已生成速报的公开 RSS 历史；最近 30 天、最多 180 个不同 cohort |
@@ -99,6 +100,10 @@
 list，每项由管理员登记：`{id, title, occurred_at, source_url, event_key, match_terms[], deadline_hours, created_at, created_by, remediation?}`。`source_url`、`event_key`、`match_terms` 至少提供一种匹配信号；`deadline_hours` 限 1–168 小时。`remediation` 按需保存 `status/outcome/note/diagnosis_code/started_at/updated_at/updated_by/last_recheck_at/last_recheck_added/source_discovery_at/source_candidates[]`；来源候选含验证后的 `url/kind/ready/entry_count/dated_entries/latest_at/evidence/next_step`。完整内部说明、发现候选和操作者仅 admin 接口返回，公开质量报告只投影状态、结果和复测摘要。
 
 评测状态 `on_time / late / missed / pending` 不持久化，而是由当前文章库的 URL、事件键或关键词确定性匹配后实时计算。准时召回率只以已到截止时间的事件为分母；最近 30 天之外的基准不参与当前报告。这个人工维护集合用于衡量已知关键事件的绝对召回，不代表对整个互联网的完整召回率。
+
+### 3.2b custom-sources.json（管理员确认的自定义源）
+
+list，每项是 `{url,name,kind,tier,category,cadence,custom,description,benchmark_id,created_at,created_by}`。目前只允许来源发现流程两次验证通过且带日期条目的 `rss/atom`，运行时强制归一化为 `high/vendor/fast`；额外字段用于追溯来源，不会由公开 `/sources` 返回。写入后同一进程立即注册，重启时由 `app/custom_sources.py` 加载并与内置注册表按 URL/名称去重。
 
 ### 3.3 deep-dives/{aid}.json
 

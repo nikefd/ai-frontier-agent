@@ -187,6 +187,7 @@ agent 主动提议（B2）：基于用户行为信号给「下一步」建议。
 | PATCH | `/quality/benchmarks/{id}/remediation` | admin | 更新迟到/漏报处理状态：`action=start/reopen`，或 `action=close` 并提供 `outcome=fixed/accepted/false_positive` 与至少 3 字说明；保存诊断快照、时间和操作者 |
 | POST | `/quality/benchmarks/{id}/recheck` | admin | 只重抓当前诊断所关联的已配置来源，记录复测时间和新增数量，再返回刷新后的诊断；没有已配置来源时返回 409 |
 | POST | `/quality/benchmarks/{id}/discover-sources` | admin | 仅用于 `source_not_configured`：从基准官方 URL 安全探测并验证同站 RSS/Atom、sitemap 与更新页，保存最多 6 个候选；返回 `kind/ready/entry_count/dated_entries/evidence/next_step`，不自动修改生产源清单 |
+| POST | `/quality/benchmarks/{id}/activate-source` | admin | `{url,name}`；仅接受该基准已发现、接入前重新验证仍 ready 的 RSS/Atom。写入持久化自定义源，固定加入 fast/vendor/high 注册表并立即单源试抓；重复 URL/名称或需适配候选返回 409 |
 | DELETE | `/quality/benchmarks/{id}` | admin | 删除误录或不再需要的基准事件 |
 | POST | `/fetch` | admin | 立即跑一轮全局抓取：相关性过滤 → 每源分轮 → 分类硬配额 → 全局 150 条上限，返回 `{ok, added}` |
 | POST | `/translate/run` | admin | 手动跑一批全局翻译，返回 `{ok, translated}` |

@@ -64,6 +64,10 @@ def test_admin_can_create_and_delete_benchmark_but_regular_user_cannot() -> None
     assert client.post(
         f"/api/ai-news/quality/benchmarks/{benchmark['id']}/discover-sources"
     ).status_code == 403
+    assert client.post(
+        f"/api/ai-news/quality/benchmarks/{benchmark['id']}/activate-source",
+        json={"url": "https://openai.com/feed.xml", "name": "OpenAI Feed"},
+    ).status_code == 403
     assert client.delete(f"/api/ai-news/quality/benchmarks/{benchmark['id']}").status_code == 403
 
     client.post("/api/auth/logout")
@@ -159,3 +163,38 @@ def test_admin_can_discover_and_persist_unconfigured_source_candidates(monkeypat
     assert stored["remediation"]["source_candidates"] == [candidate]
     public_item = client.get("/api/ai-news/quality/report").json()["benchmark_coverage"]["items"][0]
     assert "source_candidates" not in public_item["remediation"]
+
+    async def fake_validate(url: str, source_url: str):
+        assert url == candidate["url"]
+        assert source_url == "https://missing-lab.test/news/model"
+        return candidate
+
+    async def fake_fetch(feeds):
+        assert feeds == [candidate["url"]]
+        return 3
+
+    monkeypatch.setattr(discovery, "validate_discovered_feed", fake_validate)
+    import app.workers.ai_news_fetcher as fetcher
+    monkeypatch.setattr(fetcher, "fetch_once", fake_fetch)
+    activated = client.post(
+        f"/api/ai-news/quality/benchmarks/{created['id']}/activate-source",
+        json={"url": candidate["url"], "name": "Missing Lab Official"},
+    )
+    assert activated.status_code == 200
+    assert activated.json()["added"] == 3
+    assert activated.json()["source"]["cadence"] == "fast"
+    assert activated.json()["source"]["category"] == "vendor"
+
+    sources = client.get("/api/ai-news/sources").json()
+    custom = next(item for item in sources if item["url"] == candidate["url"])
+    assert custom["custom"] is True
+    assert custom["name"] == "Missing Lab Official"
+
+    stored = client.get("/api/ai-news/quality/benchmarks").json()["items"][0]
+    activated_candidate = stored["remediation"]["source_candidates"][0]
+    assert activated_candidate["activated_name"] == "Missing Lab Official"
+    assert activated_candidate["activated_added"] == 3
+    assert client.post(
+        f"/api/ai-news/quality/benchmarks/{created['id']}/activate-source",
+        json={"url": candidate["url"], "name": "Missing Lab Official"},
+    ).status_code == 409

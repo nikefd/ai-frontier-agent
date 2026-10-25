@@ -1386,6 +1386,9 @@ body[data-agent="ai-news"] .article-item.is-active {
 .source-discovery-row > span { color: var(--accent); font-weight: 600; }
 .source-discovery-row > a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
 .source-discovery-row > small { grid-column: 1 / -1; }
+.source-activation { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; margin-top: 3px; }
+.source-activation input { min-width: 0; padding: 5px 7px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-elev-1); color: var(--text); font-size: 11px; }
+.source-activation-done { grid-column: 1 / -1; color: var(--success, #15803d); font-size: 11px; }
 .benchmark-admin { flex-direction: column; gap: 7px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
 .benchmark-form { display: grid; grid-template-columns: 1.2fr 1fr 1.2fr 1.2fr auto auto; gap: 6px; }
 .benchmark-form input, .benchmark-form select { min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-elev-1); color: var(--text); font-size: 11px; }
