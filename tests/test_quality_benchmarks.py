@@ -171,16 +171,18 @@ def test_admin_can_discover_and_persist_unconfigured_source_candidates(monkeypat
     public_item = client.get("/api/ai-news/quality/report").json()["benchmark_coverage"]["items"][0]
     assert "source_candidates" not in public_item["remediation"]
 
-    async def fake_validate(url: str, source_url: str):
+    async def fake_validate(url: str, source_url: str, kind: str):
         assert url == candidate["url"]
         assert source_url == "https://missing-lab.test/news/model"
+        assert kind == "rss"
         return candidate
 
     async def fake_fetch(feeds):
         assert feeds == [candidate["url"]]
         return 3
 
-    monkeypatch.setattr(discovery, "validate_discovered_feed", fake_validate)
+    import app.source_activation as activation
+    monkeypatch.setattr(activation, "validate_discovered_source", fake_validate)
     import app.workers.ai_news_fetcher as fetcher
     monkeypatch.setattr(fetcher, "fetch_once", fake_fetch)
     activated = client.post(
@@ -244,3 +246,59 @@ def test_admin_can_discover_and_persist_unconfigured_source_candidates(monkeypat
     assert client.delete(
         "/api/ai-news/sources/custom?url=https%3A%2F%2Fmissing-lab.test%2Ffeed.xml"
     ).status_code == 404
+
+
+def test_admin_can_validate_and_activate_sitemap_adapter(monkeypatch) -> None:
+    client = _fresh_client()
+    _register(client, "admin@example.test")
+    created = client.post("/api/ai-news/quality/benchmarks", json={
+        "title": "Adapter Lab 模型发布",
+        "occurred_at": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat(),
+        "source_url": "https://adapter-lab.test/news/model",
+        "deadline_hours": 6,
+    }).json()
+    candidate = {
+        "url": "https://adapter-lab.test/sitemap.xml", "kind": "sitemap",
+        "ready": False, "entry_count": 30, "dated_entries": 30,
+        "evidence": "有效 sitemap", "next_step": "自动验证",
+    }
+
+    async def fake_discovery(_source_url: str):
+        return [candidate]
+
+    import app.source_discovery as discovery
+    monkeypatch.setattr(discovery, "discover_official_sources", fake_discovery)
+    response = client.post(f"/api/ai-news/quality/benchmarks/{created['id']}/discover-sources")
+    assert response.status_code == 200
+
+    async def fake_validate(url: str, source_url: str, kind: str):
+        assert (url, source_url, kind) == (
+            candidate["url"], "https://adapter-lab.test/news/model", "sitemap",
+        )
+        return {
+            **candidate, "ready": True,
+            "adapter": {"format": "sitemap", "include_paths": ["/news/"]},
+        }
+
+    import app.source_activation as activation
+    monkeypatch.setattr(activation, "validate_discovered_source", fake_validate)
+
+    async def fake_fetch(feeds):
+        assert feeds == [candidate["url"]]
+        return 2
+
+    import app.workers.ai_news_fetcher as fetcher
+    monkeypatch.setattr(fetcher, "fetch_once", fake_fetch)
+    activated = client.post(
+        f"/api/ai-news/quality/benchmarks/{created['id']}/activate-source",
+        json={"url": candidate["url"], "name": "Adapter Lab News"},
+    )
+
+    assert activated.status_code == 200
+    assert activated.json()["source"]["format"] == "sitemap"
+    assert activated.json()["source"]["include_paths"] == ["/news/"]
+    source = next(
+        item for item in client.get("/api/ai-news/sources").json()
+        if item["url"] == candidate["url"]
+    )
+    assert source["custom"] is True

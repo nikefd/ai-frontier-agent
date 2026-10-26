@@ -6,7 +6,7 @@ from urllib.parse import urlsplit
 
 from .storage import read_json, update_json_atomic
 
-_ALLOWED_KINDS = {"rss", "atom"}
+_ALLOWED_KINDS = {"rss", "atom", "sitemap", "update_page"}
 
 
 def load_custom_source_specs(path: Path) -> list[dict]:
@@ -21,6 +21,15 @@ def load_custom_source_specs(path: Path) -> list[dict]:
         name = str(item.get("name") or "").strip()
         parsed = urlsplit(url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc or not name:
+            continue
+        kind = str(item.get("kind"))
+        if kind == "sitemap" and (
+            item.get("format") != "sitemap"
+            or not isinstance(item.get("include_paths"), list)
+            or not item.get("include_paths")
+        ):
+            continue
+        if kind == "update_page" and item.get("format") != "auto_listing":
             continue
         specs.append({
             **item,

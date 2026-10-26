@@ -19,7 +19,7 @@
 |---|---|---|
 | `articles.json` | list | 文章主存储，上限 400（被任一用户 pin 的不淘汰）。每项是 `Article`。**不含 per-user 的 `pinned`/`deep_dive_status`** |
 | `sources.json` | dict（按 url 为 key） | 每个 feed 的抓取元数据 |
-| `custom-sources.json` | list | 管理员从漏报诊断候选确认接入的 RSS/Atom 来源；启动时与 115 个内置源合并 |
+| `custom-sources.json` | list | 管理员从漏报诊断候选确认接入的 RSS/Atom、Sitemap 或结构化更新页；启动时与 115 个内置源合并 |
 | `coverage-benchmarks.json` | list | 管理员登记的必达事件基准；用于计算准时召回、迟到和漏报 |
 | `summary_today.json` | dict | 缓存的「今日速报」 |
 | `summary_history.json` | list | 已生成速报的公开 RSS 历史；最近 30 天、最多 180 个不同 cohort |
@@ -103,7 +103,7 @@ list，每项由管理员登记：`{id, title, occurred_at, source_url, event_ke
 
 ### 3.2b custom-sources.json（管理员确认的自定义源）
 
-list，每项是 `{url,name,kind,tier,category,cadence,custom,enabled,description,benchmark_id,created_at,created_by,updated_at?,updated_by?}`。目前只允许来源发现流程两次验证通过且带日期条目的 `rss/atom`，运行时强制归一化为 `high/vendor/fast`；额外字段用于追溯来源，不会由公开 `/sources` 返回。`enabled` 缺失按 true 兼容老数据；false 时配置仍加载并显示，但不会进入默认全量抓取或 cadence 调度。写入后同一进程立即注册，重启时由 `app/custom_sources.py` 加载并与内置注册表按 URL/名称去重；删除只移除此项，不清理 `articles.json` 或 `sources.json`。
+list，每项是 `{url,name,kind,tier,category,cadence,custom,enabled,description,benchmark_id,created_at,created_by,updated_at?,updated_by?,format?,include_paths?}`。来源发现流程会在接入前二次验证：`rss/atom` 必须有带日期条目；`sitemap` 必须带服务端推断并经落地页日期抽样验证的 `format=sitemap + include_paths[]`；`update_page` 必须带 `format=auto_listing` 且当时至少解析出两个带日期的同站内容卡片。运行时统一归一化为 `high/vendor/fast`；额外字段用于追溯来源，不会由公开 `/sources` 返回。`enabled` 缺失按 true 兼容老数据；false 时配置仍加载并显示，但不会进入默认全量抓取或 cadence 调度。写入后同一进程立即注册，重启时由 `app/custom_sources.py` 校验适配字段并与内置注册表按 URL/名称去重；删除只移除此项，不清理 `articles.json` 或 `sources.json`。
 
 ### 3.3 deep-dives/{aid}.json
 

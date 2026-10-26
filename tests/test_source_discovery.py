@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.source_discovery import discover_official_sources
+from app.source_discovery import discover_official_sources, validate_discovered_source
 
 
 @pytest.mark.asyncio
@@ -91,3 +91,55 @@ async def test_discovery_drops_unvalidated_guesses(monkeypatch) -> None:
 
     monkeypatch.setattr("app.source_discovery.fetch_public_document", fake_fetch)
     assert await discover_official_sources("https://quiet.test/news/item") == []
+
+
+@pytest.mark.asyncio
+async def test_sitemap_adapter_infers_path_and_verifies_page_dates(monkeypatch) -> None:
+    sitemap = b"""<sitemapindex><sitemap><loc>https://lab.test/news-sitemap.xml</loc></sitemap></sitemapindex>"""
+    child_sitemap = b"""<urlset>
+      <url><loc>https://lab.test/news/model-x</loc><lastmod>2026-10-25</lastmod></url>
+      <url><loc>https://lab.test/news/agent</loc><lastmod>2026-10-24</lastmod></url>
+      <url><loc>https://lab.test/about</loc><lastmod>2026-10-25</lastmod></url>
+    </urlset>"""
+    pages = {
+        "https://lab.test/news/model-x": b'<meta property="article:published_time" content="2026-10-25T09:00:00Z"><h1>Model X</h1>',
+        "https://lab.test/news/agent": b'<script type="application/ld+json">{"datePublished":"2026-10-24","headline":"Agent"}</script>',
+    }
+
+    async def fake_fetch(url: str, _max_bytes: int):
+        if url == "https://lab.test/sitemap.xml":
+            return sitemap, url, "application/xml", "utf-8"
+        if url == "https://lab.test/news-sitemap.xml":
+            return child_sitemap, url, "application/xml", "utf-8"
+        if url in pages:
+            return pages[url], url, "text/html", "utf-8"
+        raise RuntimeError("not found")
+
+    monkeypatch.setattr("app.source_adapter_validation.fetch_public_document", fake_fetch)
+    result = await validate_discovered_source(
+        "https://lab.test/sitemap.xml", "https://lab.test/news/missed", "sitemap",
+    )
+
+    assert result and result["ready"] is True
+    assert result["adapter"] == {"format": "sitemap", "include_paths": ["/news/"]}
+    assert result["entry_count"] == 2
+    assert result["dated_entries"] == 2
+
+
+@pytest.mark.asyncio
+async def test_update_page_adapter_requires_multiple_dated_cards(monkeypatch) -> None:
+    page = b"""<main>
+      <article><a href="/updates/model"><h2>New Model</h2></a><time>2026-10-25</time></article>
+      <article><a href="/updates/api"><h2>API Update</h2></a><time>2026-10-24</time></article>
+    </main>"""
+
+    async def fake_fetch(url: str, _max_bytes: int):
+        return page, url, "text/html", "utf-8"
+
+    monkeypatch.setattr("app.source_adapter_validation.fetch_public_document", fake_fetch)
+    result = await validate_discovered_source(
+        "https://lab.test/updates", "https://lab.test/updates/model", "update_page",
+    )
+
+    assert result and result["adapter"] == {"format": "auto_listing"}
+    assert result["dated_entries"] == 2

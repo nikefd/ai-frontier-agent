@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .custom_sources import add_custom_source
-from .source_discovery import validate_discovered_feed
+from .source_discovery import validate_discovered_source
 from .storage import update_json_atomic
 
 
@@ -28,15 +28,18 @@ async def activate_source_candidate(
         (item for item in candidates if isinstance(item, dict) and item.get("url") == candidate_url),
         None,
     )
-    if not candidate or candidate.get("kind") not in {"rss", "atom"} or not candidate.get("ready"):
+    kind = str((candidate or {}).get("kind") or "")
+    if not candidate or kind not in {"rss", "atom", "sitemap", "update_page"}:
         raise SourceActivationError("该候选尚未达到可直接接入标准")
+    if kind in {"rss", "atom"} and not candidate.get("ready"):
+        raise SourceActivationError("该 Feed 缺少可信发布时间，暂不能接入")
 
     normalized_name = " ".join(name.split())
     if len(normalized_name) < 2:
         raise SourceActivationError("来源名称至少需要 2 个可见字符")
-    verified = await validate_discovered_feed(candidate_url, source_url)
+    verified = await validate_discovered_source(candidate_url, source_url, kind)
     if not verified:
-        raise SourceActivationError("候选重新验证失败，请先重新发现入口")
+        raise SourceActivationError("自动适配未解析出足够的带日期条目，请保留为待适配")
 
     from .routers.ai_news import (
         CUSTOM_SOURCES_FILE,
@@ -52,6 +55,7 @@ async def activate_source_candidate(
 
     now = datetime.now(timezone.utc).isoformat()
     spec = {
+        **(verified.get("adapter") or {}),
         "url": url,
         "name": normalized_name,
         "kind": str(verified["kind"]),

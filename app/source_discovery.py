@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 import asyncio
-import re
 from datetime import datetime, timezone
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 import feedparser
 from bs4 import BeautifulSoup
 
+from .auto_listing import parse_auto_listing_entries
 from .safe_fetch import fetch_public_document
 
 _DISCOVERY_LIMIT = 10
@@ -97,16 +97,19 @@ async def _inspect_candidate(seed: tuple[str, str, str], source_url: str) -> dic
         }
     soup = BeautifulSoup(raw, "xml")
     sitemap_urls = soup.find_all("url")
-    if sitemap_urls:
+    sitemap_children = soup.find_all("sitemap")
+    if sitemap_urls or sitemap_children:
+        count = len(sitemap_urls) or len(sitemap_children)
+        structure = "URL" if sitemap_urls else "子 Sitemap"
         return {
             "url": final_url,
             "kind": "sitemap",
             "ready": False,
-            "entry_count": len(sitemap_urls),
+            "entry_count": count,
             "dated_entries": sum(node.find("lastmod") is not None for node in sitemap_urls),
             "latest_at": None,
-            "evidence": f"{evidence}；有效 sitemap，包含 {len(sitemap_urls)} 个 URL",
-            "next_step": "选择稳定内容路径，并从落地页提取真实发布日期",
+            "evidence": f"{evidence}；有效 sitemap，包含 {count} 个{structure}",
+            "next_step": "可自动推断内容路径，并从落地页验证真实发布日期",
         }
     if hint != "update_page" or content_type not in {"text/html", "application/xhtml+xml"}:
         return None
@@ -120,16 +123,20 @@ async def _inspect_candidate(seed: tuple[str, str, str], source_url: str) -> dic
     visible_items = max(len(page.find_all("article")), len(relevant_links))
     if visible_items < 2:
         return None
-    dated = len(page.find_all("time")) + len(re.findall(r"\b20\d{2}[-/.]\d{1,2}[-/.]\d{1,2}\b", html))
+    parsed_entries = parse_auto_listing_entries(raw, final_url)
+    dated = len(parsed_entries)
     return {
         "url": final_url,
         "kind": "update_page",
-        "ready": False,
+        "ready": len(parsed_entries) >= 2,
         "entry_count": visible_items,
         "dated_entries": dated,
-        "latest_at": None,
+        "latest_at": parsed_entries[0]["date"] if parsed_entries else None,
         "evidence": f"{evidence}；页面可访问并发现约 {visible_items} 个更新入口",
-        "next_step": "配置 html_listing 选择器并验证每条真实发布日期",
+        "next_step": (
+            "已识别带日期的同站更新卡片，可验证后接入"
+            if len(parsed_entries) >= 2 else "需补充页面结构适配或真实发布日期"
+        ),
     }
 
 
@@ -190,3 +197,11 @@ async def validate_discovered_feed(url: str, source_url: str) -> dict | None:
     if not item or item.get("kind") not in {"rss", "atom"} or not item.get("ready"):
         return None
     return item
+
+
+async def validate_discovered_source(url: str, source_url: str, kind: str) -> dict | None:
+    """Revalidate and derive a production adapter for a stored candidate."""
+    if kind in {"rss", "atom"}:
+        return await validate_discovered_feed(url, source_url)
+    from .source_adapter_validation import validate_page_adapter
+    return await validate_page_adapter(url, source_url, kind)

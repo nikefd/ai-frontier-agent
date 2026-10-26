@@ -452,12 +452,17 @@ function renderRemediationControls(item) {
     const defaultName = (() => {
       try { return new URL(candidateUrl).hostname.replace(/^www\./, ''); } catch { return '官方更新'; }
     })();
+    const canActivate = (
+      candidate.ready && ['rss', 'atom'].includes(candidate.kind)
+    ) || ['sitemap', 'update_page'].includes(candidate.kind);
+    const actionLabel = ['sitemap', 'update_page'].includes(candidate.kind) ? '验证并接入' : '接入并试抓';
     const activation = candidate.activated_at
       ? `<div class="source-activation-done">${candidate.source_enabled === false ? '⏸ 已停用：' : '✓ 已接入为 '}${escapeHtml(candidate.activated_name || defaultName)} · 试抓新增 ${Number(candidate.activated_added || 0)} 篇</div>`
-      : (candidate.ready && ['rss', 'atom'].includes(candidate.kind)
-        ? `<div class="source-activation"><input type="text" maxlength="80" value="${escapeHtml(defaultName)}" aria-label="来源名称"><button class="ghost sm" data-source-activate data-benchmark-id="${escapeHtml(item.id || '')}" data-source-url="${escapeHtml(candidateUrl)}">接入并试抓</button></div>`
+      : (canActivate
+        ? `<div class="source-activation"><input type="text" maxlength="80" value="${escapeHtml(defaultName)}" aria-label="来源名称"><button class="ghost sm" data-source-activate data-benchmark-id="${escapeHtml(item.id || '')}" data-source-url="${escapeHtml(candidateUrl)}" data-source-kind="${escapeHtml(candidate.kind || '')}" data-action-label="${actionLabel}">${actionLabel}</button></div>`
         : '');
-    return `<div class="source-discovery-row"><span>${candidate.ready ? '可直接接入' : '需适配'} · ${escapeHtml(kindLabels[candidate.kind] || candidate.kind || '入口')}</span><a href="${escapeHtml(candidateUrl)}" target="_blank" rel="noopener">${escapeHtml(candidateUrl)}</a><small>${escapeHtml(candidate.evidence || '')}；${escapeHtml(candidate.next_step || '')}</small>${activation}</div>`;
+    const readiness = candidate.ready ? '可直接接入' : (canActivate ? '可自动验证适配' : '需适配');
+    return `<div class="source-discovery-row"><span>${readiness} · ${escapeHtml(kindLabels[candidate.kind] || candidate.kind || '入口')}</span><a href="${escapeHtml(candidateUrl)}" target="_blank" rel="noopener">${escapeHtml(candidateUrl)}</a><small>${escapeHtml(candidate.evidence || '')}；${escapeHtml(candidate.next_step || '')}</small>${activation}</div>`;
   }).join('');
   const discoveryResults = sourceCandidates
     ? `<div class="source-discovery-results">${sourceCandidates}</div>`
@@ -580,7 +585,7 @@ function bindBenchmarkControls(root, candidates = []) {
       return;
     }
     button.disabled = true;
-    button.textContent = '接入中…';
+    button.textContent = ['sitemap', 'update_page'].includes(button.dataset.sourceKind) ? '验证中…' : '接入中…';
     try {
       const result = await api('POST', `/api/ai-news/quality/benchmarks/${encodeURIComponent(button.dataset.benchmarkId)}/activate-source`, {
         url: button.dataset.sourceUrl,
@@ -591,7 +596,7 @@ function bindBenchmarkControls(root, candidates = []) {
     } catch (error) {
       if (msg) msg.textContent = error.message || '来源接入失败';
       button.disabled = false;
-      button.textContent = '接入并试抓';
+      button.textContent = button.dataset.actionLabel || '接入并试抓';
     }
   }));
   root.querySelectorAll('[data-remediation-close]').forEach(button => button.addEventListener('click', async () => {

@@ -43,3 +43,23 @@ def test_custom_sources_are_persisted_normalized_and_deduplicated(tmp_path) -> N
     assert removed and removed["name"] == "Lab Updates"
     assert load_custom_source_specs(path) == []
     assert delete_custom_source(path, source["url"]) is None
+
+
+def test_custom_source_loader_accepts_only_complete_page_adapters(tmp_path) -> None:
+    path = tmp_path / "custom-sources.json"
+    assert add_custom_source(path, {
+        "url": "https://lab.test/sitemap.xml", "name": "Lab News",
+        "kind": "sitemap", "format": "sitemap", "include_paths": ["/news/"],
+    }) is True
+    assert add_custom_source(path, {
+        "url": "https://studio.test/updates", "name": "Studio Updates",
+        "kind": "update_page", "format": "auto_listing",
+    }) is True
+    assert add_custom_source(path, {
+        "url": "https://broken.test/sitemap.xml", "name": "Broken Sitemap",
+        "kind": "sitemap", "format": "sitemap",
+    }) is True
+
+    loaded = load_custom_source_specs(path)
+    assert [item["name"] for item in loaded] == ["Lab News", "Studio Updates"]
+    assert loaded[0]["include_paths"] == ["/news/"]

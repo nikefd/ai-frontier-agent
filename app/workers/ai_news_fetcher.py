@@ -32,6 +32,7 @@ import feedparser
 import httpx
 from bs4 import BeautifulSoup
 
+from ..auto_listing import parse_auto_listing_entries
 from ..routers.ai_news import (
     DEFAULT_FEEDS,
     DEFAULT_FEED_SPECS,
@@ -817,6 +818,10 @@ async def _fetch_feed(
     if spec.get("format") == "html_listing":
         entries = _parse_html_listing_entries(r.content, url, spec)
         error = None if entries else "official HTML listing contained no parseable updates"
+        return entries, spec.get("name") or url, error
+    if spec.get("format") == "auto_listing":
+        entries = parse_auto_listing_entries(r.content, url)
+        error = None if entries else "official update page contained no dated linked updates"
         return entries, spec.get("name") or url, error
     if spec.get("format") == "stepfun_news":
         soup = BeautifulSoup(r.content, "lxml")

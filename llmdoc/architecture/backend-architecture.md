@@ -57,7 +57,7 @@ main.py ──┬─> routers/ai_news.py ──┬─> models.py
           ├─> routers/feed_personal.py ──> routers/ai_news.py（cohort/loaders）+ profile.py（信号聚合）+ auth
           ├─> routers/review.py ───> srs.py（SM-2 纯函数）+ routers/ai_news.py（文章/解读转卡）+ storage/auth
           ├─> routers/experiments.py ─> routers/ai_news.py（文章/用户路径）+ llm_client/storage/auth
-          ├─> routers/quality.py ──> quality_report.py（纯计算）+ source_discovery.py / source_activation.py / source_management.py / custom_sources.py + routers/ai_news.py（文章/来源注册表）
+          ├─> routers/quality.py ──> quality_report.py（纯计算）+ source_discovery.py / source_adapter_validation.py / source_activation.py / auto_listing.py / source_management.py / custom_sources.py + routers/ai_news.py（文章/来源注册表）
           ├─> auth.py ─────────────┬─> models.py / storage.py / settings.py
           │                        └─> migrate.py（注册时继承 _legacy）
           ├─> agent_chat.py ───────┬─> agent_tools.py ──> routers/ai_news.py（复用其 _load_* 与路径函数）
