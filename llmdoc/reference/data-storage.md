@@ -19,7 +19,7 @@
 |---|---|---|
 | `articles.json` | list | 文章主存储，上限 400（被任一用户 pin 的不淘汰）。每项是 `Article`。**不含 per-user 的 `pinned`/`deep_dive_status`** |
 | `sources.json` | dict（按 url 为 key） | 每个 feed 的抓取元数据 |
-| `custom-sources.json` | list | 管理员从漏报诊断候选确认接入的 RSS/Atom、Sitemap 或结构化更新页；启动时与 115 个内置源合并 |
+| `custom-sources.json` | list | 管理员从漏报诊断候选确认接入的 RSS/Atom、Sitemap 或结构化更新页；启动时与 118 个内置源合并 |
 | `coverage-benchmarks.json` | list | 管理员登记的必达事件基准；用于计算准时召回、迟到和漏报 |
 | `summary_today.json` | dict | 缓存的「今日速报」 |
 | `summary_history.json` | list | 已生成速报的公开 RSS 历史；最近 30 天、最多 180 个不同 cohort |

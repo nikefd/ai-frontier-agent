@@ -39,6 +39,7 @@ from app.workers.ai_news_fetcher import (
     _select_candidates,
 )
 from app.publication_dates import publication_date_from_url, repair_known_publication_dates
+from app.official_page_adapters import parse_luma_news_entries
 from app.storage import read_json, write_json_atomic
 
 
@@ -76,7 +77,7 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
     urls = {spec["url"] for spec in DEFAULT_FEED_SPECS}
     names = {spec["name"] for spec in DEFAULT_FEED_SPECS}
     by_url = {spec["url"]: spec for spec in DEFAULT_FEED_SPECS}
-    assert len(DEFAULT_FEED_SPECS) == 115
+    assert len(DEFAULT_FEED_SPECS) == 118
     assert len(urls) == len(DEFAULT_FEED_SPECS)
     assert len(names) == len(DEFAULT_FEED_SPECS)
     assert {
@@ -101,6 +102,9 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "https://www.langchain.com/sitemap.xml",
         "https://mlflow.org/blog/rss.xml",
         "https://api.github.com/repos/xai-org/xai-sdk-python/releases?per_page=20",
+        "https://x.ai/news",
+        "https://lumalabs.ai/news",
+        "https://ideogram.ai/blog/",
         "https://api.github.com/repos/huggingface/transformers/releases?per_page=20",
         "https://api.github.com/repos/vllm-project/vllm/releases?per_page=20",
         "https://app.klingai.com/global/blog?tab=product-features",
@@ -144,6 +148,34 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         }
     )
     assert "https://ltx.io/release-notes" not in urls
+
+
+def test_luma_adapter_keeps_product_signals_and_rejects_blog_noise() -> None:
+    page = b'''<main>
+      <div class="group relative grid"><div><span>Blog</span><span>Oct 27, 2026</span></div>
+        <h3><a class="card-link" href="/news/prompt-list">50 prompts</a></h3></div>
+      <div class="group relative grid"><div><span>Product</span><span>Jun 16, 2026</span></div>
+        <h3><a class="card-link" href="/news/luma-skills">Introducing Luma Skills</a></h3></div>
+      <div class="group relative grid"><div><span>Engineering</span><span>May 4, 2026</span></div>
+        <h3><a class="card-link" href="/news/new-model">New video model</a></h3></div>
+    </main>'''
+
+    assert parse_luma_news_entries(page, "https://lumalabs.ai/news") == [
+        {
+            "title": "Introducing Luma Skills",
+            "url": "https://lumalabs.ai/news/luma-skills",
+            "date": "2026-06-16T00:00:00+00:00",
+            "summary": "",
+            "tags": [],
+        },
+        {
+            "title": "New video model",
+            "url": "https://lumalabs.ai/news/new-model",
+            "date": "2026-05-04T00:00:00+00:00",
+            "summary": "",
+            "tags": [],
+        },
+    ]
 
 
 def test_official_html_listing_adapter_handles_linked_and_single_page_updates() -> None:

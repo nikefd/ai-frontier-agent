@@ -22,7 +22,7 @@
 
 ## 4. X 来源仍依赖自建 RSSHub
 
-115 个源里仍有 21 个 X 来源，其中多数路由走 RSSHub；公共实例可能 404/限流，依赖 RSSHub 的 X 路由还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS、各实验室 sitemap/API、官网更新页、GitHub Releases/组织新仓库、OpenRouter 模型目录与 OpenAI/Gemini changelog 仍可工作。Mistral sitemap 若在部署网络超时，只会记录该源失败，不阻塞其它来源。详见 [部署指南](../guides/how-to-deploy.md)。
+118 个源里仍有 21 个 X 来源，其中多数路由走 RSSHub；公共实例可能 404/限流，依赖 RSSHub 的 X 路由还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS、各实验室 sitemap/API、官网更新页、GitHub Releases/组织新仓库、OpenRouter 模型目录与 OpenAI/Gemini changelog 仍可工作。Mistral sitemap 若在部署网络超时，只会记录该源失败，不阻塞其它来源。详见 [部署指南](../guides/how-to-deploy.md)。
 
 ## 5. tier 与分类配额已恢复生效
 
@@ -59,7 +59,7 @@
 
 ## 13. 候选数据源需先证明“可持续抓取”
 
-来源扩充以可验证日期、一手链接和长期信号密度为门槛，不以数量为目标。当前暂不接入 Figure（官网混入公司/融资/合作噪声）、llama.cpp Releases（高频构建噪声）和 Epoch AI sitemap（条目缺稳定 `lastmod`，现有适配器无法可靠判断最新）；Perplexity、Luma、Ideogram 曾出现服务端不稳定，Higgsfield 与 Groq sitemap 也分别存在内容噪声和日期污染，保留为后续复查候选。站点结构稳定或有更可靠官方 API/RSS 后再接入。
+来源扩充以可验证日期、一手链接和长期信号密度为门槛，不以数量为目标。当前暂不接入 Figure（官网混入公司/融资/合作噪声）、llama.cpp Releases（高频构建噪声）和 Epoch AI sitemap（条目缺稳定 `lastmod`，现有适配器无法可靠判断最新）；Perplexity 仍受 Cloudflare 403 阻断，Higgsfield 与 Groq sitemap 也分别存在内容噪声和日期污染，保留为后续复查候选。Luma 与 Ideogram 已改为验证稳定的官网列表页，不再依赖此前不稳定的 sitemap。
 
 ## 14. 多用户鉴权：安全要点与约束
 
@@ -106,7 +106,7 @@
 
 ## 19. 生产出口曾长期无法抓 xAI/PyTorch（已降级修复）
 
-> ✅ xAI sitemap 在真实浏览器可读，但生产数据中心出口连续 70 次 403；PyTorch Blog feed 连续 21 次 403，说明不是请求头问题。两者现改读所属官方 GitHub 仓库的 Releases API，并同时补入 Transformers、vLLM 官方发布；这保证模型/API/工程版本信号稳定，但 xAI 官网非 SDK 类公司新闻仍主要依靠媒体与 X 来源补充。连续 6 次 503 且从未产出文章的 Riley Brown、vas RSSHub 路由已移除；连续 3 次 429 的 r/MachineLearning 改为稳定的 Import AI 专家通讯。
+> ✅ xAI sitemap 在生产数据中心出口曾连续 70 次 403，PyTorch Blog feed 也连续 21 次 403。PyTorch 与 xAI SDK 继续读取官方 GitHub Releases；xAI 非 SDK 新闻现直接解析已验证可访问的官网新闻页，并补入 Transformers、vLLM 官方发布。连续 6 次 503 且从未产出文章的 Riley Brown、vas RSSHub 路由已移除；连续 3 次 429 的 r/MachineLearning 改为稳定的 Import AI 专家通讯。
 
 ## 20. 四路 arXiv 曾同时返回空 feed（已修复）
 
@@ -122,7 +122,7 @@
 
 ## 23. 官方源候选仍需按生产可抓取性筛选
 
-2026-10-22 的扩源验证中，Perplexity Changelog 在浏览器可见但服务端请求反复超时；Luma 与 Ideogram sitemap 也未能在限时内稳定完成，暂不接入。Higgsfield Changelog 混有促销和故障恢复等高频噪声，Groq sitemap 的文章时间又存在批量改版污染，因此也没有为凑数量加入。后续重试这些候选时，仍须同时满足：生产出口稳定、每条有可信发布日期、能生成永久官方链接、不会把促销/运维噪声当成模型前沿。
+2026-10-27 复查中，Luma 新闻页、Ideogram 博客与 xAI 新闻页均可从服务端 HTML 稳定取得标题、可信日期和永久链接，已接入 fast 官方层；Luma 另用专用解析器只收 Product/Engineering，排除高频 SEO Blog 与公司合作噪声。Perplexity Changelog 仍被 Cloudflare 返回 403，Higgsfield Changelog 混有促销和故障恢复噪声，Groq sitemap 存在批量改版日期污染，继续不为凑数量接入。
 
 ## 24. sitemap `lastmod` 曾让旧闻重新进入今日（已修复）
 

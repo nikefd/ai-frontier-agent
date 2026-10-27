@@ -62,7 +62,7 @@
 | `_CATEGORY_FETCH_CAPS` | 共 150 | 单轮分类硬上限：vendor 46 / media 20 / blog 16 / paper 14 / community 18 / expert 18 / x-ai 12 / trending 6 |
 | `_DEFAULT_TIER_BY_CATEGORY` | 8 类映射 | 运行时按 category 归一化 tier：vendor/blog=high，media/paper/community/expert=med，x-ai/trending=low |
 | `_SUMMARY_CATEGORY_CAPS` | 8 类映射 | 速报候选上限；其中 trending=2、x-ai=3，且这两类永不放宽 |
-| `DEFAULT_FEED_SPECS` | 115 条内置 + 自定义 | 内置 RSS/Atom/官方 sitemap/API/changelog/官网更新页/GitHub Releases 清单；启动时再合并 `custom-sources.json`。内置源补 cadence（27 fast / 61 standard / 27 slow），管理员确认的自定义 Feed/Sitemap/更新页固定为 fast；其中 `enabled=false` 的自定义源保留在注册表供管理，但不进入抓取列表 |
+| `DEFAULT_FEED_SPECS` | 118 条内置 + 自定义 | 内置 RSS/Atom/官方 sitemap/API/changelog/官网更新页/GitHub Releases 清单；启动时再合并 `custom-sources.json`。内置源补 cadence（30 fast / 61 standard / 27 slow），管理员确认的自定义 Feed/Sitemap/更新页固定为 fast；其中 `enabled=false` 的自定义源保留在注册表供管理，但不进入抓取列表 |
 | `AI_KEYWORDS` | 一组中英词 | med/low 相关性过滤；high、paper 与显式 `curated=true` 的 AI 刊物未命中时仍可接受 |
 | `DEFAULT_TRACKS` | 3 条 | tracks.json 为空时的默认追踪主题 |
 
@@ -83,4 +83,4 @@
 
 - 新增/改环境变量：改 `app/settings.py` 的 `Settings` 字段 → 同步更新 `.env.example` → 回这张表补一行。
 - 调容量参数（如想多留文章、多抓几篇）：改 `ai_news.py` 顶部常量；`_CATEGORY_FETCH_CAPS` 总和当前等于 `_DAILY_FETCH_CAP=150`，新增分类或放宽一类时需重新检查全局预算和测试。
-- 加/删源：编辑 `DEFAULT_FEED_SPECS`，注意 `category` 要落在前端已识别的 8 类内（vendor/x-ai/community/expert/blog/media/trending/paper）。没有 RSS 但提供 sitemap 的官方站可设 `format="sitemap"` 与 `include_paths`，再用 `exclude_paths` 剔除招聘等非产品内容；结构稳定且带日期的官网列表可设 `format="html_listing"` 及 item/title/date/summary selectors；官方 JSON、GitHub 组织仓库或特殊 SPA/changelog 页面需在 fetcher 增加小型专用解析器和 format（现有 `openrouter_models` / `github_repositories` / `stepfun_news` / `qwen_api` / `hf_daily_papers` 可参考）。`max_per_fetch` 是解析后的单源硬上限，`source_priority` 只影响同轮候选先后，不改变持久化 tier。只有确认整个来源都属于 AI 内容时才设 `curated=true`；只有源站明确拦截抓取器 UA 时才设 `request_profile="browser"`。
+- 加/删源：编辑 `DEFAULT_FEED_SPECS`，注意 `category` 要落在前端已识别的 8 类内（vendor/x-ai/community/expert/blog/media/trending/paper）。没有 RSS 但提供 sitemap 的官方站可设 `format="sitemap"` 与 `include_paths`，再用 `exclude_paths` 剔除招聘等非产品内容；结构稳定且带日期的官网列表可设 `format="html_listing"` 及 item/title/date/summary selectors；官方 JSON、GitHub 组织仓库或特殊 SPA/changelog 页面需在 fetcher 增加小型专用解析器和 format（现有 `openrouter_models` / `github_repositories` / `stepfun_news` / `luma_news` / `qwen_api` / `hf_daily_papers` 可参考）。`max_per_fetch` 是解析后的单源硬上限，`source_priority` 只影响同轮候选先后，不改变持久化 tier。只有确认整个来源都属于 AI 内容时才设 `curated=true`；只有源站明确拦截抓取器 UA 时才设 `request_profile="browser"`。

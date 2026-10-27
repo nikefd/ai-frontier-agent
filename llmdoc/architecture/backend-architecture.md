@@ -64,7 +64,7 @@ main.py ──┬─> routers/ai_news.py ──┬─> models.py
           │                        ├─> auth.py（require_user）
           │                        ├─> llm_client.py / settings.py
           │                        └─> agent_runtime（内联 Harness/AgentConfig/Memory/tool，原 sparrow）
-          └─> scheduler.py ────────> workers/ai_news_fetcher.py ──> routers/ai_news.py（复用 add_article 等）
+          └─> scheduler.py ────────> workers/ai_news_fetcher.py ──> official_page_adapters.py + routers/ai_news.py（复用 add_article 等）
                                      workers/ai_news_translator.py ──> routers/ai_news.py
 ```
 
