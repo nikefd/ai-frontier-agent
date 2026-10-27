@@ -70,6 +70,7 @@ flowchart TD
 `_decide_relevance()` 在标题+摘要里匹配 `AI_KEYWORDS` 中英关键词表，并结合 tier/category 决定是否进入候选：
 
 - `high`：信任官方/AI 原生编辑源，即使没命中关键词也接受；标记为 `curated`。
+- 宽口径 `high`：可配置 `title_keywords` 做来源级标题硬门禁；当前 GitHub Changelog 只收 AI 编程/Agent/MCP/模型更新，NVIDIA 综合博客只收模型、Agent、机器人与 AI 基础设施信号。未命中同样计入 `last_filtered`，不会因官方身份绕过。
 - `paper`：arXiv 类目本身已限定 AI/ML，按 curated 接受，避免标题未含通用关键词时漏掉重要论文。
 - 显式 `curated=true`：只用于已经确认内容边界就是 AI 的精选刊物、独立评测或结构化模型目录；当前用于 AIGC Weekly、AI资讯日报、Artificial Analysis、METR 与 OpenRouter 模型目录，避免标题没命中通用词时整源被清空。
 - `med` / `low`：必须命中关键词才接受；未命中计入该源 `last_filtered`，不会进入文章库或 LLM 富化队列。

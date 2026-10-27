@@ -36,6 +36,7 @@ from app.workers.ai_news_fetcher import (
     _parse_sitemap_entries,
     _parse_stepfun_news_bundle,
     _request_headers,
+    _matches_title_keywords,
     _select_candidates,
 )
 from app.publication_dates import publication_date_from_url, repair_known_publication_dates
@@ -61,6 +62,15 @@ def test_discovery_streams_require_ai_keyword() -> None:
     assert _decide_relevance(generic, "low", "trending") == (False, "rejected")
     assert _decide_relevance(ai_item, "low", "trending") == (True, "keyword")
     assert _decide_relevance(generic, "med", "community", curated=True) == (True, "curated")
+
+
+def test_broad_official_feed_title_allowlist_is_precise() -> None:
+    keywords = ["ai", "copilot", "agent", "mcp", "model"]
+
+    assert _matches_title_keywords({"title": "GPT-6 in GitHub Copilot"}, keywords)
+    assert _matches_title_keywords({"title": "New AI model API"}, keywords)
+    assert not _matches_title_keywords({"title": "EMU deletions fix"}, keywords)
+    assert not _matches_title_keywords({"title": "Daily mail status"}, ["ai"])
 
 
 def test_source_registry_uses_ai2_instead_of_unreliable_stanford_sitemap() -> None:
@@ -126,6 +136,8 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "https://metr.org/blog/",
     } <= urls
     assert by_url["https://huggingface.co/api/daily_papers?limit=100"]["source_priority"] == 1
+    assert "copilot" in by_url["https://github.blog/changelog/feed/"]["title_keywords"]
+    assert "ai" in by_url["https://blogs.nvidia.com/feed/"]["title_keywords"]
     arxiv_urls = {
         "https://export.arxiv.org/rss/cs.AI",
         "https://export.arxiv.org/rss/cs.CL",
@@ -409,6 +421,38 @@ async def test_fetch_rejects_missing_and_future_publication_dates(monkeypatch) -
     assert await _fetch_once(["https://example.test/feed.xml"]) == 1
     assert [article.url for article in persisted] == ["https://example.test/valid"]
     assert saved_meta["https://example.test/feed.xml"]["last_invalid_date"] == 2
+
+
+@pytest.mark.asyncio
+async def test_fetch_applies_source_title_allowlist_before_high_tier_bypass(monkeypatch) -> None:
+    import app.workers.ai_news_fetcher as fetcher
+
+    url = "https://broad-vendor.test/feed.xml"
+    now = datetime.now(timezone.utc).isoformat()
+    entries = [
+        {"title": "New Copilot agent", "url": f"{url}/ai", "date": now, "tags": []},
+        {"title": "Enterprise account settings", "url": f"{url}/admin", "date": now, "tags": []},
+    ]
+    saved_meta = {}
+    persisted = []
+
+    async def fake_fetch(_client, _url):
+        return entries, "Broad vendor", None
+
+    monkeypatch.setitem(fetcher.FEED_SPEC_BY_URL, url, {
+        "name": "Broad vendor", "tier": "high", "category": "vendor",
+        "title_keywords": ["copilot", "agent"],
+    })
+    monkeypatch.setattr(fetcher, "_fetch_feed", fake_fetch)
+    monkeypatch.setattr(fetcher, "_load_sources_meta", lambda: {})
+    monkeypatch.setattr(fetcher, "_save_sources_meta", lambda value: saved_meta.update(value))
+    monkeypatch.setattr(
+        fetcher, "add_article", lambda article: persisted.append(article) or {"ok": True},
+    )
+
+    assert await _fetch_once([url]) == 1
+    assert [article.title for article in persisted] == ["New Copilot agent"]
+    assert saved_meta[url]["last_filtered"] == 1
 
 
 def test_hf_daily_papers_rank_by_curation_signal_and_expose_code() -> None:

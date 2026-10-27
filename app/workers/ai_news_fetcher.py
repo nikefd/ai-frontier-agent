@@ -976,6 +976,21 @@ def _decide_relevance(
     return hit, ("keyword" if hit else "rejected")
 
 
+def _matches_title_keywords(entry: dict, keywords: list[str]) -> bool:
+    """Apply an explicit title allowlist to broad first-party feeds."""
+    title = str(entry.get("title") or "").casefold()
+    for keyword in keywords:
+        needle = str(keyword).strip().casefold()
+        if not needle:
+            continue
+        if len(needle) <= 3 and needle.isalnum():
+            if re.search(rf"(?<!\w){re.escape(needle)}(?!\w)", title):
+                return True
+        elif needle in title:
+            return True
+    return False
+
+
 def _select_candidates(candidates: list[tuple], global_cap: int = _DAILY_FETCH_CAP) -> list[tuple]:
     """Select a diverse, category-balanced batch under a true global ceiling.
 
@@ -1082,6 +1097,10 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
         invalid_date_count = 0
         latest_allowed_ts = datetime.now(timezone.utc).timestamp() + 6 * 3600
         for entry in entries:
+            title_keywords = spec.get("title_keywords") or []
+            if title_keywords and not _matches_title_keywords(entry, title_keywords):
+                filtered_count += 1
+                continue
             accept, reason = _decide_relevance(
                 entry, tier, category, curated=bool(spec.get("curated")),
             )
