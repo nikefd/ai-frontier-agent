@@ -35,6 +35,7 @@ from app.workers.ai_news_fetcher import (
     _parse_sitemap_index,
     _parse_sitemap_entries,
     _parse_stepfun_news_bundle,
+    _record_quality_sample,
     _request_headers,
     _matches_title_keywords,
     _select_candidates,
@@ -71,6 +72,14 @@ def test_broad_official_feed_title_allowlist_is_precise() -> None:
     assert _matches_title_keywords({"title": "New AI model API"}, keywords)
     assert not _matches_title_keywords({"title": "EMU deletions fix"}, keywords)
     assert not _matches_title_keywords({"title": "Daily mail status"}, ["ai"])
+
+
+def test_source_quality_history_is_bounded_and_repairs_invalid_payload() -> None:
+    meta = {"quality_samples": "corrupted"}
+    for index in range(35):
+        _record_quality_sample(meta, {"at": f"2026-10-28T{index % 24:02d}:00:00Z"})
+
+    assert len(meta["quality_samples"]) == 30
 
 
 def test_source_registry_uses_ai2_instead_of_unreliable_stanford_sitemap() -> None:
@@ -453,6 +462,8 @@ async def test_fetch_applies_source_title_allowlist_before_high_tier_bypass(monk
     assert await _fetch_once([url]) == 1
     assert [article.title for article in persisted] == ["New Copilot agent"]
     assert saved_meta[url]["last_filtered"] == 1
+    assert saved_meta[url]["quality_samples"][-1]["parsed"] == 2
+    assert saved_meta[url]["quality_samples"][-1]["accepted"] == 1
 
 
 def test_hf_daily_papers_rank_by_curation_signal_and_expose_code() -> None:

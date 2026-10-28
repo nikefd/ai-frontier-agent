@@ -17,7 +17,14 @@ from ..quality_report import (
     build_quality_report,
 )
 from ..storage import read_json, update_json_atomic
-from .ai_news import AINEWS_DIR, SUMMARY_FILE, _load_articles, list_sources
+from .ai_news import (
+    AINEWS_DIR,
+    FEED_SPEC_BY_URL,
+    SUMMARY_FILE,
+    _load_articles,
+    _load_sources_meta,
+    list_sources,
+)
 
 
 router = APIRouter(prefix="/api/ai-news", tags=["ai-news-quality"])
@@ -64,9 +71,20 @@ def _coverage_item(benchmark_id: str) -> dict | None:
 @router.get("/quality/report")
 def quality_report() -> dict:
     summary = read_json(SUMMARY_FILE, None)
+    sources = list_sources()
+    source_meta = _load_sources_meta()
+    for source in sources:
+        source["quality_samples"] = source_meta.get(source["url"], {}).get(
+            "quality_samples", [],
+        )
+        source["quality_policy"] = (
+            "title_keywords"
+            if FEED_SPEC_BY_URL.get(source["url"], {}).get("title_keywords")
+            else "default"
+        )
     return build_quality_report(
         _load_articles(),
-        list_sources(),
+        sources,
         summary if isinstance(summary, dict) else None,
         _load_benchmarks(),
     )

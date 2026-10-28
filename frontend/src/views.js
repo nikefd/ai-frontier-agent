@@ -309,6 +309,7 @@ function renderQualityReport(report, candidates = null, benchmarks = null) {
   const content = report.content_coverage || {};
   const pipeline = report.pipeline || {};
   const value = report.source_value || {};
+  const noise = report.source_noise || {};
   const benchmark = report.benchmark_coverage || {};
   const statusLabel = { healthy: '正常', watch: '需关注', critical: '有缺口' }[report.status] || '未知';
   const latency = pipeline.latency_sample_size
@@ -328,9 +329,29 @@ function renderQualityReport(report, candidates = null, benchmarks = null) {
       `<div class="qf-${escapeHtml(item.level || '')}"><b>${escapeHtml(item.title || '')}</b><span>${escapeHtml(item.detail || '')}</span></div>`
     ).join('')}</div>
     ${renderSourceValue(value)}
+    ${renderSourceNoise(noise)}
     ${renderBenchmarkCoverage(benchmark, candidates, benchmarks)}
   </section>`;
   bindBenchmarkControls(root, candidates?.items || []);
+}
+
+function renderSourceNoise(noise) {
+  const items = noise.noisiest_sources || [];
+  if (!noise.sampled_sources) {
+    return '<div class="source-value-empty">来源噪声率等待成功抓取样本。</div>';
+  }
+  const chips = items.slice(0, 6).map(item => {
+    const detail = `${item.samples || 0} 轮 · 接受 ${item.accepted || 0} · 过滤 ${item.filtered || 0} · 日期异常 ${item.invalid_date || 0}`;
+    return `<span class="source-value-chip source-noise-chip" title="${escapeHtml(detail)}"><b>${escapeHtml(item.name || '')}</b><em>${pct(item.noise_rate)}</em></span>`;
+  }).join('');
+  const warning = (noise.possible_overfilter || []).length
+    ? `<div class="source-review"><b>可能过滤过严</b><span>${noise.possible_overfilter.map(item => `${escapeHtml(item.name || '')}（${item.filtered || 0} 条全被过滤）`).join('、')}</span></div>`
+    : '';
+  return `<div class="source-value source-noise">
+    <div class="source-value-head"><b>近 ${noise.window_days || 7} 天来源噪声</b><span>${noise.sampled_sources || 0} 个来源 / ${noise.sample_count || 0} 轮 · 解析 ${noise.parsed || 0} · 内容过滤 ${noise.filtered || 0}（${pct(noise.noise_rate)}）· 日期异常 ${noise.invalid_date || 0}</span></div>
+    ${chips ? `<div class="source-value-list">${chips}</div>` : '<div class="source-value-empty">当前样本没有内容过滤记录。</div>'}
+    ${warning}
+  </div>`;
 }
 
 function renderSourceValue(value) {

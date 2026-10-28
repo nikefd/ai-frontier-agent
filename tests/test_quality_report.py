@@ -66,6 +66,41 @@ def test_quality_report_surfaces_missed_events_and_fast_source_failures() -> Non
     assert report["content_coverage"]["missed_items"][0]["id"] == "missed"
 
 
+def test_quality_report_aggregates_recent_source_noise_without_punishing_filtering() -> None:
+    noisy = _source("Broad vendor") | {
+        "quality_policy": "title_keywords",
+        "quality_samples": [
+            {"at": "2026-10-18T10:00:00Z", "accepted": 6, "filtered": 4, "invalid_date": 1},
+            {"at": "2026-10-17T10:00:00Z", "accepted": 4, "filtered": 6, "invalid_date": 0},
+            {"at": "2026-10-01T10:00:00Z", "accepted": 0, "filtered": 99, "invalid_date": 0},
+        ],
+    }
+
+    report = build_quality_report([], [noisy], None, now=NOW)
+    noise = report["source_noise"]
+
+    assert noise["sample_count"] == 2
+    assert noise["parsed"] == 21
+    assert noise["noise_rate"] == 0.5
+    assert noise["invalid_rate"] == 0.048
+    assert noise["noisiest_sources"][0]["policy"] == "title_keywords"
+    assert noise["possible_overfilter"] == []
+
+
+def test_quality_report_warns_when_a_sampled_source_rejects_everything() -> None:
+    blocked = _source("Overstrict") | {
+        "quality_samples": [
+            {"at": "2026-10-18T10:00:00Z", "accepted": 0, "filtered": 5},
+            {"at": "2026-10-17T10:00:00Z", "accepted": 0, "filtered": 7},
+        ],
+    }
+
+    report = build_quality_report([], [blocked], None, now=NOW)
+
+    assert report["source_noise"]["possible_overfilter"][0]["name"] == "Overstrict"
+    assert any(item["title"] == "来源门禁可能过严" for item in report["findings"])
+
+
 def test_major_alert_counts_as_visible_before_briefing_refresh() -> None:
     release = _article("release", title="Introducing GPT-6")
     report = build_quality_report([release], [_source("Lab")], None, now=NOW)

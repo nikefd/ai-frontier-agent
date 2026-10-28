@@ -78,6 +78,7 @@
 | 常量 | 值 | 含义 |
 |---|---|---|
 | `_SITEMAP_METADATA_LIMIT` | 6 | 每个 sitemap 源最多补全的最新文章页数；读取 Open Graph/meta/JSON-LD，失败保留 sitemap 降级数据 |
+| `_QUALITY_SAMPLE_LIMIT` | 30 | 每源保留的成功抓取质量样本上限；质量报告再按近 7 天窗口聚合噪声率 |
 
 ## 修改约定
 

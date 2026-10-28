@@ -1363,6 +1363,7 @@ body[data-agent="ai-news"] .article-item.is-active {
 .source-value-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px; border-radius: 999px; background: var(--bg-elev-2); font-size: 11px; }
 .source-value-chip b { font-weight: 550; }
 .source-value-chip em { color: var(--success, #15803d); font-style: normal; font-weight: 700; }
+.source-noise-chip em { color: var(--warning, #b45309); }
 .source-review { display: flex; gap: 7px; margin-top: 9px; color: var(--warning, #b45309); font-size: 11px; line-height: 1.5; }
 .source-review span { color: var(--text-dim); }
 .benchmark-panel { margin-top: 12px; padding-top: 11px; border-top: 1px dashed var(--border); }

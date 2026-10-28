@@ -61,6 +61,7 @@ _FETCH_LOCK = asyncio.Lock()
 _HOST_FETCH_LOCKS = {"arxiv": asyncio.Lock()}
 _HOST_THROTTLE_SECONDS = 1.0
 _SITEMAP_METADATA_LIMIT = 6
+_QUALITY_SAMPLE_LIMIT = 30
 
 
 def _request_headers(source_url: str, *, accept: str | None = None) -> dict[str, str]:
@@ -107,6 +108,14 @@ async def _get_source(
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _record_quality_sample(meta: dict, sample: dict) -> None:
+    history = meta.get("quality_samples")
+    if not isinstance(history, list):
+        history = []
+    cleaned = [item for item in history if isinstance(item, dict) and item.get("at")]
+    meta["quality_samples"] = [*cleaned, sample][-_QUALITY_SAMPLE_LIMIT:]
 
 
 def _parse_sitemap_entries(
@@ -1124,6 +1133,13 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
         m["eligible"] = eligible_count
         m["last_filtered"] = filtered_count
         m["last_invalid_date"] = invalid_date_count
+        _record_quality_sample(m, {
+            "at": m["last_fetch"],
+            "parsed": len(entries),
+            "accepted": eligible_count,
+            "filtered": filtered_count,
+            "invalid_date": invalid_date_count,
+        })
 
     selected = _select_candidates(candidates)
 

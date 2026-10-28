@@ -90,7 +90,7 @@ flowchart TD
 
 旧实现会先给每个来源直接放入 4 条，79 个来源时 `selected` 本身就可能超过 150，所谓全局上限实际失效；同时 5 路高度重叠 Trending 会重复占位。新实现把 Trending 收敛为 1 路，并在来源轮次之后再执行分类与全局硬限制。
 
-每源抓取结果写入 `sources.json`（按 url 为 key）：`last_fetch` / `last_ok` / `last_error` / `last_error_at` / `last_recovered_at` / `consecutive_failures` / `eligible` / `last_added` / `last_filtered` / `last_invalid_date` / `name` / `tier` / `category`。`last_invalid_date` 是最近一轮因缺失/异常发布时间而拒绝的条目数；成功时连续失败归零，从失败恢复时记录恢复时间。
+每源抓取结果写入 `sources.json`（按 url 为 key）：`last_fetch` / `last_ok` / `last_error` / `last_error_at` / `last_recovered_at` / `consecutive_failures` / `eligible` / `last_added` / `last_filtered` / `last_invalid_date` / `quality_samples[]` / `name` / `tier` / `category`。`last_invalid_date` 是最近一轮因缺失/异常发布时间而拒绝的条目数；每次成功抓取把 `{at,parsed,accepted,filtered,invalid_date}` 追加到最近 30 轮滚动样本。成功时连续失败归零，从失败恢复时记录恢复时间。
 
 `GET /sources` 不把“很久没发文章”误判为源故障，而是只判断**抓取运输层**：最近一轮报错为 `error`，从未跑过为 `never`，超过所属 cadence 的 3 个调度间隔（最少 6 小时）没有抓取记录为 `stale`，否则为 `healthy`。响应同时返回 `cadence` 并动态计算当前滚动库内每源最新文章时间；前端显示“每小时 / 每 4 小时 / 每 12 小时”，把 error/stale 自动排到分类前面，并在顶部集中列出需关注来源。
 
@@ -167,7 +167,7 @@ worker 名义上叫翻译，实际**一次批量 LLM 调用同时做五件事**�
 3. **富化积压**：近 30 小时仍为 `translation_status=pending` 的数量，超过 8 篇提醒。
 4. **发现延迟**：新文章持久化时记录 `ingested_at`，与原始 `date` 的差值形成 P50/P90；老文章没有该字段，不纳入样本，部署后会自然积累。
 
-报告同时计算一组较慢变化的**来源价值信号**：在当前 400 篇滚动库的近 30 天范围内，按事件数、独家事件、首发现、平均重要性和中位发现延迟形成 0–100 分。返回 `top_sources`、`review_candidates`、实际样本篇数/覆盖天数和样本不足来源数；评分不触发自动禁用或删除。
+报告同时计算两组较慢变化的来源信号：**来源价值**在当前 400 篇滚动库的近 30 天范围内，按事件数、独家事件、首发现、平均重要性和中位发现延迟形成 0–100 分；**来源噪声**聚合 `sources.json` 最近 7 天、每源最多 30 轮成功抓取样本，分别统计接受、内容过滤与日期异常，返回全局噪声率、过滤最多来源和疑似过严来源。过滤本身不降健康状态；只有至少两轮、累计过滤 10 条且零接受时提示 watch。两类评分都不触发自动禁用或删除。
 
 为了衡量来源集合之外的**绝对召回率**，管理员可在数据源页登记“必达事件”：标题、发生时间、最长发现期限，以及官方 URL、富化 `event_key` 或人工匹配词中的至少一种。系统在发生前 24 小时至当前时间的文章中做确定性匹配，以最早 `ingested_at` 判断：期限内为 `on_time`，期限后才发现为 `late`，超过期限仍无匹配为 `missed`，期限尚未结束为 `pending`。质量报告分别给出准时召回率、最终覆盖率、中位发现延迟和漏报清单；任何漏报会把总体状态标成 critical，迟到则标成 watch。系统还会从近 7 天已抓取文章中自动提名两类候选：一是 `vendor/high` 且重要性至少 8 或命中重大提醒规则的官方事件；二是没有官方记录、但具有相同非空 `event_key`，被至少两个独立 `media/expert/blog` 高或中 tier 来源共同报道的重要性至少 8 的事件。后者显示佐证来源数，用于暴露官网抓取盲区；单一媒体消息、低 tier 和社区传言不会进入候选。两类都会按事件去重并排除已登记项；API 变更与安全事件默认 6 小时、模型发布 12 小时、其他高影响事件 24 小时。管理员一键确认后才写入正式基准，评分本身不调用 LLM。
 

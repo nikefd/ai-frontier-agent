@@ -30,6 +30,13 @@ def _percentile(values: list[float], percentile: float) -> float | None:
     return round(ordered[index], 1)
 
 
+def _nonnegative_int(value: object) -> int:
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
 def _event_key(article: dict) -> str:
     key = str(article.get("event_key") or "").strip()
     if key:
@@ -598,6 +605,77 @@ def _source_value_report(
     }
 
 
+def _source_noise_report(
+    sources: list[dict],
+    *,
+    now: datetime,
+    window_days: int = 7,
+) -> dict:
+    """Aggregate rolling fetch decisions without treating filtering as failure."""
+    cutoff = now - timedelta(days=window_days)
+    items: list[dict] = []
+    for source in sources:
+        if source.get("orphan") or source.get("enabled") is False:
+            continue
+        samples = []
+        for sample in source.get("quality_samples") or []:
+            if not isinstance(sample, dict):
+                continue
+            captured = _parse_date(sample.get("at"))
+            if captured and cutoff <= captured <= now + timedelta(hours=1):
+                samples.append(sample)
+        if not samples:
+            continue
+        accepted = sum(_nonnegative_int(sample.get("accepted")) for sample in samples)
+        filtered = sum(_nonnegative_int(sample.get("filtered")) for sample in samples)
+        invalid = sum(_nonnegative_int(sample.get("invalid_date")) for sample in samples)
+        judged = accepted + filtered
+        parsed = accepted + filtered + invalid
+        items.append({
+            "name": source.get("name") or source.get("url") or "（未命名）",
+            "category": source.get("category") or "other",
+            "cadence": source.get("cadence") or "standard",
+            "policy": source.get("quality_policy") or "default",
+            "samples": len(samples),
+            "parsed": parsed,
+            "accepted": accepted,
+            "filtered": filtered,
+            "invalid_date": invalid,
+            "noise_rate": round(filtered / judged, 3) if judged else None,
+            "invalid_rate": round(invalid / parsed, 3) if parsed else None,
+        })
+    items.sort(key=lambda item: (
+        -(item["noise_rate"] if item["noise_rate"] is not None else -1),
+        -item["filtered"],
+        item["name"],
+    ))
+    total_accepted = sum(item["accepted"] for item in items)
+    total_filtered = sum(item["filtered"] for item in items)
+    total_invalid = sum(item["invalid_date"] for item in items)
+    total_judged = total_accepted + total_filtered
+    total_parsed = total_judged + total_invalid
+    possible_overfilter = [
+        item for item in items
+        if item["samples"] >= 2
+        and item["accepted"] == 0
+        and item["filtered"] >= 10
+        and item["noise_rate"] == 1.0
+    ]
+    return {
+        "window_days": window_days,
+        "sampled_sources": len(items),
+        "sample_count": sum(item["samples"] for item in items),
+        "parsed": total_parsed,
+        "accepted": total_accepted,
+        "filtered": total_filtered,
+        "invalid_date": total_invalid,
+        "noise_rate": round(total_filtered / total_judged, 3) if total_judged else None,
+        "invalid_rate": round(total_invalid / total_parsed, 3) if total_parsed else None,
+        "noisiest_sources": [item for item in items if item["filtered"] > 0][:8],
+        "possible_overfilter": possible_overfilter[:8],
+    }
+
+
 def build_quality_report(
     articles: list[dict],
     sources: list[dict],
@@ -691,6 +769,7 @@ def build_quality_report(
     benchmark_coverage = build_benchmark_coverage(
         articles, benchmarks or [], now=current, sources=sources,
     )
+    source_noise = _source_noise_report(sources, now=current)
     if benchmark_coverage["missed"]:
         add(
             "critical", "基准事件存在漏报",
@@ -701,6 +780,11 @@ def build_quality_report(
             "watch", "基准事件发现偏慢",
             f"有 {benchmark_coverage['late']} 个必达事件在期限后才被发现。",
         )
+    if source_noise["possible_overfilter"]:
+        names = "、".join(
+            item["name"] for item in source_noise["possible_overfilter"][:3]
+        )
+        add("watch", "来源门禁可能过严", f"{names} 在近 7 天有足够样本但全部被过滤，请复核关键词。")
     if not findings:
         findings.append({"level": "healthy", "title": "覆盖链路正常", "detail": "暂未发现明显的来源、漏出或富化积压问题。"})
 
@@ -730,6 +814,7 @@ def build_quality_report(
             "p90_discovery_minutes": _percentile(latencies, 0.9),
         },
         "source_value": _source_value_report(articles, sources, now=current),
+        "source_noise": source_noise,
         "benchmark_coverage": benchmark_coverage,
         "findings": findings,
     }
