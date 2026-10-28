@@ -134,4 +134,4 @@
 
 ## 26. `vendor/high` 不代表宽口径官网全部可信
 
-纯 AI 官方源仍可直接放行，但 GitHub Changelog、NVIDIA Blog 这类综合官方 Feed 会混入企业管理、游戏和泛行业内容。它们现通过每源 `title_keywords` 做标题硬门禁，未命中项计入 `last_filtered`。新增宽口径官方源时应先抽样最近 20 条，再决定白名单；不要把通用关键词加进全局 `AI_KEYWORDS` 来迁就单一来源。
+纯 AI 官方源仍可直接放行，但 GitHub Changelog、NVIDIA Blog、Microsoft Research、AWS Machine Learning、Replit 与 LiblibAI 这类综合官方 Feed 会混入企业管理、游戏、通用研究、奖项、合作伙伴稿或泛教程。它们现通过每源 `title_keywords` 做标题硬门禁，未命中项计入 `last_filtered`。新增宽口径官方源时应先抽样最近 20 条，再决定白名单；不要把通用关键词加进全局 `AI_KEYWORDS` 来迁就单一来源。

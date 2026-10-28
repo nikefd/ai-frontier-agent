@@ -992,7 +992,7 @@ def _matches_title_keywords(entry: dict, keywords: list[str]) -> bool:
         needle = str(keyword).strip().casefold()
         if not needle:
             continue
-        if len(needle) <= 3 and needle.isalnum():
+        if len(needle) <= 3 and needle.isascii() and needle.isalnum():
             if re.search(rf"(?<!\w){re.escape(needle)}(?!\w)", title):
                 return True
         elif needle in title:

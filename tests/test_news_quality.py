@@ -9,6 +9,7 @@ import pytest
 
 from app.routers.ai_news import (
     _CATEGORY_FETCH_CAPS,
+    DEFAULT_FEED_SPECS,
     _dedupe_summary_articles,
     _parse_ts,
     _select_summary_cohort,
@@ -70,8 +71,36 @@ def test_broad_official_feed_title_allowlist_is_precise() -> None:
 
     assert _matches_title_keywords({"title": "GPT-6 in GitHub Copilot"}, keywords)
     assert _matches_title_keywords({"title": "New AI model API"}, keywords)
+    assert _matches_title_keywords({"title": "数字人功能正式上线"}, ["上线"])
     assert not _matches_title_keywords({"title": "EMU deletions fix"}, keywords)
     assert not _matches_title_keywords({"title": "Daily mail status"}, ["ai"])
+
+
+def test_audited_broad_vendor_policies_keep_signals_and_reject_noise() -> None:
+    by_url = {spec["url"]: spec for spec in DEFAULT_FEED_SPECS}
+    cases = {
+        "https://www.microsoft.com/en-us/research/feed/": (
+            ["Agent Lightning v1.0", "What AI gets wrong"],
+            ["Solving a 31-year-old grand challenge in mathematics", "Forecasting space weather risks"],
+        ),
+        "https://aws.amazon.com/blogs/machine-learning/feed/": (
+            ["Fix evaluation bias to unlock better models on Amazon Bedrock", "Multi-Turn Reinforcement Learning on Amazon SageMaker AI"],
+            ["AWS named a Leader in the Gartner Magic Quadrant", "Visualize routes with GeoJSON in QuickSight"],
+        ),
+        "https://blog.replit.com/feed.xml": (
+            ["Replit Monitoring Agent", "Free the models: Harness design at the frontier", "Replit is now available in Claude", "The Self-Driving Company"],
+            ["Introducing Replit Solutions Partners", "Bring Your Own Cloud to Replit"],
+        ),
+        "https://api2.liblib.art/api/www/community/article/list?page=1&pageSize=20&type=5": (
+            ["LiblibAI 数字人功能正式上线！", "全球首发！Flux CN Union Pro 2.0 强势上线 Liblib！"],
+            ["ComfyUI电商换背景工作流使用方法！", "AI 字体海报10分钟速成指南！"],
+        ),
+    }
+
+    for url, (accepted, rejected) in cases.items():
+        keywords = by_url[url]["title_keywords"]
+        assert all(_matches_title_keywords({"title": title}, keywords) for title in accepted)
+        assert all(not _matches_title_keywords({"title": title}, keywords) for title in rejected)
 
 
 def test_source_quality_history_is_bounded_and_repairs_invalid_payload() -> None:
