@@ -255,10 +255,10 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://bair.berkeley.edu/blog/feed.xml", "name": "Berkeley AI Research", "tier": "high", "category": "blog", "description": "Berkeley AI Research 官方博客 · 学术前沿、系统与机器人研究"},
     # ── paper: arXiv 论文
     {"url": "https://huggingface.co/api/daily_papers?limit=100", "name": "Hugging Face Daily Papers", "tier": "high", "category": "paper", "format": "hf_daily_papers", "source_priority": 1, "description": "HF 社区每日精选论文 · 结合票数、代码可用性与 GitHub stars 排序"},
-    {"url": "https://export.arxiv.org/rss/cs.AI", "name": "arXiv cs.AI", "tier": "high", "category": "paper", "max_per_fetch": 2, "host_throttle": "arxiv", "description": "arXiv 人工智能类目（规划、知识表示、智能体）· 每轮保留最新 2 篇作长尾发现"},
-    {"url": "https://export.arxiv.org/rss/cs.CL", "name": "arXiv cs.CL", "tier": "high", "category": "paper", "max_per_fetch": 2, "host_throttle": "arxiv", "description": "arXiv 计算语言学（NLP/LLM 论文主战场）· 每轮保留最新 2 篇作长尾发现"},
-    {"url": "https://export.arxiv.org/rss/cs.CV", "name": "arXiv cs.CV", "tier": "high", "category": "paper", "max_per_fetch": 2, "host_throttle": "arxiv", "description": "arXiv 计算机视觉类目（多模态 / 图像生成相关论文）· 每轮保留最新 2 篇作长尾发现"},
-    {"url": "https://export.arxiv.org/rss/cs.LG", "name": "arXiv cs.LG", "tier": "high", "category": "paper", "max_per_fetch": 2, "host_throttle": "arxiv", "description": "arXiv 机器学习类目（覆盖训练、优化、新架构论文）· 每轮保留最新 2 篇作长尾发现"},
+    {"url": "https://rss.arxiv.org/rss/cs.AI", "name": "arXiv cs.AI", "tier": "high", "category": "paper", "max_per_fetch": 2, "host_throttle": "arxiv", "empty_feed_policy": "arxiv_daily", "description": "arXiv 人工智能类目（规划、知识表示、智能体）· 每轮保留最新 2 篇作长尾发现"},
+    {"url": "https://rss.arxiv.org/rss/cs.CL", "name": "arXiv cs.CL", "tier": "high", "category": "paper", "max_per_fetch": 2, "host_throttle": "arxiv", "empty_feed_policy": "arxiv_daily", "description": "arXiv 计算语言学（NLP/LLM 论文主战场）· 每轮保留最新 2 篇作长尾发现"},
+    {"url": "https://rss.arxiv.org/rss/cs.CV", "name": "arXiv cs.CV", "tier": "high", "category": "paper", "max_per_fetch": 2, "host_throttle": "arxiv", "empty_feed_policy": "arxiv_daily", "description": "arXiv 计算机视觉类目（多模态 / 图像生成相关论文）· 每轮保留最新 2 篇作长尾发现"},
+    {"url": "https://rss.arxiv.org/rss/cs.LG", "name": "arXiv cs.LG", "tier": "high", "category": "paper", "max_per_fetch": 2, "host_throttle": "arxiv", "empty_feed_policy": "arxiv_daily", "description": "arXiv 机器学习类目（覆盖训练、优化、新架构论文）· 每轮保留最新 2 篇作长尾发现"},
     # ── community: 社区/周刊
     {"url": "https://quaily.com/op7418/feed/atom", "name": "AIGC Weekly", "tier": "high", "category": "community", "curated": True, "description": "AIGC 精选周刊 · 中文 AI 产品、研究与行业动态"},
     {"url": "https://justlovemaki.github.io/CloudFlare-AI-Insight-Daily/rss.xml", "name": "AI资讯日报 RSS Feed", "tier": "high", "category": "community", "curated": True, "description": "AI 资讯日报 · 中文 AI 新闻与开源项目精选"},

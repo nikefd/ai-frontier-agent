@@ -46,6 +46,7 @@ from ..routers.ai_news import (
     _save_sources_meta,
     add_article,
 )
+from ..feed_validation import is_valid_empty_arxiv_feed
 from ..models import Article
 from ..official_page_adapters import parse_luma_news_entries
 from ..publication_dates import publication_date_from_url
@@ -945,6 +946,8 @@ async def _fetch_feed(
     entries.sort(key=lambda entry: _parse_ts(entry.get("date") or ""), reverse=True)
     entries = entries[:20]
     if not entries:
+        if spec.get("empty_feed_policy") == "arxiv_daily" and is_valid_empty_arxiv_feed(feed, url):
+            return [], source, None
         parser_error = str(getattr(feed, "bozo_exception", "") or "").strip()
         detail = f": {parser_error[:180]}" if parser_error else ""
         return [], source, f"feed contained no parseable entries{detail}"

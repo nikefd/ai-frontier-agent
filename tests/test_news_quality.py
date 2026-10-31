@@ -185,10 +185,10 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
     assert "copilot" in by_url["https://github.blog/changelog/feed/"]["title_keywords"]
     assert "ai" in by_url["https://blogs.nvidia.com/feed/"]["title_keywords"]
     arxiv_urls = {
-        "https://export.arxiv.org/rss/cs.AI",
-        "https://export.arxiv.org/rss/cs.CL",
-        "https://export.arxiv.org/rss/cs.CV",
-        "https://export.arxiv.org/rss/cs.LG",
+        "https://rss.arxiv.org/rss/cs.AI",
+        "https://rss.arxiv.org/rss/cs.CL",
+        "https://rss.arxiv.org/rss/cs.CV",
+        "https://rss.arxiv.org/rss/cs.LG",
     }
     assert all(by_url[url]["max_per_fetch"] == 2 for url in arxiv_urls)
     assert all(by_url[url]["host_throttle"] == "arxiv" for url in arxiv_urls)
@@ -423,8 +423,8 @@ async def test_arxiv_feeds_are_serialized_to_avoid_burst_limits(monkeypatch) -> 
     monkeypatch.setattr(fetcher, "_fetch_feed", fake_fetch)
     monkeypatch.setattr(fetcher, "_HOST_THROTTLE_SECONDS", 0)
     urls = [
-        "https://export.arxiv.org/rss/cs.AI",
-        "https://export.arxiv.org/rss/cs.CL",
+        "https://rss.arxiv.org/rss/cs.AI",
+        "https://rss.arxiv.org/rss/cs.CL",
     ]
     async with httpx.AsyncClient() as client:
         await asyncio.gather(*(

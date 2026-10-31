@@ -109,7 +109,7 @@ flowchart TD
 
 - 单 feed 失败（HTTP 错误/超时/解析异常）只记进该源的 `last_error` 并累加 `consecutive_failures`，**绝不阻塞其它源**（`asyncio.gather(..., return_exceptions=True)`）。下一次成功会归零并记录 `last_recovered_at`。
 - 429、500、502、503、504 会做一次 0.1–1 秒的有界退避重试；VentureBeat 等明确需要普通浏览器请求头的源通过 `request_profile="browser"` 单独启用，不全局伪装浏览器。四路 arXiv 使用 HTTPS，并通过同一个异步锁串行抓取、每次间隔 1 秒，避免同时下载四个约 1 MB feed 时被上游返回空内容。
-- HTTP 200 不等于健康：普通 RSS/Atom、sitemap 与官方 API 若没有任何可解析条目，会返回明确解析错误并显示在数据源页，不再把登录页、拦截页或空 feed 记成成功。
+- HTTP 200 不等于健康：普通 RSS/Atom、sitemap 与官方 API 若没有任何可解析条目，会返回明确解析错误（经下述校验的 arXiv 空日更除外）并显示在数据源页，不再把登录页、拦截页或空 feed 记成成功。
 - 发布时间必须可追溯：RSS 使用 `published/updated`；sitemap 的 `lastmod` **只代表页面修改时间，只用于决定优先补全哪些页面，绝不写入 Article.date**。sitemap 条目必须从页面 meta/JSON-LD/正文明确日期或可信 URL 日期取得真实发布时间。缺少日期或时间超过当前 6 小时的条目不入库，并累计到 `last_invalid_date`；`add_article` 不再用抓取时间填充 `date`。
 - GitHub Trending 是按天发布的一张榜单快照：频道有当天 `pubDate`，但仓库 item 没有独立时间。该源显式启用 `snapshot_date_from_feed`，把频道发布日期作为榜单内条目的快照时间；普通 RSS 不会使用频道时间兜底，仍严格要求 item 自带可信日期。
 - 每个 RSS/Atom 只取前 20 个 entry；官方 sitemap 支持单层同站 sitemap index（最多展开 12 个子 sitemap），按 `lastmod` 排序、包含/排除路径过滤后取前 20 个 URL。若官方 sitemap 在有效前缀后出现非严格 XML，解析器会切换到容错模式，避免静默丢失后半段更新。
@@ -187,3 +187,7 @@ worker 名义上叫翻译，实际**一次批量 LLM 调用同时做五件事**�
 `GET /for-you`、学习路径近期素材等复用 `_articles_for_today()`，因此也会继承这套更平衡的候选集。旧 `summary_today.json` 没有指纹，部署后下一次分时任务会自动生成一次新缓存。
 
 独立验收：正式基准按 origin 分组展示；仓库 `evaluation/` 保存从官方栏目独立挑选的只读探针，通过 `scripts.production_audit` 核对线上当前滚动库。只读探针不自动写入生产，不以日期级证据计算精确延迟，运行方法见[生产验收指南](../guides/production-audit.md)。
+
+### arXiv 的合法空日更
+
+四路分类源迁移到[官方推荐入口](https://info.arxiv.org/help/rss.html) `https://rss.arxiv.org/rss/<category>`，继续共享串行锁并各限 2 篇。只有显式设置 `empty_feed_policy=arxiv_daily` 的来源才启用空日更例外：要求完整、无解析错误的 RSS 2.0、零原始 item、匹配分类标题和官方 self 链接，以及最近 72 小时内且不超过当前 6 小时的 lastBuildDate。通过后只记录运输成功，不把频道构建时间冒充论文发布时间，也不更新 latest_entry_at。普通空源、HTML 拦截、损坏 XML、过期或未来空日更仍报错。实现位于 `app/feed_validation.py`。

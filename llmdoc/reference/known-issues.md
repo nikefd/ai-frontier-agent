@@ -108,9 +108,9 @@
 
 > ✅ xAI sitemap 在生产数据中心出口曾连续 70 次 403，PyTorch Blog feed 也连续 21 次 403。PyTorch 与 xAI SDK 继续读取官方 GitHub Releases；xAI 非 SDK 新闻现直接解析已验证可访问的官网新闻页，并补入 Transformers、vLLM 官方发布。连续 6 次 503 且从未产出文章的 Riley Brown、vas RSSHub 路由已移除；连续 3 次 429 的 r/MachineLearning 改为稳定的 Import AI 专家通讯。
 
-## 20. 四路 arXiv 曾同时返回空 feed（已修复）
+## 20. arXiv 空日更与损坏响应必须区分
 
-> ✅ 四个约 1 MB 的 arXiv 分类 feed 原先并发下载，生产出口连续两轮同时得到无可解析条目。现统一使用 HTTPS，并以 `host_throttle=arxiv` 串行抓取、每路间隔 1 秒；HF Daily Papers 仍是论文主雷达，四路 arXiv 只各保留 2 篇作长尾发现。
+2026-10-31 生产复测确认，有些响应是合法的零条目 RSS 2.0（约 892 字节），包含正确分类、self 链接及当天 lastBuildDate，原先一律判错造成误报。现在改用官方 rss.arxiv.org 入口，并只对显式启用策略且通过完整性、分类及 72 小时时效校验的空日更记录成功；不制造论文条目或发布日期。串行锁、每路间隔 1 秒与每轮最多 2 篇继续保留。HF Daily Papers 仍是论文主雷达。之前将所有空响应归因于并发限流的结论不完整；历史没有保存原始响应，不能断言每次失败都是合法空日更。
 
 ## 21. 确定性 CI（已补齐）
 

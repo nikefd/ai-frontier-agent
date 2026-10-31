@@ -91,3 +91,5 @@
 - 新增/改环境变量：改 `app/settings.py` 的 `Settings` 字段 → 同步更新 `.env.example` → 回这张表补一行。
 - 调容量参数（如想多留文章、多抓几篇）：改 `ai_news.py` 顶部常量；`_CATEGORY_FETCH_CAPS` 总和当前等于 `_DAILY_FETCH_CAP=150`，新增分类或放宽一类时需重新检查全局预算和测试。
 - 加/删源：编辑 `DEFAULT_FEED_SPECS`，注意 `category` 要落在前端已识别的 8 类内（vendor/x-ai/community/expert/blog/media/trending/paper）。没有 RSS 但提供 sitemap 的官方站可设 `format="sitemap"` 与 `include_paths`，再用 `exclude_paths` 剔除招聘等非产品内容；结构稳定且带日期的官网列表可设 `format="html_listing"` 及 item/title/date/summary selectors；官方 JSON、GitHub 组织仓库或特殊 SPA/changelog 页面需在 fetcher 增加小型专用解析器和 format（现有 `openrouter_models` / `github_repositories` / `stepfun_news` / `luma_news` / `qwen_api` / `hf_daily_papers` 可参考）。宽口径官方 Feed 用 `title_keywords=[...]` 设置大小写不敏感的标题白名单，短词按完整词匹配，拒绝项计入 `last_filtered`。`max_per_fetch` 是解析后的单源硬上限，`source_priority` 只影响同轮候选先后，不改变持久化 tier。只有确认整个来源都属于 AI 内容时才设 `curated=true`；只有源站明确拦截抓取器 UA 时才设 `request_profile="browser"`。
+
+内置来源 `empty_feed_policy=arxiv_daily` 仅用于四路官方 arXiv 日更的合法空刊校验；不是全局允许空 Feed。校验要求和数据真实性边界见 [RSS 管线](../architecture/rss-pipeline-architecture.md#arxiv-的合法空日更)。
