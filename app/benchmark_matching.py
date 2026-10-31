@@ -4,7 +4,8 @@ from __future__ import annotations
 import re
 import unicodedata
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlsplit, urlunsplit
+from email.utils import parsedate_to_datetime
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 
 def _parse_date(value: object) -> datetime | None:
@@ -14,7 +15,10 @@ def _parse_date(value: object) -> datetime | None:
     try:
         parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
     except ValueError:
-        return None
+        try:
+            parsed = parsedate_to_datetime(raw)
+        except (ValueError, TypeError, OverflowError):
+            return None
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed.astimezone(timezone.utc)
@@ -42,7 +46,7 @@ def find_live_match(articles: list[dict], benchmark: dict, now: datetime) -> tup
     occurred = _parse_date(benchmark.get("occurred_at"))
     if occurred is None:
         return None
-    source_url = _normalized_url(benchmark.get("source_url"))
+    source_url = _event_url(benchmark.get("source_url"))
     event_key = str(benchmark.get("event_key") or "").strip()
     terms = [normalized for term in (benchmark.get("match_terms") or [])
              if (normalized := _normalized_match_text(term))]
@@ -52,7 +56,7 @@ def find_live_match(articles: list[dict], benchmark: dict, now: datetime) -> tup
         if not published or not (occurred - timedelta(hours=24) <= published <= now + timedelta(hours=1)):
             continue
         method = ""
-        if source_url and _normalized_url(article.get("url")) == source_url:
+        if source_url and _event_url(article.get("url")) == source_url:
             method = "source_url"
         elif event_key and str(article.get("event_key") or "").strip() == event_key:
             method = "event_key"
@@ -64,5 +68,55 @@ def find_live_match(articles: list[dict], benchmark: dict, now: datetime) -> tup
                 method = "match_terms"
         if method:
             discovered = _parse_date(article.get("ingested_at")) or published
-            candidates.append((discovered, article, method))
+            if discovered <= now + timedelta(hours=1):
+                candidates.append((discovered, article, method))
     return min(candidates, key=lambda item: item[0]) if candidates else None
+
+
+def _event_url(value: object) -> str:
+    """Different release-note anchors identify different events on one page."""
+    base = _normalized_url(value)
+    if not base:
+        return ""
+    parts = urlsplit(str(value))
+    query = urlencode(sorted((key, val) for key, val in parse_qsl(parts.query, keep_blank_values=True)
+                             if not key.lower().startswith("utm_") and key.lower() not in {"fbclid", "gclid"}))
+    return base + ("?" + query if query else "") + ("#" + parts.fragment if parts.fragment else "")
+
+
+def rule_fingerprint(benchmark: dict) -> str:
+    import hashlib
+    import json
+    rule = {
+        "occurred_at": str(_parse_date(benchmark.get("occurred_at"))),
+        "source_url": _event_url(benchmark.get("source_url")),
+        "event_key": str(benchmark.get("event_key") or "").strip(),
+        "match_terms": sorted({_normalized_match_text(term) for term in (benchmark.get("match_terms") or [])}),
+    }
+    return hashlib.sha256(json.dumps(rule, sort_keys=True).encode()).hexdigest()
+
+
+def _saved_match(benchmark: dict, now: datetime) -> tuple | None:
+    evidence = benchmark.get("evidence")
+    if not isinstance(evidence, dict) or evidence.get("version") != 1:
+        return None
+    if evidence.get("rule_fingerprint") != rule_fingerprint(benchmark):
+        return None
+    article = evidence.get("article")
+    if not isinstance(article, dict):
+        return None
+    candidate = find_live_match([{**article, "summary": evidence.get("match_text") or ""}], benchmark, now)
+    if not candidate or candidate[0] != _parse_date(evidence.get("matched_at")):
+        return None
+    if candidate[2] != evidence.get("match_method"):
+        return None
+    return candidate
+
+
+def find_benchmark_match(articles: list[dict], benchmark: dict, now: datetime) -> tuple | None:
+    """Prefer the earliest verified observation, whether live or retained."""
+    live = find_live_match(articles, benchmark, now)
+    saved = _saved_match(benchmark, now)
+    if saved and (not live or saved[0] <= live[0]):
+        return (*saved, True)
+    return (*live, False) if live else None

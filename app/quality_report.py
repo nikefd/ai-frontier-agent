@@ -5,7 +5,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlsplit
 
-from .benchmark_matching import _parse_date, _normalized_url, _normalized_match_text, find_live_match
+from .benchmark_matching import _parse_date, _normalized_url, _normalized_match_text, find_benchmark_match
 from .news_alerts import build_breaking_alerts, classify_alert
 
 
@@ -296,13 +296,13 @@ def build_benchmark_coverage(
         source_url = _normalized_url(benchmark.get("source_url"))
         terms = [normalized for term in (benchmark.get("match_terms") or [])
                  if (normalized := _normalized_match_text(term))]
-        candidate = find_live_match(articles, benchmark, now)
+        candidate = find_benchmark_match(articles, benchmark, now)
 
         matched_at: datetime | None = None
         matched_article: dict | None = None
         match_method = ""
         if candidate:
-            matched_at, matched_article, match_method = candidate
+            matched_at, matched_article, match_method, _ = candidate
             status = "on_time" if matched_at <= deadline else "late"
         else:
             status = "pending" if now <= deadline else "missed"
@@ -344,6 +344,11 @@ def build_benchmark_coverage(
                 "source": matched_article.get("source") or "",
             } if matched_article else None),
             "match_method": match_method or None,
+            "matched_at": matched_at.isoformat() if matched_at else None,
+            "match_evidence_retained": bool(candidate and candidate[3]),
+            "match_time_basis": (
+                "ingested_at" if _parse_date(matched_article.get("ingested_at")) else "published_at"
+            ) if matched_article else None,
             "discovery_minutes": latency,
             "diagnosis": diagnosis,
             "remediation": ({
