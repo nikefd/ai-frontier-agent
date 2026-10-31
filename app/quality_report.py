@@ -5,7 +5,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlsplit
 
-from .benchmark_matching import _parse_date, _normalized_url, _normalized_match_text, find_benchmark_match
+from .benchmark_matching import _parse_date, _normalized_url, _normalized_match_text, _event_url, find_benchmark_match
 from .news_alerts import build_breaking_alerts, classify_alert
 
 
@@ -64,7 +64,7 @@ def build_benchmark_candidates(
     """Suggest official or independently corroborated events for human review."""
     cutoff = now - timedelta(days=lookback_days)
     registered_urls = {
-        url for item in benchmarks if (url := _normalized_url(item.get("source_url")))
+        url for item in benchmarks if (url := _event_url(item.get("source_url")))
     }
     registered_keys = {
         str(item.get("event_key") or "").strip() for item in benchmarks
@@ -73,7 +73,7 @@ def build_benchmark_candidates(
     grouped: dict[str, list[tuple[dict, datetime, str, str | None]]] = {}
     for article in articles:
         published = _parse_date(article.get("date"))
-        url = _normalized_url(article.get("url"))
+        url = _event_url(article.get("url"))
         event_key = str(article.get("event_key") or "").strip()
         official = article.get("category") == "vendor" and article.get("tier") == "high"
         trusted_secondary = (

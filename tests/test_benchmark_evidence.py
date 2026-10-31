@@ -170,3 +170,17 @@ def test_query_article_identifiers_are_preserved_while_tracking_is_ignored():
     benchmark = _benchmark(source_url="https://qwen.ai/blog?id=model-two")
     assert not retain_match(benchmark, [_article(url="https://qwen.ai/blog?id=model-one")], NOW)
     assert retain_match(benchmark, [_article(url="https://qwen.ai/blog?utm_source=rss&id=model-two")], NOW)
+
+
+@pytest.mark.parametrize("urls", [
+    ["https://qwen.ai/blog?id=first", "https://qwen.ai/blog?id=second"],
+    ["https://lab.test/changelog#first", "https://lab.test/changelog#second"],
+])
+def test_candidate_registration_preserves_event_identity_and_excludes_only_same_event(urls):
+    from app.quality_report import build_benchmark_candidates
+    articles = [_article(id=str(index), title=f"Important release {index}", url=url,
+                         category="vendor", tier="high", importance=9)
+                for index, url in enumerate(urls)]
+    result = build_benchmark_candidates(articles, [_benchmark(source_url=urls[0])], now=NOW)
+    assert len(result["items"]) == 1
+    assert result["items"][0]["source_url"] == urls[1]
