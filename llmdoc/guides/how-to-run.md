@@ -83,7 +83,7 @@ pip install -e ".[dev]"     # pytest + pytest-asyncio
 pytest
 ```
 
-当前安全/业务回归共 161 项；提交前同时运行 `pytest`、`cd frontend && npm run build && npm audit`。
+当前安全/业务回归共 175 项；提交前同时运行 `pytest`、`cd frontend && npm run build && npm audit`。
 
 正式 CI 位于 `.github/workflows/ci.yml`，在 PR、`main` 推送及手动触发时运行：
 

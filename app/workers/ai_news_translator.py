@@ -25,7 +25,8 @@ import re
 from typing import Any
 
 from ..llm_client import LLMUnavailable, chat_complete, llm_configured
-from ..routers.ai_news import ARTICLES_FILE, _load_articles
+from ..routers.ai_news import ARTICLES_FILE, BENCHMARKS_FILE, _load_articles
+from ..benchmark_evidence import record_benchmark_matches
 from ..storage import update_json_atomic
 
 log = logging.getLogger("aif.translator")
@@ -225,7 +226,8 @@ async def _translate_once() -> int:
                 a["translation_status"] = "failed"
         return latest
 
-    update_json_atomic(ARTICLES_FILE, [], merge_results)
+    merged = update_json_atomic(ARTICLES_FILE, [], merge_results)
+    record_benchmark_matches(BENCHMARKS_FILE, [a for a in merged if a.get("id") in by_id])
     log.info("enrich worker: persisted %d entries", written)
     return written
 

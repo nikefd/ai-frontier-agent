@@ -27,6 +27,7 @@ from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
 from ..auth import current_user_optional, require_admin, require_user, require_verified_user, require_llm_quota
+from ..benchmark_evidence import record_benchmark_matches
 from ..custom_sources import load_custom_source_specs
 from ..llm_client import LLMUnavailable, chat_complete, chat_stream, llm_configured
 from ..models import Article, ChatRequest, Guide, Track, UserPublic
@@ -44,6 +45,7 @@ router = APIRouter(prefix="/api/ai-news", tags=["ai-news"])
 AINEWS_DIR = settings.data_dir / "ai-news"
 # ── Global, shared by everyone ──────────────────────────────────────
 ARTICLES_FILE = AINEWS_DIR / "articles.json"
+BENCHMARKS_FILE = AINEWS_DIR / "coverage-benchmarks.json"
 SOURCES_FILE = AINEWS_DIR / "sources.json"  # per-feed fetch metadata
 CUSTOM_SOURCES_FILE = AINEWS_DIR / "custom-sources.json"
 SUMMARY_FILE = AINEWS_DIR / "summary_today.json"  # cached "today" summary
@@ -587,6 +589,7 @@ def add_article(article: Article) -> dict:
     """Manual add — for openclaw-compat write API and for the fetcher worker."""
     aid = article.id or _article_id(article.url)
     result = {"ok": True, "id": aid}
+    inserted = []
 
     def mutate(data):
         articles = data if isinstance(data, list) else []
@@ -598,15 +601,20 @@ def add_article(article: Article) -> dict:
         payload["ingested_at"] = payload.get("ingested_at") or _now_iso()
         for k in ("pinned", "deep_dive_status", "deep_dive_id"):
             payload.pop(k, None)
+        inserted.append(payload)
         articles.insert(0, payload)
         if len(articles) > _ARTICLE_LIMIT:
             protected = _all_pinned_ids()
             kept_pinned = [a for a in articles if a.get("id") in protected]
             rest = [a for a in articles if a.get("id") not in protected][:_ARTICLE_LIMIT - len(kept_pinned)]
+            kept_ids = {a.get("id") for a in kept_pinned + rest}
+            evicted = [a for a in articles[1:] if a.get("id") not in kept_ids]
+            record_benchmark_matches(BENCHMARKS_FILE, evicted)
             return kept_pinned + rest
         return articles
 
     update_json_atomic(ARTICLES_FILE, [], mutate)
+    record_benchmark_matches(BENCHMARKS_FILE, inserted)
     return result
 
 

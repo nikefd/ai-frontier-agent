@@ -131,3 +131,5 @@ main.py ──┬─> routers/ai_news.py ──┬─> models.py
 详见 [Agent 架构](agent-architecture.md)。两者并存属历史演进，见 [known-issues](../reference/known-issues.md)。
 
 基准的确定性匹配已抽到 `app/benchmark_matching.py`（纯计算、无存储/router 依赖），质量报告复用同一套 URL/事件键/关键词规则，便于后续写入证据与读取评测保持一致。
+
+`benchmark_evidence.py` 只依赖匹配模块与 storage，由 router/入库/翻译/启动路径传入文件路径和文章快照；不反向 import router。启动顺序是发布时间修复 → 当前文章证据回填 → 调度器启动。

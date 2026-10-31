@@ -23,6 +23,7 @@
 | 理解今日速报为什么不会被 Trending/X 淹没 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 4 节）＋ [API 参考](reference/api-reference.md)（第 4 节） |
 | 理解全天分时抓取 / 速报刷新 / 未变化跳过 LLM | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.1/4 节）＋ [配置参考](reference/config-reference.md) |
 | 理解分层刷新 / “刚刚发生”重大提醒 / 各层健康阈值 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.1/2.2/2.5/4 节）＋ [API 参考](reference/api-reference.md)（第 4/7 节） |
+| 基准命中留存、淘汰保护、规则失效与入库时间依据 | [数据存储参考](reference/data-storage.md#32a-coverage-benchmarksjson必达事件基准) ＋ `app/benchmark_evidence.py` |
 | 修改基准的 URL/事件键/关键词确定性匹配 | [后端架构](architecture/backend-architecture.md) ＋ `app/benchmark_matching.py` |
 | 检查来源覆盖 / 噪声率 / 价值评分 / 必达候选 / 绝对召回 / 漏报根因诊断、未接入来源发现、RSS/Sitemap/更新页半自动接入与自定义源停用/删除、JS 官网专用适配、单源复测和处理闭环 / 高影响事件漏出 / 富化积压 / 发现延迟 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.2/2.5/5 节）＋ [API 参考](reference/api-reference.md)（第 7 节）＋ [数据存储参考](reference/data-storage.md)（2.1/3.2b）＋ `app/quality_report.py` / `app/source_discovery.py` / `app/source_adapter_validation.py` / `app/source_activation.py` / `app/auto_listing.py` / `app/official_page_adapters.py` / `app/source_management.py` / `app/custom_sources.py` |
 | 找出可实践内容 / 理解实践建议怎么生成 / “带我做”如何接 AI | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 3/4 节）＋ [前端架构](architecture/frontend-architecture.md)（第 3/4 节）＋ [数据存储参考](reference/data-storage.md)（3.1） |

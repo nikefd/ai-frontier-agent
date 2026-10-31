@@ -326,3 +326,26 @@ def test_independent_benchmark_requires_evidence_and_reports_origin_separately()
     assert groups["candidate"]["total"] == groups["independent"]["total"] == 1
     payload["origin"] = "unverified"
     assert client.post("/api/ai-news/quality/benchmarks", json=payload).status_code == 422
+
+
+def test_new_benchmark_retains_existing_hit_and_public_get_remains_read_only():
+    client = _fresh_client()
+    _register(client, "admin@example.test")
+    occurred = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+    article = client.post("/api/ai-news/articles", json={
+        "title": "Verified model release", "url": "https://official.test/model", "source": "Lab", "date": occurred,
+    })
+    assert article.status_code == 200
+    created = client.post("/api/ai-news/quality/benchmarks", json={
+        "title": "Model release", "occurred_at": occurred, "source_url": "https://official.test/model", "deadline_hours": 6,
+    })
+    assert created.status_code == 201
+    assert created.json()["evidence"]["article"]["id"] == article.json()["id"]
+    assert client.delete(f'/api/ai-news/articles/{article.json()["id"]}').status_code == 200
+    import app.routers.quality as quality
+    before = quality.BENCHMARKS_FILE.stat().st_mtime_ns
+    client.post("/api/auth/logout")
+    result = client.get("/api/ai-news/quality/report").json()["benchmark_coverage"]
+    assert result["on_time"] == 1 and result["items"][0]["match_evidence_retained"] is True
+    assert quality.BENCHMARKS_FILE.stat().st_mtime_ns == before
+    assert "rule_fingerprint" not in str(result)

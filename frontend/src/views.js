@@ -425,7 +425,7 @@ function renderBenchmarkCoverage(benchmark, candidates, benchmarks) {
   }).join('');
   return `<div class="benchmark-panel">
     <div class="source-value-head"><b>必达事件基准</b><span>近 ${benchmark.window_days || 30} 天 · 准时 ${benchmark.on_time || 0} / 迟到 ${benchmark.late || 0} / 漏报 ${benchmark.missed || 0} / 待闭环 ${benchmark.open_issue_count || 0}</span></div>
-    <div class="source-value-empty">独立核验 ${benchmark.origin_breakdown?.independent?.total || 0} 条 · 已抓候选 ${benchmark.origin_breakdown?.candidate?.total || 0} 条 · 普通登记 ${benchmark.origin_breakdown?.manual?.total || 0} 条。候选来自已抓文章，不能单独证明漏报率；当前滚动库也可能已淘汰旧事件。</div>
+    <div class="source-value-empty">独立核验 ${benchmark.origin_breakdown?.independent?.total || 0} 条 · 已抓候选 ${benchmark.origin_breakdown?.candidate?.total || 0} 条 · 普通登记 ${benchmark.origin_breakdown?.manual?.total || 0} 条。候选来自已抓文章，不能单独证明漏报率；历史命中已独立保存 ${items.filter(item => item.match_evidence_retained).length} 条，不随文章淘汰。</div>
     ${issueRows}
     <div class="benchmark-admin admin-only">
       <div class="benchmark-candidates">

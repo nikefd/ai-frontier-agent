@@ -74,3 +74,5 @@ GitHub Actions 会在每个 PR、`main` 推送和手动触发时运行确定性 
 FastAPI · uvicorn · APScheduler · httpx · feedparser · BeautifulSoup · pydantic-settings · SQLite · 内联 agent runtime · DeepSeek（LLM）· Vite ES module 前端（marked + DOMPurify + Mermaid strict）。
 
 只读生产检查与站外独立事件探针：见[生产验收指南](llmdoc/guides/production-audit.md)。
+
+必达基准会保存最早命中证据，已确认命中不会因 400 篇滚动库存淘汰而退化为漏报；已有历史缺口仍需独立样本核验。

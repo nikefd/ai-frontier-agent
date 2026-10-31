@@ -24,4 +24,4 @@
 
 数据源页手工登记时可选“从站外独立发现”或“普通手工登记”；自动候选加入时标记为“已抓候选”。API `origin=independent/manual/candidate`，旧基准缺省归入 manual。independent 必须提供来源 URL，真实性仍由管理员人工核验，服务端不会自动证明 URL 是官方。
 
-公开质量报告 `benchmark_coverage.origin_breakdown` 分别给出 total/settled/on_time/missed。不要用 candidate 的命中情况代表站外独立样本的召回；当前正式评测仍受滚动文章库淘汰限制。示例集合的日期没有时分秒，不会自动写入正式基准或伪造精确发布时间。
+公开质量报告 `benchmark_coverage.origin_breakdown` 分别给出 total/settled/on_time/missed。不要用 candidate 的命中情况代表站外独立样本的召回；正式基准已增加命中证据留存：登记/入库/富化/淘汰/启动时保存可确认的最早匹配，已保存命中不因文章淘汰消失。此前已经淘汰且未保存的命中仍无法恢复。示例集合的日期没有时分秒，不会自动写入正式基准或伪造精确发布时间。

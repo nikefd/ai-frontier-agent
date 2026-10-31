@@ -212,3 +212,5 @@ agent 主动提议（B2）：基于用户行为信号给「下一步」建议。
 > agent 细节见 [Agent 架构](../architecture/agent-architecture.md)；两个 chat 端点并存的来龙去脉见 [backend-architecture](../architecture/backend-architecture.md) 第 6 节。
 
 基准来源分组：`GET /quality/report` 的 `benchmark_coverage.origin_breakdown` 按 `independent/candidate/manual` 返回 total/settled/on_time/missed；每个 item 携带 origin。旧记录按 manual 兼容。详见[生产验收指南](../guides/production-audit.md)。
+
+基准命中证据：登记 POST 会尝试捕获已有文章，并在 admin 返回中携带 evidence。公开 `benchmark_coverage.items[]` 新增 `matched_at`、`match_evidence_retained`、`match_time_basis=ingested_at/published_at/null`；只投影命中来源，不暴露规则指纹、匹配文本和管理备注。GET 仍为只读；正式基准可使用留存证据，不因文章淘汰降为漏报。

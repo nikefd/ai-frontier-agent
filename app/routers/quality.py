@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from ..auth import require_admin
+from ..benchmark_evidence import retain_match
 from ..models import UserPublic
 from ..quality_report import (
     build_benchmark_candidates,
@@ -18,7 +19,7 @@ from ..quality_report import (
 )
 from ..storage import read_json, update_json_atomic
 from .ai_news import (
-    AINEWS_DIR,
+    BENCHMARKS_FILE,
     FEED_SPEC_BY_URL,
     SUMMARY_FILE,
     _load_articles,
@@ -28,7 +29,6 @@ from .ai_news import (
 
 
 router = APIRouter(prefix="/api/ai-news", tags=["ai-news-quality"])
-BENCHMARKS_FILE = AINEWS_DIR / "coverage-benchmarks.json"
 
 
 class BenchmarkCreate(BaseModel):
@@ -152,6 +152,8 @@ def create_benchmark(
         "created_by": admin.id,
         "origin": request.origin,
     }
+
+    retain_match(item, _load_articles(), now)
 
     def add(items: list[dict]) -> list[dict]:
         existing = items if isinstance(items, list) else []

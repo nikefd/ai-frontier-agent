@@ -97,9 +97,15 @@
 
 ### 3.2a coverage-benchmarks.json（必达事件基准）
 
-list，每项由管理员登记：`{id, title, occurred_at, source_url, event_key, match_terms[], deadline_hours, origin?, created_at, created_by, remediation?}`。`source_url`、`event_key`、`match_terms` 至少提供一种匹配信号；`deadline_hours` 限 1–168 小时。`remediation` 按需保存 `status/outcome/note/diagnosis_code/started_at/updated_at/updated_by/last_recheck_at/last_recheck_added/source_discovery_at/source_candidates[]`；来源候选含验证后的 `url/kind/ready/entry_count/dated_entries/latest_at/evidence/next_step`。完整内部说明、发现候选和操作者仅 admin 接口返回，公开质量报告只投影状态、结果和复测摘要。
+list，每项由管理员登记：`{id, title, occurred_at, source_url, event_key, match_terms[], deadline_hours, origin?, created_at, created_by, evidence?, remediation?}`。`source_url`、`event_key`、`match_terms` 至少提供一种匹配信号；`deadline_hours` 限 1–168 小时。`remediation` 按需保存 `status/outcome/note/diagnosis_code/started_at/updated_at/updated_by/last_recheck_at/last_recheck_added/source_discovery_at/source_candidates[]`；来源候选含验证后的 `url/kind/ready/entry_count/dated_entries/latest_at/evidence/next_step`。完整内部说明、发现候选和操作者仅 admin 接口返回，公开质量报告只投影状态、结果和复测摘要。
 
-评测状态 `on_time / late / missed / pending` 不持久化，而是由当前文章库的 URL、事件键或关键词确定性匹配后实时计算。准时召回率只以已到截止时间的事件为分母；最近 30 天之外的基准不参与当前报告。`origin` 为 `independent/candidate/manual`，缺省 manual；独立来源由管理员声明并需提供可核验 URL，旧记录不自动改称独立样本。这个人工维护集合用于衡量已知关键事件的绝对召回，不代表对整个互联网的完整召回率。
+评测状态 `on_time / late / missed / pending` 不持久化，而是由当前文章与已保存的最早命中证据实时计算。`evidence` v1 包含 `rule_fingerprint/recorded_at/matched_at/match_method/time_basis/article/match_text`：article 只保存 id、原/中文标题、URL、来源、发布时间、原始入库时间与事件键；关键词匹配另保存当时归一化的匹配文本，不复制全文或用户状态。`time_basis=ingested_at` 使用原入库时间；老文章缺该字段时保留 `published_at` 回退标识，绝不伪造入库时间。
+
+基准登记即尝试捕获已存在文章；新文章写入、富化完成、旧文章滚动淘汰之前以及启动时都会保存可确认的命中。合并在基准文件事务锁内重选最早证据，保留 remediation 等其它字段；未变化不写文件。文章与基准是两个文件，不承诺跨文件事务：淘汰前先保存旧文章证据；新文章落库后捕获，启动幂等补全当前仍有的文章。已经消失、且从未保存过的历史命中无法凭空恢复。
+
+报告会核验规则指纹、原匹配方法与时间，并在现存/留存证据中选择最早命中；URL 保留文章身份 query 与锚点，仅排除已知跟踪参数。改发生时间、URL、事件键或匹配词后，旧证据失效；改期限时按原命中时间重算。普通文章删除不删除评测证据，删除基准则连同内嵌证据一起移除；证据不会形成无限增长的独立档案（基准最多 500 条）。GET 报告/基准列表仍只读。
+
+准时召回率维持原统计口径；最近 30 天之外的基准不参与当前报告。`origin` 为 `independent/candidate/manual`，缺省 manual；独立来源由管理员声明并需提供可核验 URL，旧记录不自动改称独立样本。这个人工维护集合只衡量已登记事件，不代表整个互联网的完整召回。
 
 ### 3.2b custom-sources.json（管理员确认的自定义源）
 

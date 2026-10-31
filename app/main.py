@@ -43,6 +43,8 @@ async def lifespan(app: FastAPI):
     repaired_dates = repair_known_publication_dates()
     if repaired_dates:
         log.warning("repaired trusted publication dates for %d stored articles", repaired_dates)
+    from .benchmark_evidence import record_benchmark_matches
+    record_benchmark_matches(ai_news.BENCHMARKS_FILE, ai_news._load_articles())
     scheduler.start()
     try:
         yield
