@@ -257,7 +257,10 @@ export async function loadSources() {
     const staleN = r.filter(s => s.health_status === 'stale').length;
     const neverN = r.filter(s => s.health_status === 'never').length;
     const disabledN = r.filter(s => s.health_status === 'disabled').length;
-    const attention = r.filter(s => ['error', 'stale'].includes(s.health_status));
+    const quietN = r.filter(s => s.enabled !== false && s.content_status === 'quiet').length;
+    const dormantN = r.filter(s => s.enabled !== false && s.content_status === 'dormant').length;
+    const attention = r.filter(s =>
+      s.enabled !== false && (['error', 'stale'].includes(s.health_status) || s.content_status === 'dormant'));
     const totalArticles = r.reduce((a, s) => a + (s.article_count || 0), 0);
     const healthBar = `
       <div class="src-health">
@@ -267,14 +270,18 @@ export async function loadSources() {
           ${staleN ? `<span class="hs-warn">◷ ${staleN} 调度过期</span>` : ''}
           ${neverN ? `<span class="hs-neutral">⊝ ${neverN} 未抓取</span>` : ''}
           ${disabledN ? `<span class="hs-neutral">⏸ ${disabledN} 已停用</span>` : ''}
+          ${dormantN ? `<span class="hs-err">◌ ${dormantN} 疑似停更</span>` : ''}
+          ${quietN ? `<span class="hs-warn">◌ ${quietN} 内容偏久</span>` : ''}
           <span class="hs-neutral">· ${r.length - disabledN} 个启用 / 共 ${r.length} 源 · 当前库 ${totalArticles} 篇</span>
         </div>
-        ${attention.length ? `<div class="src-attention"><strong>需关注：</strong>${attention.slice(0, 8).map(s => `${escapeHtml(s.name)}（${escapeHtml(s.health_reason || '异常')}）`).join('、')}${attention.length > 8 ? ` 等 ${attention.length} 个源` : ''}</div>` : ''}
+        ${attention.length ? `<div class="src-attention"><strong>需关注：</strong>${attention.slice(0, 8).map(s => `${escapeHtml(s.name)}（${escapeHtml(['error', 'stale'].includes(s.health_status) ? (s.health_reason || '异常') : (s.content_reason || '内容疑似停更'))}）`).join('、')}${attention.length > 8 ? ` 等 ${attention.length} 个源` : ''}</div>` : ''}
       </div>`;
 
     const healthRank = { error: 0, stale: 1, never: 2, healthy: 3, disabled: 4 };
     Object.values(groups).forEach(items => items.sort((a, b) =>
       (healthRank[a.health_status] ?? 9) - (healthRank[b.health_status] ?? 9)
+      || Number(b.content_status === 'dormant') - Number(a.content_status === 'dormant')
+      || Number(b.content_status === 'quiet') - Number(a.content_status === 'quiet')
       || String(a.name || '').localeCompare(String(b.name || ''))));
     const cats = SRC_ORDER.concat(Object.keys(groups).filter(k => !SRC_ORDER.includes(k)));
     const html = healthBar + cats.map(cat => {
@@ -648,9 +655,13 @@ function sourceCard(s) {
   const healthDetail = ['error', 'stale'].includes(s.health_status)
     ? `<div class="src-err ${s.health_status === 'stale' ? 'is-stale' : ''}" title="${escapeHtml(s.last_error || s.health_reason || '')}">${escapeHtml(s.last_error ? (s.last_error.length > 80 ? s.last_error.slice(0, 77) + '…' : s.last_error) : s.health_reason || '')}</div>`
     : '';
+  const contentDetail = ['quiet', 'dormant'].includes(s.content_status)
+    ? `<div class="src-err is-stale" title="${escapeHtml(s.content_reason || '')}">${escapeHtml(s.content_reason || '')}</div>`
+    : '';
   const lastFetch = s.last_fetch ? fmtDate(s.last_fetch) : '—';
   const lastOk = s.last_ok ? fmtDate(s.last_ok) : '—';
   const newestArticle = s.newest_article_at ? fmtDate(s.newest_article_at) : '—';
+  const latestEntry = s.latest_entry_at ? fmtDate(s.latest_entry_at) : '—';
   const desc = s.description ? escapeHtml(s.description) : '<span class="text-faint">（无简介）</span>';
   const cadence = { fast: '每小时', standard: '每 4 小时', slow: '每 12 小时' }[s.cadence] || '';
   const host = s.url ? (s.url.replace(/^https?:\/\//, '').split('/')[0] || '') : '';
@@ -670,6 +681,7 @@ function sourceCard(s) {
       </div>
       <div class="src-desc">${desc}</div>
       ${healthDetail}
+      ${contentDetail}
       <div class="src-stats">
         ${cadence ? `<span title="自动抓取频率">↻ ${cadence}</span><span class="dot-sep">·</span>` : ''}
         <span title="本次入库 / 被过滤"><span class="hs-ok">+${s.last_added ?? 0}</span> <span class="text-faint">/ ${s.last_filtered ?? 0} 过滤</span></span>
@@ -680,7 +692,7 @@ function sourceCard(s) {
         <span title="最近抓取">⏱ ${lastFetch}</span>
         ${s.consecutive_failures ? `<span class="dot-sep">·</span><span class="hs-err">连续失败 ${s.consecutive_failures} 次</span>` : ''}
       </div>
-      <div class="src-stats text-faint"><span title="最近成功抓取">成功 ${lastOk}</span><span class="dot-sep">·</span><span title="当前库中该来源最新文章">最新内容 ${newestArticle}</span></div>
+      <div class="src-stats text-faint"><span title="最近成功抓取">成功 ${lastOk}</span><span class="dot-sep">·</span><span title="源站最新可解析条目">源站最新 ${latestEntry}</span><span class="dot-sep">·</span><span title="当前库中该来源最新文章">入库最新 ${newestArticle}</span></div>
       <div class="src-foot">${linkRow}${controls}</div>
     </div>`;
 }

@@ -22,7 +22,7 @@
 
 ## 4. X 来源仍依赖自建 RSSHub
 
-118 个源里仍有 21 个 X 来源，其中多数路由走 RSSHub；公共实例可能 404/限流，依赖 RSSHub 的 X 路由还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS、各实验室 sitemap/API、官网更新页、GitHub Releases/组织新仓库、OpenRouter 模型目录与 OpenAI/Gemini changelog 仍可工作。Mistral sitemap 若在部署网络超时，只会记录该源失败，不阻塞其它来源。详见 [部署指南](../guides/how-to-deploy.md)。
+116 个源里仍有 21 个 X 来源，其中多数路由走 RSSHub；公共实例可能 404/限流，依赖 RSSHub 的 X 路由还需要 `TWITTER_AUTH_TOKEN`。不配自建 RSSHub 时主要损失社交信号，官方/研究/媒体 RSS、各实验室 sitemap/API、官网更新页、GitHub Releases/组织新仓库、OpenRouter 模型目录与 OpenAI/Gemini changelog 仍可工作。Mistral sitemap 若在部署网络超时，只会记录该源失败，不阻塞其它来源。详见 [部署指南](../guides/how-to-deploy.md)。
 
 ## 5. tier 与分类配额已恢复生效
 
@@ -135,3 +135,11 @@
 ## 26. `vendor/high` 不代表宽口径官网全部可信
 
 纯 AI 官方源仍可直接放行，但 GitHub Changelog、NVIDIA Blog、Microsoft Research、AWS Machine Learning、Replit 与 LiblibAI 这类综合官方 Feed 会混入企业管理、游戏、通用研究、奖项、合作伙伴稿或泛教程。它们现通过每源 `title_keywords` 做标题硬门禁，未命中项计入 `last_filtered`。新增宽口径官方源时应先抽样最近 20 条，再决定白名单；不要把通用关键词加进全局 `AI_KEYWORDS` 来迁就单一来源。
+
+## 27. HTTP 200 不代表来源内容仍在更新
+
+2026-10-29 全量抽样发现，Google Research 旧 Blogger Feed 停在 2024 年、VentureBeat AI Feed 滞后两个月，但两者的官网栏目都有当周新内容；现已改为服务端 HTML 列表适配。Gwern 旧 Newsletter Feed 已被作者弃用，三花 AI 快讯也停更约一年，两者无可验证替代入口，已从内置源移除。
+
+抓取器现保存 `latest_entry_at`，数据源页把运输健康与内容新鲜度分开：安静超过所属 cadence 窗口标记 `quiet`，超过两倍且至少 180 天才标记 `dormant`。这是“检查入口”提醒，不等于抓取失败；Karpathy、Lilian Weng 等低频高价值作者不应仅因发文少被自动删除。
+
+2026-10-31 续作复测：Google Research 新入口可解析 12 条带日期文章；VentureBeat 新栏目直连返回 HTTP 429，页面迁移尚不能保证部署网络可抓取，需观察限流恢复后的成功记录。来源最新时间超过当前时间 6 小时会标记 `unknown`，停用源不计入前端内容告警。

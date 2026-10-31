@@ -11,7 +11,7 @@
 flowchart TD
   cron[APScheduler 分层刷新<br/>官方 1h / 常规 4h / 发现 12h] --> fetch
   manual[管理员点「立即抓取」 POST /fetch] --> fetch
-  fetch[fetch_once：异步拉取 118 个 RSS/sitemap/API/changelog/官网更新页/GitHub 源]
+  fetch[fetch_once：异步拉取 116 个 RSS/sitemap/API/changelog/官网更新页/GitHub 源]
   fetch --> parse[feedparser 解析 RSS/Atom<br/>BS4 解析官方 sitemap/changelog<br/>适配官方 JSON API]
   parse --> gate[tier/category 相关性门槛<br/>high/paper/显式精选源接受，med/low 需关键词]
   gate --> rounds[每源分 4 轮取候选<br/>先各源 1 条，再各源第 2 条]
@@ -34,7 +34,7 @@ flowchart TD
 
 - **定时**：`scheduler.py` 按 `cadence` 把来源拆成互斥三组，时区 Asia/Shanghai：
   - `fast`：30 个高时效官方源，每小时第 10 分钟检查；覆盖核心实验室新闻、模型/API 更新日志、重要 AI 初创公司和关键开发工具 changelog。
-  - `standard`：61 个媒体、博客、社区及普通官方工程源，默认在 01/05/09/13/17/21 点（每 4 小时）检查。
+  - `standard`：59 个媒体、博客、社区及普通官方工程源，默认在 01/05/09/13/17/21 点（每 4 小时）检查。
   - `slow`：27 个 paper、X 与 Trending 发现型源，默认在 05:20/17:20（每 12 小时）检查。
 - **手动**：admin-only 的 `POST /api/ai-news/fetch` 即时跑一轮（普通用户看不到按钮，直接调用返回 403）。
 
@@ -42,7 +42,7 @@ flowchart TD
 
 ### 2.2 feed 清单与分类
 
-118 个内置来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`；管理员确认的自动发现 RSS/Atom、Sitemap 或更新页另存 `custom-sources.json`，启动时合并进同一运行时注册表。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；内置源根据 `_FAST_SOURCE_NAMES` 与 category 赋 `cadence=fast/standard/slow`，自定义官方源固定为 `vendor/high/fast`。自定义 Sitemap 额外持久化 `format=sitemap + include_paths`，更新页持久化 `format=auto_listing`；`enabled=false` 会同时从默认全量抓取和分层调度中过滤，但仍在数据源页显示供恢复，删除只移除配置与运行时注册，不清理历史文章或 `sources.json` 抓取元数据。无稳定 RSS 的官方站可设置专用 format。当前 Anthropic、ByteDance Seed、Cerebras、DeepSeek、Fireworks AI、LangChain、MiniMax、Modal 与 Mistral 读取官方 sitemap；xAI 官网新闻、Luma 产品/工程页与 Ideogram 博客直接解析服务端 HTML，xAI Python SDK、PyTorch、SGLang、Transformers 与 vLLM 读取所属官方 GitHub Releases API，Z.ai 则读取官方组织的新仓库 API；LiblibAI、OpenRouter、Qwen 与 HF Daily Papers 读取官方 API。OpenAI API 的 Markdown changelog、Gemini API 的 HTML release notes 与 StepFun SPA 内嵌新闻会拆成带真实日期和官方落地链接的独立发布项，Claude Platform、Cursor、ElevenLabs、Lovable、Replit 与 Stability AI 直接读取 RSS。`html_listing` 适配器用每源声明的 CSS selector 解析已知官网；`auto_listing` 则保守提取同站链接、标题与日期明确关联的重复内容卡片。两者都拒绝缺标题或可信日期的条目；Luma 的专用解析器只收 Product/Engineering 卡片，避免大量 SEO 博客与公司合作内容进入文章流。普通 RSS 在截取最新 20 条前统一按发布日期重排，避免 Replit 这类原站混排 feed 漏掉新内容。论文侧使用 Hugging Face Daily Papers 策展接口，结合社区票数、代码可用性和 GitHub stars 排序；四路原始 arXiv 各限最新 2 篇，只承担长尾发现。开放研究和工程侧还覆盖 Ai2、Meta Engineering、Google Cloud AI、Cloudflare AI、Together AI、Ollama 与 MLflow。
+116 个内置来源硬编码在 `ai_news.py` 的 `DEFAULT_FEED_SPECS`；管理员确认的自动发现 RSS/Atom、Sitemap 或更新页另存 `custom-sources.json`，启动时合并进同一运行时注册表。普通 RSS/Atom 条目是 `{url, name, tier, category, description}`；内置源根据 `_FAST_SOURCE_NAMES` 与 category 赋 `cadence=fast/standard/slow`，自定义官方源固定为 `vendor/high/fast`。自定义 Sitemap 额外持久化 `format=sitemap + include_paths`，更新页持久化 `format=auto_listing`；`enabled=false` 会同时从默认全量抓取和分层调度中过滤，但仍在数据源页显示供恢复，删除只移除配置与运行时注册，不清理历史文章或 `sources.json` 抓取元数据。无稳定 RSS 的官方站可设置专用 format。当前 Anthropic、ByteDance Seed、Cerebras、DeepSeek、Fireworks AI、LangChain、MiniMax、Modal 与 Mistral 读取官方 sitemap；xAI 官网新闻、Luma 产品/工程页、Ideogram 博客、Google Research 新官网与 VentureBeat AI 实时栏目直接解析服务端 HTML，xAI Python SDK、PyTorch、SGLang、Transformers 与 vLLM 读取所属官方 GitHub Releases API，Z.ai 则读取官方组织的新仓库 API；LiblibAI、OpenRouter、Qwen 与 HF Daily Papers 读取官方 API。OpenAI API 的 Markdown changelog、Gemini API 的 HTML release notes 与 StepFun SPA 内嵌新闻会拆成带真实日期和官方落地链接的独立发布项，Claude Platform、Cursor、ElevenLabs、Lovable、Replit 与 Stability AI 直接读取 RSS。`html_listing` 适配器用每源声明的 CSS selector 解析已知官网；`auto_listing` 则保守提取同站链接、标题与日期明确关联的重复内容卡片。两者都拒绝缺标题或可信日期的条目；Luma 的专用解析器只收 Product/Engineering 卡片，避免大量 SEO 博客与公司合作内容进入文章流。普通 RSS 在截取最新 20 条前统一按发布日期重排，避免 Replit 这类原站混排 feed 漏掉新内容。论文侧使用 Hugging Face Daily Papers 策展接口，结合社区票数、代码可用性和 GitHub stars 排序；四路原始 arXiv 各限最新 2 篇，只承担长尾发现。开放研究和工程侧还覆盖 Ai2、Meta Engineering、Google Cloud AI、Cloudflare AI、Together AI、Ollama 与 MLflow。
 
 `category` 同时驱动前端分组、tier 归一化与抓取配额，共 8 类：
 
@@ -50,8 +50,8 @@ flowchart TD
 |---|---|---|
 | `vendor` | 官方实验室 / 厂商第一手发布 | 57 |
 | `x-ai` | X(Twitter) 上的 AI 大 V | 21 |
-| `community` | 社区 / 周刊（含中文资讯） | 10 |
-| `expert` | 专家个人博客 / 独立评测 | 13 |
+| `community` | 社区 / 周刊（含中文资讯） | 9 |
+| `expert` | 专家个人博客 / 独立评测 | 12 |
 | `blog` | AI 博客（原始一批） | 6 |
 | `media` | 科技媒体 | 5 |
 | `trending` | GitHub 热门风向 | 1 |
@@ -90,9 +90,9 @@ flowchart TD
 
 旧实现会先给每个来源直接放入 4 条，79 个来源时 `selected` 本身就可能超过 150，所谓全局上限实际失效；同时 5 路高度重叠 Trending 会重复占位。新实现把 Trending 收敛为 1 路，并在来源轮次之后再执行分类与全局硬限制。
 
-每源抓取结果写入 `sources.json`（按 url 为 key）：`last_fetch` / `last_ok` / `last_error` / `last_error_at` / `last_recovered_at` / `consecutive_failures` / `eligible` / `last_added` / `last_filtered` / `last_invalid_date` / `quality_samples[]` / `name` / `tier` / `category`。`last_invalid_date` 是最近一轮因缺失/异常发布时间而拒绝的条目数；每次成功抓取把 `{at,parsed,accepted,filtered,invalid_date}` 追加到最近 30 轮滚动样本。成功时连续失败归零，从失败恢复时记录恢复时间。
+每源抓取结果写入 `sources.json`（按 url 为 key）：`last_fetch` / `last_ok` / `last_error` / `last_error_at` / `last_recovered_at` / `consecutive_failures` / `latest_entry_at` / `eligible` / `last_added` / `last_filtered` / `last_invalid_date` / `quality_samples[]` / `name` / `tier` / `category`。`latest_entry_at` 保存该入口最新可信条目时间，即使条目后续被相关性门禁过滤也会更新；`last_invalid_date` 是最近一轮因缺失/异常发布时间而拒绝的条目数。每次成功抓取把 `{at,parsed,accepted,filtered,invalid_date}` 追加到最近 30 轮滚动样本。成功时连续失败归零，从失败恢复时记录恢复时间。
 
-`GET /sources` 不把“很久没发文章”误判为源故障，而是只判断**抓取运输层**：最近一轮报错为 `error`，从未跑过为 `never`，超过所属 cadence 的 3 个调度间隔（最少 6 小时）没有抓取记录为 `stale`，否则为 `healthy`。响应同时返回 `cadence` 并动态计算当前滚动库内每源最新文章时间；前端显示“每小时 / 每 4 小时 / 每 12 小时”，把 error/stale 自动排到分类前面，并在顶部集中列出需关注来源。
+`GET /sources` 不把“很久没发文章”误判为抓取故障：运输层仍用 `healthy/error/stale/never/disabled`，内容层另用 `fresh/quiet/dormant/unknown`。内容窗口默认为 fast 45 天、standard 120 天、slow 180 天；超过窗口为 `quiet`，超过两倍窗口且至少 180 天才为 `dormant`。历史元数据没有 `latest_entry_at` 时暂用当前滚动库的最新入库文章兼容，下一轮成功抓取后自然切换到源站时间。前端会分开显示抓取状态、源站最新条目和入库最新文章，并将 `dormant` 纳入需关注列表。
 
 `GET /quality/report` 还会对当前 400 篇滚动库中的近 30 天数据做来源价值归因，并返回实际样本篇数与覆盖天数：先按 `event_key`（缺失时回退规范化标题）合并同一事件，再统计每源有效事件、仅该源覆盖的独家事件、同一最早发现窗口（最早入库后 15 分钟内）的首发现、事件平均重要性和中位发现延迟。五项分别占 20/25/20/25/10 分；待富化文章按中性重要性 5 计，不足 3 个事件不评分，避免新源、富化排队或低频高质量源被误伤。只有健康、至少 5 个事件且低于 40 分的源进入“待复核”，评分只辅助人工调整，不会自动删源。
 

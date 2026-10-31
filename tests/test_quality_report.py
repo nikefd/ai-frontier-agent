@@ -101,6 +101,19 @@ def test_quality_report_warns_when_a_sampled_source_rejects_everything() -> None
     assert any(item["title"] == "来源门禁可能过严" for item in report["findings"])
 
 
+def test_quality_report_warns_about_dormant_content_without_calling_fetch_broken() -> None:
+    source = _source("Old but reachable") | {
+        "health_status": "healthy",
+        "content_status": "dormant",
+    }
+
+    report = build_quality_report([], [source], None, now=NOW)
+
+    assert report["source_health"]["healthy"] == 1
+    assert report["source_health"]["content_dormant"] == 1
+    assert any(item["title"] == "来源内容疑似停更" for item in report["findings"])
+
+
 def test_major_alert_counts_as_visible_before_briefing_refresh() -> None:
     release = _article("release", title="Introducing GPT-6")
     report = build_quality_report([release], [_source("Lab")], None, now=NOW)

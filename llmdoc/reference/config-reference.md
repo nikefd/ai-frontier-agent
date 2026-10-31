@@ -62,7 +62,7 @@
 | `_CATEGORY_FETCH_CAPS` | 共 150 | 单轮分类硬上限：vendor 46 / media 20 / blog 16 / paper 14 / community 18 / expert 18 / x-ai 12 / trending 6 |
 | `_DEFAULT_TIER_BY_CATEGORY` | 8 类映射 | 运行时按 category 归一化 tier：vendor/blog=high，media/paper/community/expert=med，x-ai/trending=low |
 | `_SUMMARY_CATEGORY_CAPS` | 8 类映射 | 速报候选上限；其中 trending=2、x-ai=3，且这两类永不放宽 |
-| `DEFAULT_FEED_SPECS` | 118 条内置 + 自定义 | 内置 RSS/Atom/官方 sitemap/API/changelog/官网更新页/GitHub Releases 清单；启动时再合并 `custom-sources.json`。内置源补 cadence（30 fast / 61 standard / 27 slow），管理员确认的自定义 Feed/Sitemap/更新页固定为 fast；其中 `enabled=false` 的自定义源保留在注册表供管理，但不进入抓取列表 |
+| `DEFAULT_FEED_SPECS` | 116 条内置 + 自定义 | 内置 RSS/Atom/官方 sitemap/API/changelog/官网更新页/GitHub Releases 清单；启动时再合并 `custom-sources.json`。内置源补 cadence（30 fast / 59 standard / 27 slow），管理员确认的自定义 Feed/Sitemap/更新页固定为 fast；其中 `enabled=false` 的自定义源保留在注册表供管理，但不进入抓取列表 |
 | `AI_KEYWORDS` | 一组中英词 | med/low 相关性过滤；high、paper 与显式 `curated=true` 的 AI 刊物未命中时仍可接受 |
 | `DEFAULT_TRACKS` | 3 条 | tracks.json 为空时的默认追踪主题 |
 
@@ -79,6 +79,12 @@
 |---|---|---|
 | `_SITEMAP_METADATA_LIMIT` | 6 | 每个 sitemap 源最多补全的最新文章页数；读取 Open Graph/meta/JSON-LD，失败保留 sitemap 降级数据 |
 | `_QUALITY_SAMPLE_LIMIT` | 30 | 每源保留的成功抓取质量样本上限；质量报告再按近 7 天窗口聚合噪声率 |
+
+在 `app/source_freshness.py`：
+
+| 常量 | 值 | 含义 |
+|---|---|---|
+| `_QUIET_AFTER_DAYS` | fast=45 / standard=120 / slow=180 | 来源内容超过该天数未更新时标记 `quiet`；超过两倍且至少 180 天才标记 `dormant`。个别低频高价值源可在 spec 设 `quiet_after_days` 覆盖 |
 
 ## 修改约定
 

@@ -1101,6 +1101,19 @@ async def _fetch_once(feeds: Iterable[str] | None = None) -> int:
         m["consecutive_failures"] = 0
         entries = _limit_source_entries(entries, spec)
 
+        latest_entry_ts = max(
+            (
+                timestamp for entry in entries
+                if (timestamp := _parse_ts(entry.get("date") or ""))
+                and timestamp <= datetime.now(timezone.utc).timestamp() + 6 * 3600
+            ),
+            default=0.0,
+        )
+        if latest_entry_ts > _parse_ts(m.get("latest_entry_at") or ""):
+            m["latest_entry_at"] = datetime.fromtimestamp(
+                latest_entry_ts, tz=timezone.utc,
+            ).isoformat()
+
         eligible_count = 0
         filtered_count = 0
         invalid_date_count = 0

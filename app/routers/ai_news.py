@@ -33,6 +33,7 @@ from ..models import Article, ChatRequest, Guide, Track, UserPublic
 from ..news_alerts import build_breaking_alerts
 from ..settings import settings
 from ..safe_fetch import UnsafeUrl, fetch_public_html, sanitize_reader_html
+from ..source_freshness import classify_content_freshness
 from ..storage import read_json, update_json_atomic, write_json_atomic, write_text_atomic
 from ..summary_feed import archive_summary
 
@@ -190,7 +191,7 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://github.blog/changelog/feed/", "name": "GitHub Changelog", "tier": "high", "category": "vendor", "title_keywords": ["ai", "copilot", "agent", "mcp", "model", "opencode", "codex", "claude code"], "description": "GitHub 产品 changelog · 只收 AI 编程、Agent、MCP 与模型相关更新"},
     {"url": "https://deepmind.google/blog/rss.xml", "name": "Google DeepMind", "tier": "high", "category": "vendor", "description": "DeepMind 博客 · AlphaFold、Gemini、强化学习、AI 安全等前沿研究"},
     {"url": "https://ai.google.dev/gemini-api/docs/changelog", "name": "Gemini API Release Notes", "tier": "high", "category": "vendor", "format": "gemini_changelog", "description": "Gemini API 官方更新 · 新模型、能力变更、弃用与迁移提醒"},
-    {"url": "https://blog.research.google/feeds/posts/default?alt=rss", "name": "Google Research", "tier": "high", "category": "vendor", "description": "Google Research 博客 · Gemini 之外的基础研究和长文"},
+    {"url": "https://research.google/blog/", "name": "Google Research", "tier": "high", "category": "vendor", "format": "html_listing", "item_selector": "a.glue-card--blog[href^='/blog/']", "title_selector": ".js-gt-item-id", "date_selector": ".glue-card__eyebrow", "description": "Google Research 新版官网 · Gemini 之外的基础研究、Agent 与科学 AI"},
     {"url": "https://huggingface.co/blog/feed.xml", "name": "Hugging Face Blog", "tier": "high", "category": "vendor", "description": "HF 官方博客 · 开源模型、Transformers/Diffusers 库、社区工程实践"},
     {"url": "https://www.microsoft.com/en-us/research/feed/", "name": "Microsoft Research", "tier": "high", "category": "vendor", "title_keywords": ["ai", "agent", "model", "machine learning", "deep learning", "neural", "multimodal", "robot", "copilot", "llm", "generative", "reinforcement learning", "computer vision", "speech", "reasoning"], "description": "微软研究院综合 Feed · 只收 AI、模型、Agent、机器人与机器学习研究"},
     {"url": "https://blogs.nvidia.com/feed/", "name": "NVIDIA Blog", "tier": "high", "category": "vendor", "title_keywords": ["ai", "model", "agent", "machine learning", "deep learning", "inference", "robot", "cuda", "tensorrt", "gpu", "blackwell", "rubin", "dgx", "dsx", "gtc"], "description": "英伟达企业博客 · 标题级筛选后的模型、Agent、机器人与 AI 基础设施动态"},
@@ -244,7 +245,7 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://www.technologyreview.com/topic/artificial-intelligence/feed", "name": "MIT Tech Review AI", "tier": "high", "category": "media", "description": "MIT Tech Review · 长篇深度报道与影响分析"},
     {"url": "https://techcrunch.com/category/artificial-intelligence/feed/", "name": "TechCrunch AI", "tier": "high", "category": "media", "description": "TechCrunch AI · 创业公司、投资、产品发布快讯"},
     {"url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml", "name": "The Verge AI", "tier": "high", "category": "media", "description": "Verge AI 栏目 · 科技媒体视角，重点关注产品发布和行业大事"},
-    {"url": "https://venturebeat.com/category/ai/feed/", "name": "VentureBeat AI", "tier": "high", "category": "media", "request_profile": "browser", "description": "VentureBeat AI · 企业级 AI、融资、商业落地新闻"},
+    {"url": "https://venturebeat.com/category/ai", "name": "VentureBeat AI", "tier": "high", "category": "media", "format": "html_listing", "item_selector": "article", "title_selector": "h2", "date_selector": "time", "link_selector": "h2 a", "request_profile": "browser", "description": "VentureBeat AI 实时栏目 · 企业级 AI、模型、Agent 与商业落地"},
     # ── blog: AI 博客(原)
     {"url": "https://karpathy.github.io/feed.xml", "name": "Andrej Karpathy", "tier": "high", "category": "blog", "description": "Karpathy 个人博客 · 从零写 LLM、micrograd、教学性内容"},
     {"url": "https://www.latent.space/feed", "name": "Latent Space", "tier": "high", "category": "blog", "description": "Latent Space 播客博客 · swyx 与 Alessio 的 AI 工程师播客与短文"},
@@ -266,13 +267,11 @@ DEFAULT_FEED_SPECS: list[dict] = [
     {"url": "https://hnrss.org/newest?q=AI+OR+LLM+OR+GPT+OR+Claude+OR+Gemini", "name": "HN: AI keyword", "tier": "high", "category": "community", "description": "Hacker News AI 关键词搜索流 · 杂噪较高但覆盖广，靠相关性过滤"},
     {"url": "https://www.reddit.com/r/LocalLLaMA/.rss", "name": "r/LocalLLaMA", "tier": "high", "category": "community", "description": "Reddit 本地大模型社区 · 开源权重、量化、推理硬件经验"},
     {"url": "https://jack-clark.net/feed/", "name": "Import AI · Jack Clark", "tier": "high", "category": "expert", "curated": True, "description": "Import AI 通讯 · Jack Clark 对前沿研究、产业与 AI 政策的精选分析"},
-    {"url": "https://sanhua.himrr.com/daily-news/feed", "name": "三花 AI 快讯", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
     {"url": "https://wechat2rss.bestblogs.dev/feed/484d4199ae6c0b72ea01e7e0597a1f74933dfb62.xml", "name": "刘小排r", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
     {"url": "https://www.langchain.com/sitemap.xml", "name": "LangChain Blog", "tier": "high", "category": "vendor", "format": "sitemap", "include_paths": ["/blog/"], "description": "LangChain 官方博客 · Agent 工程、评测、可观测性与实践案例"},
     {"url": "https://mlflow.org/blog/rss.xml", "name": "MLflow Blog", "tier": "high", "category": "vendor", "description": "MLflow 官方博客 · Agent/LLM 评测、Tracing 与生产实践"},
     {"url": "https://quaily.com/ameow/feed/atom", "name": "猫鱼周刊", "tier": "high", "category": "community", "description": "AI 社区/周刊 · 聚合精选与中文资讯"},
     # ── expert: AI 专家博客
-    {"url": "https://gwern.substack.com/feed", "name": "Gwern.net Newsletter", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
     {"url": "https://sunocean.life/blog/feed.xml", "name": "NoteAI", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
     {"url": "https://www.dwarkesh.com/feed", "name": "dwarkesh.com", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
     {"url": "https://garymarcus.substack.com/feed", "name": "garymarcus.substack.com", "tier": "high", "category": "expert", "description": "AI 专家博客 · 个人深度文章与综述"},
@@ -877,6 +876,11 @@ def list_sources() -> list[dict]:
         # on a stale name persisted by an earlier fetch.
         name = spec.get("name") or m.get("name") or url
         enabled = spec.get("enabled") is not False
+        newest_article_at = newest.get(name, (0.0, None))[1]
+        content = classify_content_freshness(
+            m.get("latest_entry_at") or newest_article_at,
+            spec,
+        )
         health = _source_health(m, interval_hours={
             "fast": settings.fast_news_interval_hours,
             "slow": settings.slow_news_interval_hours,
@@ -905,7 +909,9 @@ def list_sources() -> list[dict]:
             "last_filtered": m.get("last_filtered", 0),
             "last_invalid_date": m.get("last_invalid_date", 0),
             "article_count": counts.get(name, 0),
-            "newest_article_at": newest.get(name, (0.0, None))[1],
+            "newest_article_at": newest_article_at,
+            "latest_entry_at": m.get("latest_entry_at") or newest_article_at,
+            **content,
             **health,
         })
     return out

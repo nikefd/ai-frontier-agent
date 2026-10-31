@@ -770,6 +770,10 @@ def build_quality_report(
         articles, benchmarks or [], now=current, sources=sources,
     )
     source_noise = _source_noise_report(sources, now=current)
+    dormant_sources = [
+        source for source in configured
+        if source.get("content_status") == "dormant"
+    ]
     if benchmark_coverage["missed"]:
         add(
             "critical", "基准事件存在漏报",
@@ -785,6 +789,12 @@ def build_quality_report(
             item["name"] for item in source_noise["possible_overfilter"][:3]
         )
         add("watch", "来源门禁可能过严", f"{names} 在近 7 天有足够样本但全部被过滤，请复核关键词。")
+    if dormant_sources:
+        names = "、".join(str(source.get("name") or "未命名") for source in dormant_sources[:3])
+        add(
+            "watch", "来源内容疑似停更",
+            f"{names} 的抓取仍可成功，但源站条目长期未更新，请检查入口是否迁移。",
+        )
     if not findings:
         findings.append({"level": "healthy", "title": "覆盖链路正常", "detail": "暂未发现明显的来源、漏出或富化积压问题。"})
 
@@ -797,6 +807,8 @@ def build_quality_report(
             "fast_healthy": len(fast_healthy), "fast_total": len(fast), "fast_rate": fast_rate,
             "error": sum(source.get("health_status") == "error" for source in configured),
             "stale": sum(source.get("health_status") == "stale" for source in configured),
+            "content_quiet": sum(source.get("content_status") == "quiet" for source in configured),
+            "content_dormant": len(dormant_sources),
         },
         "content_coverage": {
             "recent_articles": len(recent),

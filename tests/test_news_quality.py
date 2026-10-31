@@ -125,7 +125,7 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
     urls = {spec["url"] for spec in DEFAULT_FEED_SPECS}
     names = {spec["name"] for spec in DEFAULT_FEED_SPECS}
     by_url = {spec["url"]: spec for spec in DEFAULT_FEED_SPECS}
-    assert len(DEFAULT_FEED_SPECS) == 118
+    assert len(DEFAULT_FEED_SPECS) == 116
     assert len(urls) == len(DEFAULT_FEED_SPECS)
     assert len(names) == len(DEFAULT_FEED_SPECS)
     assert {
@@ -172,7 +172,15 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "https://api.github.com/repos/sgl-project/sglang/releases?per_page=20",
         "https://artificialanalysis.ai/articles",
         "https://metr.org/blog/",
+        "https://research.google/blog/",
+        "https://venturebeat.com/category/ai",
     } <= urls
+    assert "https://blog.research.google/feeds/posts/default?alt=rss" not in urls
+    assert "https://venturebeat.com/category/ai/feed/" not in urls
+    assert "https://sanhua.himrr.com/daily-news/feed" not in urls
+    assert "https://gwern.substack.com/feed" not in urls
+    assert by_url["https://research.google/blog/"]["format"] == "html_listing"
+    assert by_url["https://venturebeat.com/category/ai"]["format"] == "html_listing"
     assert by_url["https://huggingface.co/api/daily_papers?limit=100"]["source_priority"] == 1
     assert "copilot" in by_url["https://github.blog/changelog/feed/"]["title_keywords"]
     assert "ai" in by_url["https://blogs.nvidia.com/feed/"]["title_keywords"]
@@ -336,7 +344,7 @@ def test_unstable_sources_use_verified_replacements_and_scoped_headers() -> None
     assert _request_headers(
         "https://api.github.com/repos/pytorch/pytorch/releases?per_page=20",
     )["X-GitHub-Api-Version"] == "2022-11-28"
-    assert "Mozilla/5.0" in _request_headers("https://venturebeat.com/category/ai/feed/")["User-Agent"]
+    assert "Mozilla/5.0" in _request_headers("https://venturebeat.com/category/ai")["User-Agent"]
     assert _request_headers("https://www.reddit.com/r/LocalLLaMA/.rss")["User-Agent"].startswith(
         "ai-frontier-agent/",
     )
@@ -459,6 +467,7 @@ async def test_fetch_rejects_missing_and_future_publication_dates(monkeypatch) -
     assert await _fetch_once(["https://example.test/feed.xml"]) == 1
     assert [article.url for article in persisted] == ["https://example.test/valid"]
     assert saved_meta["https://example.test/feed.xml"]["last_invalid_date"] == 2
+    assert saved_meta["https://example.test/feed.xml"]["latest_entry_at"] == entries[0]["date"]
 
 
 @pytest.mark.asyncio

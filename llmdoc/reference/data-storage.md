@@ -19,7 +19,7 @@
 |---|---|---|
 | `articles.json` | list | 文章主存储，上限 400（被任一用户 pin 的不淘汰）。每项是 `Article`。**不含 per-user 的 `pinned`/`deep_dive_status`** |
 | `sources.json` | dict（按 url 为 key） | 每个 feed 的抓取元数据 |
-| `custom-sources.json` | list | 管理员从漏报诊断候选确认接入的 RSS/Atom、Sitemap 或结构化更新页；启动时与 118 个内置源合并 |
+| `custom-sources.json` | list | 管理员从漏报诊断候选确认接入的 RSS/Atom、Sitemap 或结构化更新页；启动时与 116 个内置源合并 |
 | `coverage-benchmarks.json` | list | 管理员登记的必达事件基准；用于计算准时召回、迟到和漏报 |
 | `summary_today.json` | dict | 缓存的「今日速报」 |
 | `summary_history.json` | list | 已生成速报的公开 RSS 历史；最近 30 天、最多 180 个不同 cohort |
@@ -93,7 +93,7 @@
 
 ### 3.2 sources.json（按 feed url 为 key）
 
-每个值是该源的抓取状态：`last_fetch` / `last_ok` / `last_error` / `last_error_at` / `last_recovered_at` / `consecutive_failures` / `eligible` / `last_added` / `last_filtered` / `last_invalid_date` / `quality_samples[]` / `name` / `tier` / `category`。`last_invalid_date` 是最近一轮因缺失/异常发布时间而拒绝的条目数。`quality_samples` 最多 30 项，每项为 `{at,parsed,accepted,filtered,invalid_date}`，只在成功解析来源后追加，用于近 7 天噪声率和疑似过严门禁诊断；历史文件缺失该字段按空样本兼容。`GET /sources` 把元数据和 `DEFAULT_FEED_SPECS` 合并，再动态叠加当前滚动库的每源文章计数与 `newest_article_at`，并计算 `health_status` / `health_reason` / `fetch_age_hours` / `stale_after_hours`；这些派生健康字段不回写 JSON，滚动样本也不直接暴露给该列表接口。
+每个值是该源的抓取状态：`last_fetch` / `last_ok` / `last_error` / `last_error_at` / `last_recovered_at` / `consecutive_failures` / `latest_entry_at` / `eligible` / `last_added` / `last_filtered` / `last_invalid_date` / `quality_samples[]` / `name` / `tier` / `category`。`latest_entry_at` 是抓取器观测到的源站最新有效发布时间，用于区分“运输层成功”与“入口内容长期不更新”。`last_invalid_date` 是最近一轮因缺失/异常发布时间而拒绝的条目数。`quality_samples` 最多 30 项，每项为 `{at,parsed,accepted,filtered,invalid_date}`，只在成功解析来源后追加，用于近 7 天噪声率和疑似过严门禁诊断；历史文件缺失该字段按空样本兼容。`GET /sources` 把元数据和 `DEFAULT_FEED_SPECS` 合并，再动态叠加当前滚动库的每源文章计数与 `newest_article_at`，并计算运输层 `health_*` 和内容层 `content_status/content_age_days/quiet_after_days/content_reason`；这些派生字段不回写 JSON，滚动样本也不直接暴露给该列表接口。
 
 ### 3.2a coverage-benchmarks.json（必达事件基准）
 
