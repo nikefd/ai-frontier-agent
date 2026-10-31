@@ -129,3 +129,5 @@ main.py ──┬─> routers/ai_news.py ──┬─> models.py
 | `POST /api/agent/chat` | `agent_chat.py`，sparrow ReAct + 工具 + 记忆，SSE | **前端实际使用**的对话入口 |
 
 详见 [Agent 架构](agent-architecture.md)。两者并存属历史演进，见 [known-issues](../reference/known-issues.md)。
+
+基准的确定性匹配已抽到 `app/benchmark_matching.py`（纯计算、无存储/router 依赖），质量报告复用同一套 URL/事件键/关键词规则，便于后续写入证据与读取评测保持一致。
