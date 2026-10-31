@@ -108,3 +108,5 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 - 依赖变更后提交 `package-lock.json`，并运行 `npm audit` 与生产构建。
 
 详见 [known-issues](../reference/known-issues.md)。
+
+基准录入支持独立站外发现或普通手工登记，自动候选显式提交 candidate；覆盖区按发现方式显示样本数，避免已抓候选与独立样本混淆。

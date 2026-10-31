@@ -386,6 +386,7 @@ def build_benchmark_coverage(
             "occurred_at": occurred.isoformat(),
             "deadline_at": deadline.isoformat(),
             "deadline_hours": deadline_hours,
+            "origin": benchmark.get("origin") or "manual",
             "source_url": str(benchmark.get("source_url") or ""),
             "match_terms": benchmark.get("match_terms") or [],
             "status": status,
@@ -423,6 +424,14 @@ def build_benchmark_coverage(
             diagnosis_counts[code] = diagnosis_counts.get(code, 0) + 1
     diagnosed = [item for item in settled if item.get("diagnosis")]
     return {
+        "origin_breakdown": {
+            origin: {
+                "total": sum(item["origin"] == origin for item in results),
+                "settled": sum(item["origin"] == origin for item in settled),
+                "on_time": sum(item["origin"] == origin for item in on_time),
+                "missed": sum(item["origin"] == origin and item["status"] == "missed" for item in settled),
+            } for origin in ("independent", "candidate", "manual")
+        },
         "window_days": window_days,
         "total": len(results),
         "settled": denominator,

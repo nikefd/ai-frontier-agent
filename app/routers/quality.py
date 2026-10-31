@@ -38,6 +38,7 @@ class BenchmarkCreate(BaseModel):
     event_key: str = Field(default="", max_length=160)
     match_terms: list[str] = Field(default_factory=list, max_length=8)
     deadline_hours: int = Field(default=24, ge=1, le=168)
+    origin: Literal["manual", "independent", "candidate"] = "manual"
 
 
 class RemediationUpdate(BaseModel):
@@ -115,6 +116,8 @@ def create_benchmark(
         parsed = urlparse(source_url)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise HTTPException(status_code=400, detail="source_url 必须是有效的 http(s) URL")
+    if request.origin == "independent" and not source_url:
+        raise HTTPException(status_code=400, detail="独立基准必须提供可核验的官方来源链接")
     terms: list[str] = []
     seen: set[str] = set()
     for raw in request.match_terms:
@@ -147,6 +150,7 @@ def create_benchmark(
         "deadline_hours": request.deadline_hours,
         "created_at": now.isoformat(),
         "created_by": admin.id,
+        "origin": request.origin,
     }
 
     def add(items: list[dict]) -> list[dict]:

@@ -425,6 +425,7 @@ function renderBenchmarkCoverage(benchmark, candidates, benchmarks) {
   }).join('');
   return `<div class="benchmark-panel">
     <div class="source-value-head"><b>必达事件基准</b><span>近 ${benchmark.window_days || 30} 天 · 准时 ${benchmark.on_time || 0} / 迟到 ${benchmark.late || 0} / 漏报 ${benchmark.missed || 0} / 待闭环 ${benchmark.open_issue_count || 0}</span></div>
+    <div class="source-value-empty">独立核验 ${benchmark.origin_breakdown?.independent?.total || 0} 条 · 已抓候选 ${benchmark.origin_breakdown?.candidate?.total || 0} 条 · 普通登记 ${benchmark.origin_breakdown?.manual?.total || 0} 条。候选来自已抓文章，不能单独证明漏报率；当前滚动库也可能已淘汰旧事件。</div>
     ${issueRows}
     <div class="benchmark-admin admin-only">
       <div class="benchmark-candidates">
@@ -432,6 +433,7 @@ function renderBenchmarkCoverage(benchmark, candidates, benchmarks) {
         ${candidateRows || '<div class="source-value-empty">暂无未登记候选。</div>'}
       </div>
       <div class="benchmark-form">
+        <select id="benchmark-origin" aria-label="基准发现方式"><option value="independent">从站外独立发现</option><option value="manual" selected>普通手工登记</option></select>
         <input id="benchmark-title" maxlength="200" placeholder="事件标题，如：GPT-6 正式发布" />
         <input id="benchmark-time" type="datetime-local" title="事件发生时间" />
         <input id="benchmark-terms" maxlength="400" placeholder="匹配词，逗号分隔，如：GPT-6, OpenAI" />
@@ -520,6 +522,7 @@ function bindBenchmarkControls(root, candidates = []) {
     try {
       await api('POST', '/api/ai-news/quality/benchmarks', {
         title,
+        origin: root.querySelector('#benchmark-origin')?.value || 'manual',
         occurred_at: new Date(occurredValue).toISOString(),
         source_url: root.querySelector('#benchmark-url')?.value.trim() || '',
         match_terms: matchTerms,
@@ -552,6 +555,7 @@ function bindBenchmarkControls(root, candidates = []) {
     try {
       await api('POST', '/api/ai-news/quality/benchmarks', {
         title: item.title,
+        origin: 'candidate',
         occurred_at: item.occurred_at,
         source_url: item.source_url,
         event_key: item.event_key,

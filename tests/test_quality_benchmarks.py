@@ -47,6 +47,7 @@ def test_admin_can_create_and_delete_benchmark_but_regular_user_cannot() -> None
     assert created.status_code == 201
     benchmark = created.json()
     assert benchmark["match_terms"] == ["GPT-6", "OpenAI"]
+    assert benchmark["origin"] == "manual"
     assert client.get("/api/ai-news/quality/benchmarks").json()["total"] == 1
     assert client.get("/api/ai-news/quality/benchmark-candidates").status_code == 200
     assert client.get("/api/ai-news/quality/report").json()["benchmark_coverage"]["total"] == 1
@@ -302,3 +303,26 @@ def test_admin_can_validate_and_activate_sitemap_adapter(monkeypatch) -> None:
         if item["url"] == candidate["url"]
     )
     assert source["custom"] is True
+
+
+def test_independent_benchmark_requires_evidence_and_reports_origin_separately():
+    client = _fresh_client()
+    _register(client, "admin@example.test")
+    payload = {"title": "Independently found release", "origin": "independent",
+        "occurred_at": (datetime.now(timezone.utc) - timedelta(days=2)).isoformat(),
+        "match_terms": ["UniqueModel"]}
+    assert client.post("/api/ai-news/quality/benchmarks", json=payload).status_code == 400
+    payload["source_url"] = "https://official.test/news/model"
+    result = client.post("/api/ai-news/quality/benchmarks", json=payload)
+    assert result.status_code == 201
+    assert result.json()["origin"] == "independent"
+    coverage = client.get("/api/ai-news/quality/report").json()["benchmark_coverage"]
+    assert coverage["origin_breakdown"]["independent"] == {"total": 1, "settled": 1, "on_time": 0, "missed": 1}
+    assert coverage["origin_breakdown"]["candidate"]["total"] == 0
+    assert coverage["items"][0]["origin"] == "independent"
+    payload["origin"] = "candidate"
+    assert client.post("/api/ai-news/quality/benchmarks", json=payload).status_code == 201
+    groups = client.get("/api/ai-news/quality/report").json()["benchmark_coverage"]["origin_breakdown"]
+    assert groups["candidate"]["total"] == groups["independent"]["total"] == 1
+    payload["origin"] = "unverified"
+    assert client.post("/api/ai-news/quality/benchmarks", json=payload).status_code == 422
