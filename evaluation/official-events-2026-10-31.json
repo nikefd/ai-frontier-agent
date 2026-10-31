@@ -1,0 +1,30 @@
+[
+  {
+    "title": "Google Research sleep framework",
+    "source_url": "https://research.google/blog/the-sleep-framework-a-new-way-for-llms-to-retain-knowledge-in-continual-learning/",
+    "published_on": "2026-10-27",
+    "verified_on": "2026-10-31",
+    "reason": "从官方研究栏目独立抽取：持续学习与长期知识保留研究，检查 Google Research 入口迁移后的覆盖。"
+  },
+  {
+    "title": "Mistral Large 4 open weights",
+    "source_url": "https://mistral.ai/news/mistral-large-4-oss/",
+    "published_on": "2026-10-29",
+    "verified_on": "2026-10-31",
+    "reason": "从官方新闻栏目独立抽取：重要模型开放权重，检查近期模型发布的官方原文覆盖。"
+  },
+  {
+    "title": "Mistral Voxtral 3",
+    "source_url": "https://mistral.ai/news/voxtral-3/",
+    "published_on": "2026-10-20",
+    "verified_on": "2026-10-31",
+    "reason": "从官方新闻栏目独立抽取：语音模型发布；作为较旧对照样本，可能已被 400 篇滚动库淘汰。"
+  },
+  {
+    "title": "Grok Voice 3.0",
+    "source_url": "https://x.ai/news/grok-voice-3",
+    "published_on": "2026-10-14",
+    "verified_on": "2026-10-31",
+    "reason": "从官方新闻栏目独立抽取：语音模型发布，检查 xAI 官网访问受阻的影响；旧事件可能已滚出库存。"
+  }
+]

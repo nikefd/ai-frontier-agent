@@ -72,3 +72,5 @@ GitHub Actions 会在每个 PR、`main` 推送和手动触发时运行确定性 
 ## 技术栈
 
 FastAPI · uvicorn · APScheduler · httpx · feedparser · BeautifulSoup · pydantic-settings · SQLite · 内联 agent runtime · DeepSeek（LLM）· Vite ES module 前端（marked + DOMPurify + Mermaid strict）。
+
+只读生产检查与站外独立事件探针：见[生产验收指南](llmdoc/guides/production-audit.md)。
