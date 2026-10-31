@@ -41,7 +41,7 @@
 |---|---|---|
 | DeepSeek API | 翻译 / 速报 / 深度解读 / 深度指南 / 对话 agent，全部共用一个 key | 未配置 key 时，所有 LLM 端点返回 503，但 RSS 浏览仍可用 |
 | RSSHub | 部分 X 大 V / GitHub 路由的 RSS 源 | 公共 `rsshub.app` 容易限流/403/404，需自建私有实例（compose 内置）；Twitter 路由还需 `TWITTER_AUTH_TOKEN` |
-| 各资讯源 | 116 个内置分层源 + 管理员确认的自定义官方 RSS/Atom、Sitemap 或结构化更新页；模型与产品层覆盖字节 Seed、阶跃星辰、Z.ai、LiblibAI、可灵、Kimi、Manus、Runway、xAI、Luma、Ideogram 等官方入口，实践可用性由 OpenRouter 模型目录与 SGLang Releases 补充，具身智能由 Physical Intelligence 补充，独立基准与安全评测由 Artificial Analysis、METR 补充；论文由 HF Daily Papers 策展源加四路限流 arXiv 组成 | 内置清单在 `DEFAULT_FEED_SPECS`，自定义源存 `custom-sources.json` |
+| 各资讯源 | 116 个内置分层源 + 管理员确认的自定义官方 RSS/Atom、Sitemap 或结构化更新页；模型与产品层覆盖字节 Seed、阶跃星辰、Z.ai、LiblibAI、可灵、Kimi、Manus、Runway、xAI API Release Notes、Luma、Ideogram 等官方入口，实践可用性由 OpenRouter 模型目录与 SGLang Releases 补充，具身智能由 Physical Intelligence 补充，独立基准与安全评测由 Artificial Analysis、METR 补充；论文由 HF Daily Papers 策展源加四路限流 arXiv 组成 | 内置清单在 `DEFAULT_FEED_SPECS`，自定义源存 `custom-sources.json` |
 
 ## 5. 目录结构
 

@@ -30,7 +30,7 @@ flowchart LR
 - 对 **Twitter 路由 404**
 - 对部分路由 **403/限流**
 
-应用启动时会把所有 `rsshub.app` 前缀的 URL 改写到 `AIF_RSSHUB_BASE`（compose 内默认 `http://rsshub:1200`，即自建实例）。这样这些源才抓得到。Anthropic/Cohere/DeepSeek/LangChain/Mistral 直接读取官方 sitemap；xAI 官网新闻、Luma 产品/工程页和 Ideogram 博客解析服务端 HTML，xAI SDK/PyTorch/Transformers/vLLM 读取官方 GitHub Releases，Qwen 读取官方文章 API，Ai2/MLflow 读取官方 RSS，均不依赖 RSSHub。sitemap index 最多展开同站 12 个子 sitemap，并对最新 6 页补全标题、摘要和发布时间。单源或单页失败都会隔离记录/降级，不阻塞其它来源。
+应用启动时会把所有 `rsshub.app` 前缀的 URL 改写到 `AIF_RSSHUB_BASE`（compose 内默认 `http://rsshub:1200`，即自建实例）。这样这些源才抓得到。Anthropic/Cohere/DeepSeek/LangChain/Mistral 直接读取官方 sitemap；xAI 模型/API 更新解析 docs.x.ai 官方 Release Notes（新闻官网在生产出口持续 403）；Luma 产品/工程页和 Ideogram 博客解析服务端 HTML，xAI SDK/PyTorch/Transformers/vLLM 读取官方 GitHub Releases，Qwen 读取官方文章 API，Ai2/MLflow 读取官方 RSS，均不依赖 RSSHub。sitemap index 最多展开同站 12 个子 sitemap，并对最新 6 页补全标题、摘要和发布时间。单源或单页失败都会隔离记录/降级，不阻塞其它来源。
 
 **Twitter 路由额外需要登录态**：在 rsshub 容器配 `TWITTER_AUTH_TOKEN`（x.com 的 `auth_token` cookie）。留空则依赖 RSSHub 的 X 路由抓不到（当前 `x-ai` 共 21 个来源，其中部分使用其它 RSS 服务），其余源正常。这个 token 是登录凭证，**绝不写进代码/git**，在 Coolify 环境变量里手填。
 

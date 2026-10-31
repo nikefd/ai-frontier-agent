@@ -47,6 +47,7 @@ from ..routers.ai_news import (
     add_article,
 )
 from ..feed_validation import is_valid_empty_arxiv_feed
+from ..xai_release_notes import parse_xai_release_notes
 from ..models import Article
 from ..official_page_adapters import parse_luma_news_entries
 from ..publication_dates import publication_date_from_url
@@ -833,6 +834,10 @@ async def _fetch_feed(
     if spec.get("format") == "auto_listing":
         entries = parse_auto_listing_entries(r.content, url)
         error = None if entries else "official update page contained no dated linked updates"
+        return entries, spec.get("name") or url, error
+    if spec.get("format") == "xai_release_notes":
+        entries = parse_xai_release_notes(r.content, url)
+        error = None if entries else "xAI release notes contained no updates with verifiable dates"
         return entries, spec.get("name") or url, error
     if spec.get("format") == "luma_news":
         entries = parse_luma_news_entries(r.content, url)

@@ -150,7 +150,7 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
         "https://www.langchain.com/sitemap.xml",
         "https://mlflow.org/blog/rss.xml",
         "https://api.github.com/repos/xai-org/xai-sdk-python/releases?per_page=20",
-        "https://x.ai/news",
+        "https://docs.x.ai/developers/release-notes",
         "https://lumalabs.ai/news",
         "https://ideogram.ai/blog/",
         "https://api.github.com/repos/huggingface/transformers/releases?per_page=20",
@@ -179,6 +179,9 @@ def test_source_registry_includes_verified_official_ai_feeds() -> None:
     assert "https://venturebeat.com/category/ai/feed/" not in urls
     assert "https://sanhua.himrr.com/daily-news/feed" not in urls
     assert "https://gwern.substack.com/feed" not in urls
+    assert "https://x.ai/news" not in urls
+    assert by_url["https://docs.x.ai/developers/release-notes"]["format"] == "xai_release_notes"
+    assert by_url["https://docs.x.ai/developers/release-notes"]["cadence"] == "fast"
     assert by_url["https://research.google/blog/"]["format"] == "html_listing"
     assert by_url["https://venturebeat.com/category/ai"]["format"] == "html_listing"
     assert by_url["https://huggingface.co/api/daily_papers?limit=100"]["source_priority"] == 1

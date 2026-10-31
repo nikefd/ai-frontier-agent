@@ -104,9 +104,9 @@
 
 > ✅ DeepSeek 官方 sitemap 没有 `lastmod`，旧实现又只从 meta/JSON-LD 取日期，导致 2024 年文章入库时被 `add_article` 填成当日。现在官方 URL/正文日期会作为可信发布时间，补全后重排；无可信日期不入库，今日速报也不再用旧文兜底。启动修复会更正已污染文章，并使引用它们的旧速报缓存失效。
 
-## 19. 生产出口曾长期无法抓 xAI/PyTorch（已降级修复）
+## 19. xAI 官网在生产持续 403，改用官方 API 更新日志
 
-> ✅ xAI sitemap 在生产数据中心出口曾连续 70 次 403，PyTorch Blog feed 也连续 21 次 403。PyTorch 与 xAI SDK 继续读取官方 GitHub Releases；xAI 非 SDK 新闻现直接解析已验证可访问的官网新闻页，并补入 Transformers、vLLM 官方发布。连续 6 次 503 且从未产出文章的 Riley Brown、vas RSSHub 路由已移除；连续 3 次 429 的 r/MachineLearning 改为稳定的 Import AI 专家通讯。
+2026-10-31 复测：xAI 新闻页在本地可访问，但生产出口仍连续 403，切换普通浏览器请求头也无效；此前“新闻页已稳定”的判断只适用于本地。现将该入口替换为生产可访问的 docs.x.ai 官方 API Release Notes（fast），专用解析器保留真实时间线日期及原有锚点，不以页面修改时间或当前年份填日期。覆盖范围收敛为模型/API/弃用更新，不等同全部官网新闻。PyTorch 与 xAI SDK 继续读取官方 GitHub Releases；Transformers/vLLM 与 Import AI 替代源维持原配置。
 
 ## 20. arXiv 空日更与损坏响应必须区分
 
