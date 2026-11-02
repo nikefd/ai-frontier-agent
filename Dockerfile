@@ -32,6 +32,7 @@ COPY app/ app/
 COPY agent/ agent/
 COPY seed-data/ seed-data/
 COPY docker-entrypoint.sh .
+COPY LICENSE NOTICE THIRD_PARTY_NOTICES.md ./
 # 前端构建产物（指纹化的 JS/CSS + index.html）
 COPY --from=frontend /build/static/dist static/dist
 RUN chmod +x docker-entrypoint.sh

@@ -1,6 +1,8 @@
 [project]
 name = "ai-frontier-agent"
 version = "0.1.0"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
 description = "可自托管的 AI 前沿信息站：分层信源、中文速报、实践卡与对话式追踪。"
 requires-python = ">=3.11"
 dependencies = [
@@ -26,7 +28,7 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
