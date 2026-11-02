@@ -63,7 +63,7 @@
 | 大量数据源抓取失败怎么排查 | [部署指南](guides/how-to-deploy.md)（第 7 节）＋ [已知问题](reference/known-issues.md)（第 4 条） |
 | 理解单源连续失败 / 调度过期 / 来源最新内容与疑似停更状态 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.5/2.7 节）＋ [数据存储参考](reference/data-storage.md)（3.2） |
 | 所有 LLM 功能报 503 | [运行指南](guides/how-to-run.md)（排障）＋ [配置参考](reference/config-reference.md) |
-| 查历史命名与开源前清理状态 | [已知问题](reference/known-issues.md)（第 7 条）＋ [开源准备清单](reference/open-source-readiness.md) |
+| 查历史命名、开源发布与验收状态 | [已知问题](reference/known-issues.md)（第 7 条）＋ [开源准备清单](reference/open-source-readiness.md) |
 | 准备公开仓库 / 选择许可证 / 做发布前审计 | [开源准备清单](reference/open-source-readiness.md) |
 | 坑 / 历史遗留 / 安全注意面 | [已知问题](reference/known-issues.md) |
 

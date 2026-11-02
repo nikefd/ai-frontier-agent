@@ -1,6 +1,6 @@
 # 开源发布准备
 
-> 状态日期：2026-11-02。许可证已由项目所有者明确选择 Apache-2.0；实际仓库可见性与发布结果记录在最终发布验收中。
+> 状态日期：2026-11-02。项目所有者明确选择 Apache-2.0；仓库已公开，[v0.1.0 已发布](https://github.com/nikefd/ai-frontier-agent/releases/tag/v0.1.0)。
 
 ## 已完成
 
@@ -14,12 +14,20 @@
 
 ## 发布验收
 
-完成全部后再公开仓库并发布版本：
+首版全部通过后公开仓库并发布：
 
 1. 全量 pytest、前端构建/依赖审计与 Python wheel 构建。
 2. 从干净 Git 导出内容构建 Docker 镜像，在独立卷验证首次启动、未初始化注册拒绝、CLI 初始化、登录、普通用户注册以及重复初始化拒绝。
 3. 对最终 Git 历史与导出树执行 Gitleaks，检查 GitHub CI。密钥扫描不是绝对保证，不承诺全网来源完整召回或上游永久可用。
 4. 核对首版 tag/release 指向已验证提交，启用公开漏洞私密报告入口。
+
+### v0.1.0 验收结果
+
+- tag 指向 `76821c066f316b4a3cce59a6ec35ed03eeddf4ed`。
+- 干净检出 183 项测试通过；[云端 CI](https://github.com/nikefd/ai-frontier-agent/actions/runs/41457919890) 的 Python 3.11/3.12、前端构建/审计和生产镜像均通过。
+- 干净 Git 导出构建 Compose 镜像，隔离卷验证未初始化注册 503、CLI 初始化、管理员登录、普通注册不提权、重复初始化拒绝与前端完整许可文件；测试卷已清理，未触碰生产数据。
+- 最终可达历史 153 个提交和导出树 Gitleaks 均 0 命中，[Secret scan CI](https://github.com/nikefd/ai-frontier-agent/actions/runs/41457920031) 通过。
+- 无认证 GitHub API 确认仓库公开、许可证识别为 Apache-2.0、版本非草稿、tag 正确；私密漏洞报告已启用。
 
 ## 发布边界
 
