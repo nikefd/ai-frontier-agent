@@ -112,3 +112,5 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 基准录入支持独立站外发现或普通手工登记，自动候选显式提交 candidate；覆盖区按发现方式显示样本数，避免已抓候选与独立样本混淆。
 
 覆盖页显示已保存的历史命中条数，说明已确认命中不会随文章淘汰消失；独立只读探针与未保存的历史数据限制仍保留。
+
+前端构建先运行 `frontend/scripts/licenses.mjs`，从锁定的生产依赖收集完整许可/版权文本，再由 Vite public 目录复制到产物 `THIRD_PARTY_LICENSES.txt`；生成文件不入 Git，依赖缺许可文本时构建失败。

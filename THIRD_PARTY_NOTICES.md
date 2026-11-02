@@ -24,6 +24,10 @@ AI Frontier Agent's own code is licensed under Apache-2.0. Dependencies retain t
 
 RSSHub and Redis are optional separate services in Docker Compose and retain their respective distribution licenses. Transitive packages and base images also retain their original notices. Consult the exact installed package/image versions before redistributing a bundled product.
 
+## Bundled frontend notices
+
+`npm run build` collects the installed production dependency license/copyright texts into `/THIRD_PARTY_LICENSES.txt`, shipped with the frontend and Docker image. The generator includes transitive dependencies and preserves their original license texts; identical texts are grouped with their package versions. Build-tool and Python distributions also retain their own license files.
+
 ## Source content
 
 Article publishers own their content. The project license covers this repository's software and original documentation, not third-party articles, images, feeds or model output rights. Source URLs are attribution and discovery aids, not a grant to republish source material. Fetch responsibly, respect site terms and access restrictions, and review permissions before publishing derived feeds or deploying a public content service.
