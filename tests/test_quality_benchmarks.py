@@ -28,6 +28,10 @@ def _fresh_client():
 
 
 def _register(client, email: str):
+    import app.auth as auth
+    if not auth.load_users():
+        auth.create_initial_admin(email, "pass1234")
+        return client.post("/api/auth/login", json={"email": email, "password": "pass1234"})
     return client.post("/api/auth/register", json={"email": email, "password": "pass1234"})
 
 

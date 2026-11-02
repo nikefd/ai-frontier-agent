@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     # Mark the session cookie Secure (HTTPS only). True in production behind TLS.
     cookie_secure: bool = False
     # The email that inherits the legacy single-user data on registration. When
-    # empty the first account to register inherits it.
+    # empty the locally initialized admin inherits it.
     admin_email: str | None = None
     # Daily per-user LLM-action quota (anti-abuse, second line after email verify).
     # Counts user-initiated LLM operations; admins are exempt. 0 = unlimited.

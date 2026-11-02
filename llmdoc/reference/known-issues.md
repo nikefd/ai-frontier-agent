@@ -76,10 +76,10 @@
 
 ## 14. 数据迁移只跑一次（`_legacy` 哨兵）
 
-`app/migrate.py` 的 `migrate_legacy_to_holding()` 启动时把老单用户产物搬到 `<data_dir>/users/_legacy/`，**靠 `_legacy/` 是否存在判断幂等**。首个注册账号（或 `AIF_ADMIN_EMAIL` 指定者）注册时 `inherit_legacy_if_eligible()` 把 `_legacy/` 改名成其 uid 目录。两个隐含约束：
+`app/migrate.py` 的 `migrate_legacy_to_holding()` 启动时把老单用户产物搬到 `<data_dir>/users/_legacy/`，**靠 `_legacy/` 是否存在判断幂等**。服务器本地初始化管理员时 `inherit_legacy_if_eligible()` 把 `_legacy/` 改名成其 uid 目录。两个隐含约束：
 
 - 迁移**只在 `_legacy/` 不存在时跑**。手动删了 `_legacy/` 又有老数据残留，会再迁一次。
-- 若**没人**匹配 `AIF_ADMIN_EMAIL`，`_legacy/` 会一直留着不被继承（数据不丢，但「无主」）。不配 `AIF_ADMIN_EMAIL` 时由首个注册者继承，最稳。
+- 若**没人**匹配 `AIF_ADMIN_EMAIL`，`_legacy/` 会一直留着不被继承（数据不丢，但「无主」）。不配 `AIF_ADMIN_EMAIL` 时由服务器初始化的管理员继承；普通用户即使邮箱匹配也不会继承。
 
 ## 15. 静态资源缓存陷阱（已由 Vite 迁移解决）
 

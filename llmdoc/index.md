@@ -45,6 +45,7 @@
 | PR 自动审查机器人怎么工作 / 改审查规范 | `.github/workflows/pr-review.yml`（触发）＋ `scripts/pr_review.py`（执行）＋ `.claude/skills/pr-review/SKILL.md`（**规范单一来源，改这里**） |
 | 如何修改 sparrow-chat.js / 安全渲染如何接入 | [前端架构](architecture/frontend-architecture.md)（第 5/6 节） |
 | 查全部 HTTP 端点 / 新增一个端点 | [API 参考](reference/api-reference.md) |
+| 新实例安全初始化管理员、注册 503 与旧数据继承 | [认证架构](architecture/auth-architecture.md#7-安全的首次初始化) ＋ `app/bootstrap_admin.py` |
 | 用户注册登录 / 鉴权守卫 / 会话怎么做 | [认证架构](architecture/auth-architecture.md) |
 | 邮箱验证 / SMTP 怎么配 / 重发链接 | [认证架构](architecture/auth-architecture.md)（3.1b）＋ [配置参考](reference/config-reference.md)（`AIF_SMTP_*`）＋ `app/email.py` |
 | 修改密码 / 忘记密码找回 / 重置 token | [认证架构](architecture/auth-architecture.md)（3.1c）＋ [API 参考](reference/api-reference.md)（0 节 change/forgot/reset） |

@@ -87,9 +87,10 @@ def test_global_mutations_require_admin(tmp_path, monkeypatch):
     monkeypatch.setattr(auth, "USERS_FILE", users_file)
     monkeypatch.setattr(news, "ARTICLES_FILE", articles_file)
 
+    auth.create_initial_admin("admin@example.com", "password123")
     admin = TestClient(__import__("app.main", fromlist=["app"]).app)
     assert admin.post(
-        "/api/auth/register", json={"email": "admin@example.com", "password": "password123"}
+        "/api/auth/login", json={"email": "admin@example.com", "password": "password123"}
     ).status_code == 200
     assert admin.post("/api/auth/logout").status_code == 200
     assert admin.post(

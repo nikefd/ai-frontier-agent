@@ -88,9 +88,11 @@ def migrate_legacy_to_holding() -> None:
 
 
 def _is_eligible(user: UserRecord) -> bool:
+    if user.role != "admin":
+        return False
     if settings.admin_email:
         return user.email == settings.admin_email
-    # No designated admin → the first registrant (assigned role=admin) inherits.
+    # No designated email → the locally initialized admin inherits.
     return user.role == "admin"
 
 

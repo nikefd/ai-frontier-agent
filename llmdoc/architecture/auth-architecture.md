@@ -49,7 +49,7 @@ sequenceDiagram
 
   UI->>API: POST /register {email, password}
   API->>API: 限流 + 校验 + bcrypt 哈希
-  API->>Store: 追加 UserRecord（首个=admin）
+  API->>Store: 追加 UserRecord（仅 user，管理员已由服务器 CLI 初始化）
   API->>API: migrate.inherit_legacy_if_eligible()
   API->>Cookie: Set-Cookie aif_session (httponly)
   API-->>UI: {user: UserPublic}
@@ -67,7 +67,7 @@ sequenceDiagram
 
 ### 3.1b 邮箱验证（软提示，不阻断登录）
 
-`UserRecord.email_verified`（默认 False，**首个 admin 自动 True**，免得 SMTP 没配好就把自己锁外面）。流程：
+`UserRecord.email_verified`（默认 False，**服务器 CLI 初始化的 admin 为 True**，免得 SMTP 没配好就把自己锁外面）。流程：
 
 - 注册非 admin 用户 → `_send_verification` 用 `itsdangerous` 签一个独立 salt（`aif-email-verify`，与 session token 隔离）的 token（24h），拼成 `<AIF_PUBLIC_BASE_URL>/api/auth/verify?token=…` 发邮件。
 - 用户点链接 → `GET /verify` 校验 token → `mark_email_verified` → 302 跳 `/ui/?verify=ok|invalid`，前端弹 toast。
@@ -106,9 +106,9 @@ agent 工具也按用户绑定：`agent_tools.build_tools(uid)` 每请求构造�
 `app/migrate.py` 两步：
 
 1. **启动时** `migrate_legacy_to_holding()`（幂等，靠 `users/_legacy/` 是否存在判断）：把老的 `ai-news/` 下 `tracks.json` / `guides.json` / `guides/` / `deep-dives/` / `ui.db` 搬到 `users/_legacy/`；从 `articles.json` 抽出 `pinned=True` 的 id 写进 `_legacy/pins.json` 并剥离每篇的 `pinned`；丢弃 `manual` 合成文章（其解读已在 `_legacy/deep-dives/`）。
-2. **注册时** `inherit_legacy_if_eligible(user)`：若该用户匹配 `AIF_ADMIN_EMAIL`（未配则首个注册的 admin），把 `_legacy/` 改名成其 uid 目录继承。
+2. **注册时** `inherit_legacy_if_eligible(user)`：若该用户匹配 `AIF_ADMIN_EMAIL`（未配则本地初始化的 admin），把 `_legacy/` 改名成其 uid 目录继承。
 
-约束：没人匹配 `AIF_ADMIN_EMAIL` 时 `_legacy/` 会一直「无主」留存（数据不丢）。不配 `AIF_ADMIN_EMAIL` 由首注册者继承最稳。
+约束：没人匹配 `AIF_ADMIN_EMAIL` 时 `_legacy/` 会一直「无主」留存（数据不丢）。不配 `AIF_ADMIN_EMAIL` 时由本地初始化的管理员继承；普通用户即使邮箱匹配也不继承。
 
 ## 6. 前端（`frontend/src/auth.js`）
 
@@ -116,3 +116,9 @@ agent 工具也按用户绑定：`agent_tools.build_tools(uid)` 每请求构造�
 - 登录/注册弹窗（零构建，原生 DOM），不引框架。
 - `api.js` 统一拦 401 → 弹登录弹窗（`setUnauthorizedHandler`）。
 - 登录/登出后派发 `aif:auth-changed` 事件，`main.js` 据此重载视图；登出清 `localStorage` 的 `aif_conv_id` 避免会话串号。
+
+## 7. 安全的首次初始化
+
+公开 `/register` 永远只创建 user；没有管理员时返回 503 并要求部署者本地初始化。`AIF_ADMIN_EMAIL` 仅用于旧数据继承，不授予角色。已有管理员、密码和会话不受升级影响。
+
+在部署者交互终端执行 `python -m app.bootstrap_admin --email you@example.com`。CLI 隐藏输入两次密码，复用邮箱/密码校验；不接受命令行密码，非 TTY 拒绝执行。首个管理员通过服务器受信路径创建并自动验证，已有管理员时拒绝覆盖。CLI 以 Unix 文件锁串行化多次初始化，用户文件修改仍使用 storage 事务；初始化后幂等迁移/继承旧数据。Linux/macOS 可裸机运行，Windows 使用 Docker 交互终端。新部署建议在开放服务前初始化；勿在额外进程并发修改已有生产用户库。

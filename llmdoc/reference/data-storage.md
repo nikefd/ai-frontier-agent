@@ -49,7 +49,7 @@
 | `experiments/{aid}.json` | 每文件一张 | 由可实践文章生成的实验卡、进度与结果笔记（见 §3.11） |
 | `ui.db` | SQLite | 该用户的 sparrow 对话记忆（会话/消息/journal） |
 
-> `users/_legacy/` 是迁移哨兵目录：启动时老单用户产物先搬到这里，首个注册账号（或 `AIF_ADMIN_EMAIL` 指定者）注册时改名成其 uid 目录继承。详见 [认证架构](../architecture/auth-architecture.md) 与 [已知问题](known-issues.md) 第 14 条。
+> `users/_legacy/` 是迁移哨兵目录：启动时老单用户产物先搬到这里，本地初始化的管理员（可由 `AIF_ADMIN_EMAIL` 限定继承邮箱）注册时改名成其 uid 目录继承。详见 [认证架构](../architecture/auth-architecture.md) 与 [已知问题](known-issues.md) 第 14 条。
 
 > 种子数据 `seed-data/ai-news/` 是镜像内的中性初始数据，首次启动卷为空时由 `docker-entrypoint.sh` 灌入。`articles.json`、`summary_today.json` 与 `sources.json` 默认均为空，只保留通用追踪主题；首次部署后需要由 admin 跑一轮 fetch 才会出现真实文章和来源健康数据。仓库不分发抓取文章、LLM 速报或个人产物样例。
 
@@ -87,8 +87,8 @@
 | `id` | str | `u_` + 16 位 hex |
 | `email` | str | 小写归一化，唯一 |
 | `password_hash` | str | bcrypt 哈希（含盐）；**永不返回给前端**（响应用 `UserPublic`，无此字段） |
-| `role` | str | admin / user；首个注册者为 admin |
-| `email_verified` | bool | 邮箱是否已验证；首个 admin 自动 True，其余注册默认 False（软提示，不阻断登录） |
+| `role` | str | admin / user；首个管理员由服务器 CLI 初始化，公开注册均为 user |
+| `email_verified` | bool | 邮箱是否已验证；本地初始化的 admin 自动 True，其余注册默认 False（软提示，不阻断登录） |
 | `created_at` / `last_login_at` | str | ISO 时间 |
 
 ### 3.2 sources.json（按 feed url 为 key）

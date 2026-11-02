@@ -32,7 +32,7 @@
 | `AIF_SECRET_KEY` | `secret_key` | `None` | 会话 cookie 的签名密钥（itsdangerous）。**为空时自动生成并落 `<data_dir>/auth/secret.key`**；生产建议显式配，否则连卷重建/多副本会让会话失效（全员登出） |
 | `AIF_SESSION_MAX_AGE_DAYS` | `session_max_age_days` | `30` | 会话有效期（天）；签名 cookie 超时即失效 |
 | `AIF_COOKIE_SECURE` | `cookie_secure` | `False` | 是否给会话 cookie 加 `Secure` 标记。**HTTPS 部署设 1**，否则明文 HTTP 下可被嗅探 |
-| `AIF_ADMIN_EMAIL` | `admin_email` | `None` | 指定继承老（单用户）数据的邮箱；**为空则第一个注册的账号继承**（且首注册者自动为 admin） |
+| `AIF_ADMIN_EMAIL` | `admin_email` | `None` | 指定继承老（单用户）数据的邮箱；为空则本地初始化的管理员继承；仅用于数据继承，不授予管理员身份 |
 | `AIF_DAILY_LLM_LIMIT` | `daily_llm_limit` | `50` | 每个已验证用户每天的 LLM 操作额度（防滥用第二道防线，第一道是邮箱验证）。admin 不限；`0`=不限。超额端点返回 **429** |
 | `AIF_CORS_ORIGINS` | `cors_origins` | `""` | 允许的跨域来源（逗号分隔）。cookie 鉴权下 `allow_credentials=True`，**不能用 `"*"`**；为空 = 仅同源（内置 UI 够用） |
 | `AIF_SMTP_HOST` | `smtp_host` | `""` | 邮箱验证用的 SMTP 服务器。**留空则不发验证邮件**（注册照常） |

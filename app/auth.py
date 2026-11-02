@@ -197,8 +197,8 @@ def find_by_id(uid: str) -> dict | None:
     return next((u for u in load_users() if u.get("id") == uid), None)
 
 
-def create_user(email: str, password: str) -> UserRecord:
-    """Create + persist a user. First account becomes admin."""
+def _create_user(email: str, password: str, initial_admin: bool) -> UserRecord:
+    """Public signup cannot assign roles; only the local bootstrap can initialize admin."""
     email = email.strip().lower()
     password_hash = hash_password(password)
     created = {}
@@ -207,7 +207,12 @@ def create_user(email: str, password: str) -> UserRecord:
         users = data if isinstance(data, list) else []
         if any(user.get("email") == email for user in users):
             raise HTTPException(409, "该邮箱已注册")
-        role = "admin" if not users else "user"
+        has_admin = any(user.get("role") == "admin" for user in users)
+        if initial_admin and has_admin:
+            raise HTTPException(409, "管理员已初始化；请通过现有管理员管理账号")
+        if not initial_admin and not has_admin:
+            raise HTTPException(503, "站点尚未初始化，请联系部署者在服务器创建管理员")
+        role = "admin" if initial_admin else "user"
         rec = UserRecord(
             id="u_" + secrets.token_hex(8),
             email=email,
@@ -223,6 +228,16 @@ def create_user(email: str, password: str) -> UserRecord:
 
     update_json_atomic(USERS_FILE, [], mutate)
     return created["record"]
+
+
+def create_user(email: str, password: str) -> UserRecord:
+    return _create_user(email, password, False)
+
+
+def create_initial_admin(email: str, password: str) -> UserRecord:
+    """Trusted local setup only; no HTTP endpoint accepts this operation."""
+    email, password = _validate_credentials(email, password)
+    return _create_user(email, password, True)
 
 
 def _touch_login(uid: str) -> None:
