@@ -10,7 +10,7 @@ services:
     environment:
       # 对话 agent + 抓取/翻译 worker 共用的 LLM（DeepSeek，OpenAI 兼容）；key 在 Coolify 配
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
-      AIF_LLM_API_KEY: ${DEEPSEEK_API_KEY:-}
+      AIF_LLM_API_KEY: ${AIF_LLM_API_KEY:-}
       AIF_LLM_BASE_URL: ${AIF_LLM_BASE_URL:-https://api.deepseek.com}
       AIF_LLM_MODEL: ${AIF_LLM_MODEL:-deepseek-chat}
       AIF_DATA_DIR: /data

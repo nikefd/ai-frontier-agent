@@ -11,3 +11,11 @@ __pycache__/
 # frontend build artifacts (Vite output) + deps — built in CI/Docker, not committed
 frontend/node_modules/
 static/dist/
+
+# Local environment variants must never be committed
+.env.*
+!.env.example
+
+# Python package build artifacts
+build/
+dist/

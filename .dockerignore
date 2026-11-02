@@ -10,3 +10,13 @@ __pycache__/
 .git/
 /data/
 .env
+
+# Local audit reports, scanner tools and private diagnostics
+.run/
+*.egg-info/
+.env.*
+!.env.example
+
+# Python package build artifacts
+build/
+dist/

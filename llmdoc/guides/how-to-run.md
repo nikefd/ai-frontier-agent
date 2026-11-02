@@ -28,7 +28,10 @@ cp .env.example .env
 #   本地裸机建议把 AIF_RSSHUB_BASE 改成 https://rsshub.app 或留空
 #   （compose 默认的 http://rsshub:1200 只在 docker 网络里有效）
 
-# 4) 起服务
+# 4) 在交互终端创建首个管理员（密码隐藏输入；已有管理员时跳过）
+python -m app.bootstrap_admin --email you@example.com
+
+# 5) 起服务
 uvicorn app.main:app --host 0.0.0.0 --port 9702 --reload
 ```
 
@@ -36,7 +39,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 9702 --reload
 
 ### 数据目录
 
-裸机默认数据根是 `~/agent-data`（`AIF_DATA_DIR` 可改）。首次跑先注册首个账号（自动成为 admin），再点管理员可见的「立即抓取」；也可拷贝演示数据：
+未配环境变量时裸机数据根是 `~/agent-data`；复制 .env.example 后为项目 `./data`（`AIF_DATA_DIR` 可改）。首次跑先执行 bootstrap_admin 创建管理员，再登录点「立即抓取」；也可拷贝演示数据：
 
 ```bash
 mkdir -p ~/agent-data/ai-news
@@ -46,8 +49,10 @@ cp -r seed-data/ai-news/. ~/agent-data/ai-news/
 ## 方式 B：Docker compose（最接近生产）
 
 ```bash
-# .env 里至少填 DEEPSEEK_API_KEY=...（compose 会映射到 AIF_LLM_API_KEY）
-docker compose up -d --build
+# .env 可填 AIF_LLM_API_KEY=...，也支持 DEEPSEEK_API_KEY 回退
+docker compose build
+docker compose run --rm --no-deps ai-frontier python -m app.bootstrap_admin --email you@example.com
+docker compose up -d
 ```
 
 这会起三个容器：
@@ -83,7 +88,7 @@ pip install -e ".[dev]"     # pytest + pytest-asyncio
 pytest
 ```
 
-当前安全/业务回归共 177 项；提交前同时运行 `pytest`、`cd frontend && npm run build && npm audit`。
+当前安全/业务回归共 183 项；提交前同时运行 `pytest`、`cd frontend && npm run build && npm audit`。
 
 正式 CI 位于 `.github/workflows/ci.yml`，在 PR、`main` 推送及手动触发时运行：
 

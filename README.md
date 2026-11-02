@@ -1,78 +1,79 @@
-# AI Frontier Agent — 个人 AI 前沿信息站
+# AI Frontier Agent
 
-分层抓取 116 个 AI 源：模型/API/重要 AI 初创公司等 30 个高时效官方源每小时更新，59 个常规资讯源每 4 小时更新，论文、X 与 GitHub Trending 等 27 个发现型源每 12 小时更新。除常规新闻外，还直接跟踪独立模型基准、安全评测、具身智能、模型 API 可用性和官方开源仓库，让“重要但不热门”的信号不再被 GitHub Trending 淹没。内容经过相关性过滤、同事件聚类与分类配额，再做双语翻译和可实践性判断；今日速报会直接标出近 36 小时的模型发布、API 弃用、安全事件与重要开源，并保留可点击的一手来源，也可通过 `/rss/digest.xml` 全文订阅。同一事件的不同标题会合并并保留多源佐证；论文结合 Hugging Face Daily Papers 票数、开源代码和 GitHub stars 筛选，同时保留受限的 arXiv 长尾发现。可实践文章还能按需生成结构化实验卡，保存进度与结果笔记，再把完整实验上下文交给 AI 逐步带练。数据源页分开体检抓取运输健康与源站内容新鲜度，能找出“HTTP 正常但入口已停更”的伪健康源；同时跟踪高影响事件露出、富化积压和发现延迟，并以近 30 天的有效事件、独家贡献、首发现、重要性和时效计算可解释的来源价值评分；样本不足不会误判为低价值。管理员还可登记“绝不能漏”的真实事件，系统按期限区分准时命中、迟到、漏报与观察中，给出绝对召回率；近 7 天官方高影响事件及被至少两个独立可信来源共同报道的事件会自动成为待确认候选。每个迟到或漏报会进一步诊断为源站晚发、抓取异常、刷新过慢、解析/过滤缺口、来源未接入或匹配规则漂移，并给出修复建议；管理员可认领处理、对已配置来源执行单源复测，再以已修复、接受限制或基准误报记录闭环结果。空白/伪 RSS 与无可信发布日期的条目都会被拒绝，不再显示“假健康”或用抓取时间冒充发布时间。候选未变化时跳过速报 LLM 调用。
+[![CI](https://github.com/nikefd/ai-frontier-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/nikefd/ai-frontier-agent/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
-宽口径官方源不会因为是 `vendor/high` 就全部放行：GitHub Changelog、NVIDIA 综合博客、Microsoft Research、AWS Machine Learning、Replit 与 LiblibAI 使用来源级标题白名单，只保留 AI 编程、模型、Agent、机器人、AI 基础设施和官方产品发布信号，过滤企业管理、通用研究、合作伙伴稿与泛教程。每次成功抓取会保存最近 30 轮解析/接受/过滤/日期异常计数，质量页按近 7 天展示来源噪声率；只有样本充足且连续全部被拒绝时才提示门禁可能过严。
+**可自托管的 AI 技术情报站：跟踪官方发布，生成有引用的中文速报，并记录值得尝试的实验。**
 
-对诊断为“官方来源尚未接入”的漏报，管理员还能从基准官方链接发起安全探测：系统验证同站 RSS/Atom、sitemap 与更新页，只保存实际可访问、可解析的入口；重定向后的最终地址会再次去重和筛选，评论 Feed、泛化导航与无关落地页不会混入。RSS/Atom 可直接复验接入；Sitemap 会自动推断 `/news/`、`/research/` 等稳定内容路径并抽样核验落地页真实发布时间，更新页则保守识别“同站链接 + 标题 + 日期”的重复卡片。只有验证成功的候选才会写入持久化自定义源、加入 fast 官方层并立即试抓，无法可靠解析的页面继续保留为待适配。自定义源可随时停用、重新启用或删除配置，停用立即退出所有抓取调度，删除不会清理已经入库的历史文章。
+适合希望持续跟进模型、API、开源工具和重要研究的开发者。支持自己的 OpenAI-compatible 模型服务；不配置模型也能抓取和浏览资讯。
 
-## 组成
+## 能做什么
 
-| 层 | 位置 | 说明 |
-|---|---|---|
-| FastAPI 应用 | `app/` | 单进程一体化：HTTP API + 静态托管 + APScheduler 抓取/翻译（入口 `app.main:app`，默认 `:9702`） |
-| RSS 管线 | `app/workers/` | 异步抓取（每源配额 + 全局上限）+ 批量翻译 worker |
-| 对话 agent | `app/agent_chat.py` + `app/agent_tools.py` | sparrow 驱动的 ReAct agent，带工具/引用/对话记忆 |
-| 前端 | `frontend/` → `static/dist/` | Vite 构建的原生 ES module 单页 + sparrow-chat 对话组件 |
-| 数据 | `<data_dir>/ai-news/` + `<data_dir>/users/<uid>/` | 全局资讯与按用户隔离的 JSON（原子写）+ SQLite 对话记忆，无数据库服务 |
-| 容器化 | `Dockerfile` / `docker-compose.yml` | 单镜像 + 自建 rsshub + redis 三服务 |
-| CI | `.github/workflows/ci.yml` | PR 与 main 推送自动跑 Python 3.11/3.12 测试、前端构建/审计和生产镜像构建 |
-| 文档 | `llmdoc/` | 面向人和 AI 的架构/指南/参考（**改代码前先读**） |
+- **跟踪一手变化**：116 个内置信源，模型/API 官方源每小时检查，常规内容每 4 小时、论文与发现源每 12 小时检查。
+- **减少重复阅读**：相关性过滤、同事件聚合、中文翻译和带原文引用的每日速报；支持 RSS 订阅 `/rss/digest.xml`。
+- **把阅读变成实践**：按需深度解读、结构化实验卡、进度和结果笔记，可交给对话助手逐步讨论。
+- **看清覆盖质量**：来源健康、内容陈旧度、噪声率和发现延迟可查；人工必达基准会保留最早命中证据，文章淘汰后仍可核验。
+- **保留自己的资料**：收藏、解读、实验和对话按用户隔离，数据存于自己的文件卷。
 
-## 快速开始（裸机）
+## 快速开始：Docker Compose
+
+需要 Docker 和 Docker Compose。在交互终端执行：
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e .
-cp .env.example .env          # 填 AIF_LLM_API_KEY=<DeepSeek key>；本地建议 AIF_RSSHUB_BASE=https://rsshub.app
-uvicorn app.main:app --host 0.0.0.0 --port 9702 --reload
+git clone https://github.com/nikefd/ai-frontier-agent.git
+cd ai-frontier-agent
+cp .env.example .env
+
+# 可选：在 .env 填 AIF_LLM_API_KEY；默认使用 DeepSeek。
+# 使用其它兼容服务时同时配置 AIF_LLM_BASE_URL 和 AIF_LLM_MODEL。
+docker compose build
+
+# 首次部署：在服务器终端创建管理员，密码隐藏输入。
+# 先初始化再启动公开服务，避免任何人通过网页抢注管理员。
+docker compose run --rm --no-deps ai-frontier \
+  python -m app.bootstrap_admin --email you@example.com
+
+docker compose up -d
 ```
 
-打开 http://127.0.0.1:9702/ ，注册首个账号（自动成为 admin），点管理员可见的「立即抓取」拉第一批数据。
+打开 **http://127.0.0.1:9702/**，使用刚创建的账号登录，点“立即抓取”。初始数据为空，抓取后才会出现资讯。管理员已存在时跳过初始化命令；重复初始化会拒绝，不会覆盖原账号。网页注册只创建普通用户；尚未初始化时返回明确提示。
 
-## 快速开始（Docker，最接近生产）
+Compose 启动应用、RSSHub 与 Redis 三个服务。应用数据保存在命名卷 `ai-frontier-data`，升级镜像不会清空该卷。
+
+## 配置与费用
+
+| 配置 | 用途 |
+|---|---|
+| `AIF_LLM_API_KEY` | 翻译、速报、解读与对话使用的模型密钥；兼容 `DEEPSEEK_API_KEY` 回退 |
+| `AIF_LLM_BASE_URL` / `AIF_LLM_MODEL` | 默认 DeepSeek，可换为自己的 OpenAI-compatible 服务 |
+| `AIF_SECRET_KEY` | 公网部署建议设置随机会话签名密钥 |
+| `AIF_COOKIE_SECURE=1` | HTTPS 公网部署时设置 |
+| `AIF_SMTP_*` / `AIF_PUBLIC_BASE_URL` | 普通用户邮箱验证与找回密码；自用管理员无需 SMTP |
+| `TWITTER_AUTH_TOKEN` | 可选的 X 来源登录凭证，仅提供给私有 RSSHub |
+
+模型调用费用由部署者承担。未配置模型时，资讯抓取/浏览可用，LLM 功能不可用。未配置 X 登录态时，部分社交来源不可用；官方 RSS、API 和文档来源独立运行。
+
+完整变量见 [.env.example](.env.example) 和[配置参考](llmdoc/reference/config-reference.md)。生产域名、反向代理和数据持久化见[部署指南](llmdoc/guides/how-to-deploy.md)。
+
+## 本地开发与贡献
 
 ```bash
-# .env 填 DEEPSEEK_API_KEY=...（要 Twitter 源再填 TWITTER_AUTH_TOKEN=...）
-docker compose up -d --build
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+cp .env.example .env
+# 本地开发把 .env 中 AIF_RSSHUB_BASE 改为 https://rsshub.app。
+(cd frontend && npm ci && npm run build)
+python -m app.bootstrap_admin --email you@example.com
+uvicorn app.main:app --port 9702 --reload
 ```
 
-起三个容器：应用（`127.0.0.1:9702`）+ 自建 RSSHub + redis。数据持久化在命名卷 `ai-frontier-data`，首次启动自动灌入 `seed-data/`。
+运行 `pytest` 验证后端，`cd frontend && npm run build` 验证前端。欢迎贡献稳定的一手信源适配、日期解析回归与部署体验改进。详见[贡献指南](CONTRIBUTING.md)、[文档索引](llmdoc/index.md)和[安全政策](SECURITY.md)。
 
-> 没配 LLM key 也能跑——RSS 浏览正常，翻译/速报/解读/对话返回 503。
+## 使用边界
 
-## 部署
+来源访问可能受网络、限流、登录态或页面变化影响。质量指标对应已配置来源和已登记事件，不代表全网完整召回。AI 摘要和实践建议需要结合原文核验。公开内容服务需要自行确认来源条款和内容再分发权限。
 
-用 [Coolify](https://coolify.io/)（Traefik 反代 + 命名卷持久化）。部分 X 源走 RSSHub，所以 compose 自带私有实例；Twitter 路由还需 `TWITTER_AUTH_TOKEN`。Anthropic/Cohere/Mistral 等无稳定 RSS 的官方源读取 sitemap 并补全页面元数据；xAI 同时读取官网新闻与官方 SDK Releases，Luma 用专用页面适配器过滤营销内容，Ideogram 读取官方博客；Qwen 读取官方文章 API，OpenAI/Gemini 官方更新日志由专用解析器逐条拆分。详见 [llmdoc/guides/how-to-deploy.md](llmdoc/guides/how-to-deploy.md)。
+## 许可证
 
-## RSS 订阅
-
-把 `/rss/digest.xml` 加入任意 RSS 阅读器即可订阅完整中文速报。每次候选集发生实质变化都会生成一个稳定条目，引用编号直接链接一手来源；服务保留最近 30 天、最多 180 个版本，并用 ETag/Last-Modified 避免阅读器重复下载。RSS 只包含全局速报，不包含任何用户画像、收藏或实验记录。
-
-## 质量门禁
-
-GitHub Actions 会在每个 PR、`main` 推送和手动触发时运行确定性 CI：后端在 Python 3.11/3.12 上执行全部测试和字节码编译，前端在 Node 20 上执行锁文件安装、生产构建和高危依赖审计；全部通过后再构建生产 Docker 镜像。详细命令见 [运行指南](llmdoc/guides/how-to-run.md#测试与-ci)。
-
-## 开源状态
-
-仓库正在做公开前准备，目前尚未选择许可证，也没有开放外部贡献。示例配置和种子数据已经匿名化，贡献与安全报告规范已补齐；公开前仍需完成安全的管理员初始化、专业历史密钥扫描并在 AGPL-3.0 与 Apache-2.0 之间确认许可证。详见[开源准备清单](llmdoc/reference/open-source-readiness.md)。
-
-## 文档导航（llmdoc）
-
-第一次接手这个项目，**先读 [llmdoc/index.md](llmdoc/index.md)**，那里有完整的快速导航表。常用入口：
-
-- 项目全貌：[llmdoc/overview/project-overview.md](llmdoc/overview/project-overview.md)
-- 后端怎么搭的：[llmdoc/architecture/backend-architecture.md](llmdoc/architecture/backend-architecture.md)
-- 抓取管线怎么运转：[llmdoc/architecture/rss-pipeline-architecture.md](llmdoc/architecture/rss-pipeline-architecture.md)
-- 对话 agent：[llmdoc/architecture/agent-architecture.md](llmdoc/architecture/agent-architecture.md)
-- HTTP 端点速查：[llmdoc/reference/api-reference.md](llmdoc/reference/api-reference.md)
-- 配置项：[llmdoc/reference/config-reference.md](llmdoc/reference/config-reference.md)
-- 坑与约束：[llmdoc/reference/known-issues.md](llmdoc/reference/known-issues.md)
-
-## 技术栈
-
-FastAPI · uvicorn · APScheduler · httpx · feedparser · BeautifulSoup · pydantic-settings · SQLite · 内联 agent runtime · DeepSeek（LLM）· Vite ES module 前端（marked + DOMPurify + Mermaid strict）。
-
-只读生产检查与站外独立事件探针：见[生产验收指南](llmdoc/guides/production-audit.md)。
-
-必达基准会保存最早命中证据，已确认命中不会因 400 篇滚动库存淘汰而退化为漏报；已有历史缺口仍需独立样本核验。
+本项目原创软件与文档采用 [Apache-2.0](LICENSE)。第三方依赖和来源内容保留各自权利，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
