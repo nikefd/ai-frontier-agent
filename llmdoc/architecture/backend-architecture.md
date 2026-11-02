@@ -39,6 +39,8 @@ flowchart TD
 
 几个关键设计点：
 
+- 未构建前端的干净检出会创建空的 `static/dist/assets/`，允许后端 API 和测试独立启动；访问完整界面仍需先执行前端构建。
+
 - **agent 路由是「软挂载」**：`app/main.py` 用 try/except 包住 `from .agent_chat import router`。如果 agent 运行时初始化失败，只打一条 warning，**新闻 API 照常工作**。
 - **对话组件 sparrow-chat.js 随前端构建**：现在是仓库内源码 `frontend/public/sparrow-chat.js`，Vite 原样输出，后端在 `GET /sparrow-chat.js` 提供。（历史：曾由 `_sync_sparrow_assets()` 启动时从 sparrow 包同步，agent 运行时内联后该机制已删。）
 - **根路径托管 + SPA catch-all（路由顺序很重要）**：`GET /` 返回 index.html；`app.mount("/assets", ...)` 服务指纹文件（immutable 强缓存）；`GET /sparrow-chat.js`；最后注册 `GET /{full_path:path}` 作 SPA catch-all（非 `/api`、非真实文件 → 返回 index，交前端 History 路由接管）。catch-all 必须**最后**注册，否则会吃掉真实路由。`/ui` `/ui/` → 301 跳 `/`（旧书签兼容）。

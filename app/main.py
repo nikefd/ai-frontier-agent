@@ -166,7 +166,8 @@ def health() -> dict:
 # served at the ROOT path (no /ui/ prefix). The agent chat component
 # (sparrow-chat.js) ships via frontend/public/, served at /sparrow-chat.js.
 STATIC_DIR = Path(__file__).parent.parent / "static" / "dist"
-STATIC_DIR.mkdir(parents=True, exist_ok=True)
+# API-only development and backend CI also start from an unbuilt checkout.
+(STATIC_DIR / "assets").mkdir(parents=True, exist_ok=True)
 
 
 def _index_response() -> FileResponse:
