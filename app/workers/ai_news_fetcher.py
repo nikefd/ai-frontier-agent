@@ -46,6 +46,7 @@ from ..routers.ai_news import (
     _save_sources_meta,
     add_article,
 )
+from ..gemini_release_notes import parse_gemini_markdown
 from ..feed_validation import is_valid_empty_arxiv_feed
 from ..xai_release_notes import parse_xai_release_notes
 from ..models import Article
@@ -699,9 +700,12 @@ def _parse_openai_changelog_entries(content: bytes) -> list[dict]:
     return entries
 
 
-def _parse_gemini_changelog_entries(content: bytes) -> list[dict]:
+def _parse_gemini_changelog_entries(
+    content: bytes, base_url: str = "https://ai.google.dev/gemini-api/docs/changelog",
+) -> list[dict]:
     """Turn Gemini API release-note list items into feed-like entries."""
-    base_url = "https://ai.google.dev/gemini-api/docs/changelog"
+    if not re.search(rb"<h2\b", content, re.IGNORECASE):
+        return parse_gemini_markdown(content, base_url)
     soup = BeautifulSoup(content, "lxml")
     body = soup.select_one(".devsite-article-body") or soup
     entries: list[dict] = []
@@ -916,7 +920,7 @@ async def _fetch_feed(
         error = None if entries else "OpenAI changelog contained no parseable updates"
         return entries, spec.get("name") or url, error
     if spec.get("format") == "gemini_changelog":
-        entries = _parse_gemini_changelog_entries(r.content)
+        entries = _parse_gemini_changelog_entries(r.content, str(r.url))
         error = None if entries else "Gemini changelog contained no parseable updates"
         return entries, spec.get("name") or url, error
 

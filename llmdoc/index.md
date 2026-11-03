@@ -58,6 +58,7 @@
 | 改抓取容量（多留文章 / 多抓几篇 / 加 RSS 源） | [配置参考](reference/config-reference.md)（代码内常量 + 修改约定） |
 | 数据存哪 / 各 JSON 文件结构 / Article 字段 | [数据存储参考](reference/data-storage.md) |
 | 为什么没有数据库 / 原子读改写怎么避免丢更新 | [数据存储参考](reference/data-storage.md)（第 4 节）＋ [后端架构](architecture/backend-architecture.md)（第 4 节） |
+| Gemini 更新日志 HTML → AI Studio Markdown 迁移与重定向链接 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.5 节）＋ `app/gemini_release_notes.py` |
 | xAI 官网生产 403、官方 API 更新日志与时间线年份推导 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md#xai-官方模型api-更新) ＋ `app/xai_release_notes.py` |
 | arXiv 合法空日更、分类/构建时间校验与官方 RSS 主机 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md#arxiv-的合法空日更) ＋ `app/feed_validation.py` |
 | 大量数据源抓取失败怎么排查 | [部署指南](guides/how-to-deploy.md)（第 7 节）＋ [已知问题](reference/known-issues.md)（第 4 条） |
