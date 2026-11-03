@@ -7,15 +7,21 @@
 文件事务锁只在应用进程内有效，不能对正在运行的卷直接打包。先停止唯一应用进程，复制数据后立即重新启动；压缩和验证在副本上执行。操作会有短暂服务中断，应避开部署和长任务。下面在 Docker 主机执行，容器名按实际环境替换：
 
 ```bash
+(
+set -eu
 umask 077
-mkdir -p backups/snapshot
+mkdir -p backups
+mkdir backups/snapshot
 container=ai-frontier-agent
-# 用 finally/trap 确保复制失败时也重启；不要对整个 Compose down --volumes。
-trap 'docker start "$container" >/dev/null' EXIT INT TERM
+# 复制失败时也重启；不要对整个 Compose down --volumes。
+trap 'docker start "$container" >/dev/null' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 docker stop --time 30 "$container"
 docker cp "$container":/data/. backups/snapshot/
 docker start "$container"
-trap - EXIT INT TERM
+trap - EXIT
+)
 ```
 
 确认容器恢复健康。副本放在仓库外的私有目录更合适；若使用上面的 `backups/`，已被 Git 与 Docker 上下文排除。不要在同一个 snapshot 目录反复覆盖复制，应每次新建目录。
@@ -49,3 +55,7 @@ python3 -m app.backup restore --archive backups/site.aif-backup.tar.gz \
 停止应用，先备份当前卷，恢复到新卷并完成上述检查。确认后再修改挂载并启动；不要用解压命令覆盖活动数据卷。本工具没有“覆盖生产”或“强制覆盖”选项。
 
 同主机备份只能应对误删/坏数据，不能抵抗主机或磁盘损失。本次手动演练不等于已配置自动备份、保留周期或异地副本；这些需要另行确定存储位置和频率。
+
+## 5. 首次演练记录（2026-11-03）
+
+工具已通过 198 项全量测试及云端 CI。真实数据在独立目录完成备份、逐文件 SHA-256 对比、JSON/SQLite 校验和断网容器启动；身份、收藏、实验卡及对话读取验证通过。生产卷没有被恢复覆盖，演练容器与临时明文副本已清理，私有归档和独立部署配置保留在服务器。生产中没有覆盖基准记录，此类别由合成回归测试验证，不能据此声称恢复了真实基准证据。
