@@ -815,6 +815,9 @@ async def _fetch_feed(
                 )
             )
         )
+        if spec.get("format") == "gemini_changelog":
+            # AI Studio negotiates Markdown; the RSS Accept header gets a SPA shell.
+            accept = "text/markdown,text/plain;q=0.9,text/html;q=0.8"
         r = await _get_source(
             client, url, source_url=url, timeout=float(spec.get("timeout") or 15.0),
             accept=accept,

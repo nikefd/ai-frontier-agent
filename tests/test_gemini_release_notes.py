@@ -46,6 +46,7 @@ def test_unknown_section_does_not_inherit_previous_date_and_entries_are_bounded(
 @pytest.mark.asyncio
 async def test_fetch_uses_redirect_destination_for_markdown_links():
     def handler(request):
+        assert request.headers["accept"].startswith("text/markdown")
         if str(request.url) == OLD:
             return httpx.Response(301, headers={'location': NEW})
         assert str(request.url) == NEW
