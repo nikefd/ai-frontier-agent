@@ -13,6 +13,7 @@
 | 本地把项目跑起来（裸机 / Docker） | [运行指南](guides/how-to-run.md) |
 | 理解或修改 PR/main 的正式 CI 质量门禁 | [运行指南](guides/how-to-run.md)（测试与 CI）＋ `.github/workflows/ci.yml` |
 | 只读生产验收、独立官方样本与基准发现方式 | [生产验收指南](guides/production-audit.md) ＋ `evaluation/` |
+| 数据卷备份、校验、隔离恢复演练与环境配置边界 | [备份恢复指南](guides/backup-and-restore.md) ＋ `app/backup.py` |
 | 部署到生产（Coolify + 自建 rsshub） | [部署指南](guides/how-to-deploy.md) |
 | 理解整个后端的进程模型 / 启动流程 / 无前端产物启动 / 模块依赖 | [后端架构](architecture/backend-architecture.md) |
 | 理解「一篇文章从 RSS 到入库到翻译」怎么发生 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md) |

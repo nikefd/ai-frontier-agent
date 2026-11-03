@@ -71,6 +71,10 @@ Compose 启动应用、RSSHub 与 Redis 三个服务。应用数据保存在命�
 
 完整变量见 [.env.example](.env.example) 和[配置参考](llmdoc/reference/config-reference.md)。生产域名、反向代理和数据持久化见[部署指南](llmdoc/guides/how-to-deploy.md)。
 
+## 备份与恢复
+
+完整数据卷可离线备份，并按 SHA-256、JSON 和 SQLite 完整性检查后恢复到新目录。操作步骤、隔离演练与配置保存见[备份恢复指南](llmdoc/guides/backup-and-restore.md)。
+
 ## 本地开发与贡献
 
 ```bash
