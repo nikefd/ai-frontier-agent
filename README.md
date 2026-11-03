@@ -7,6 +7,10 @@
 
 适合希望持续跟进模型、API、开源工具和重要研究的开发者。支持自己的 OpenAI-compatible 模型服务；不配置模型也能抓取和浏览资讯。
 
+**[在线体验](https://ai.zhangyangbin.com/) · [今日速报](https://ai.zhangyangbin.com/summary) · [最新文章](https://ai.zhangyangbin.com/feed) · [RSS 订阅](https://ai.zhangyangbin.com/rss/digest.xml)**
+
+[![今日 AI 速报：中文摘要、重点事件与原文引用](docs/images/daily-digest.png)](https://ai.zhangyangbin.com/summary)
+
 ## 能做什么
 
 - **跟踪一手变化**：116 个内置信源，模型/API 官方源每小时检查，常规内容每 4 小时、论文与发现源每 12 小时检查。
@@ -14,6 +18,18 @@
 - **把阅读变成实践**：按需深度解读、结构化实验卡、进度和结果笔记，可交给对话助手逐步讨论。
 - **看清覆盖质量**：来源健康、内容陈旧度、噪声率和发现延迟可查；人工必达基准会保留最早命中证据，文章淘汰后仍可核验。
 - **保留自己的资料**：收藏、解读、实验和对话按用户隔离，数据存于自己的文件卷。
+
+## 界面预览
+
+**最新文章**：按时间或重要性浏览中文摘要，搜索感兴趣的话题，直接打开原文或进一步解读。
+
+[![最新文章：中文摘要、来源分类、搜索和阅读入口](docs/images/article-feed.png)](https://ai.zhangyangbin.com/feed)
+
+**数据源与覆盖质量**：查看抓取健康、内容新鲜度及已登记事件的覆盖情况。
+
+[![数据源：覆盖质量与来源健康概览](docs/images/source-health.png)](https://ai.zhangyangbin.com/sources)
+
+截图来自 2026-11-03 的公开页面，内容会随资讯更新。
 
 ## 快速开始：Docker Compose
 
