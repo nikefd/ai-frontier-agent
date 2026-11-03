@@ -29,7 +29,7 @@ def main() -> None:
             result = verify_backup(args.archive)
         else:
             result = restore_backup(args.archive, args.destination)
-    except (OSError, ValueError, KeyError, TypeError, sqlite3.Error, tarfile.TarError) as error:
+    except (OSError, ValueError, KeyError, TypeError, EOFError, sqlite3.Error, tarfile.TarError) as error:
         # No file contents, emails or credentials in command output.
         parser.exit(1, f'Backup operation failed ({type(error).__name__}); no verified result.\n')
     print(json.dumps({'ok': True, **result}))

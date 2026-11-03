@@ -99,3 +99,20 @@ def test_rejects_modified_or_unsafe_archives_without_publishing(data, tmp_path, 
         restore_backup(bad, restored)
     assert not restored.exists()
     assert not (tmp_path / 'escape').exists()
+
+
+def test_cli_reports_truncated_archive_without_dumping_data(data, tmp_path):
+    import subprocess
+    import sys
+
+    archive = tmp_path / 'truncated.tar.gz'
+    create_backup(data, archive)
+    archive.write_bytes(archive.read_bytes()[:20])
+    result = subprocess.run(
+        [sys.executable, '-m', 'app.backup', 'verify', '--archive', str(archive)],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 1
+    assert 'no verified result' in result.stderr
+    assert 'Traceback' not in result.stderr
+    assert not result.stdout
