@@ -24,6 +24,7 @@ import logging
 import re
 from typing import Any
 
+from ..locale import output_language
 from ..llm_client import LLMUnavailable, chat_complete, llm_configured
 from ..routers.ai_news import ARTICLES_FILE, BENCHMARKS_FILE, _load_articles
 from ..benchmark_evidence import record_benchmark_matches
@@ -180,7 +181,10 @@ async def _translate_once() -> int:
         {"role": "user", "content": _build_user_msg(batch)},
     ]
     try:
-        body = await chat_complete(messages, temperature=0.2, max_tokens=3000)
+        # Global enrichment always populates *_zh, even when an English UI
+        # administrator manually triggers this job.
+        with output_language("zh"):
+            body = await chat_complete(messages, temperature=0.2, max_tokens=3000)
         parsed = _parse_response(body)
     except (LLMUnavailable, ValueError, json.JSONDecodeError) as e:
         log.warning("enrich batch failed: %s", e)

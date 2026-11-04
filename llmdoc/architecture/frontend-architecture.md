@@ -121,6 +121,6 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 
 英文文章流优先读取原文 title/summary；中文模式继续优先 title_zh/summary_zh。原文可能本来就是中文，不承诺自动生成英文译文。标签与常用操作本地化；已有个人 AI 内容保留原语言。英文实践入口从原文章生成英文实验卡，不在访问时翻译整库。
 
-`api()` 与聊天请求发送 `Accept-Language`。请求级 ContextVar 只影响当前 AI 输出，调度默认中文；新个人 AI 产物使用所选语言并保留 JSON 字段/枚举。双语速报在一次请求中返回 body/body_en，缓存与原文 cohort 共用；语言切换与公开 GET 不调用模型。历史中文速报未补齐英文时显示等待下一轮生成，英文 RSS 跳过这些历史项。
+`api()` 与聊天请求发送 `Accept-Language`。请求级 ContextVar 只影响当前 AI 输出，调度默认中文；全局富化强制中文，避免英文界面的管理员手动翻译时把 *_zh 写成英文；新个人 AI 产物使用所选语言并保留 JSON 字段/枚举。双语速报在一次请求中返回 body/body_en，缓存与原文 cohort 共用；语言切换与公开 GET 不调用模型。历史中文速报未补齐英文时显示等待下一轮生成，英文 RSS 跳过这些历史项。
 
 完整英文 README 位于根目录，中文在 README.zh-CN.md，顶部相互链接。详细 llmdoc 暂维持中文。

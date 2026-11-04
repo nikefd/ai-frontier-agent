@@ -84,3 +84,24 @@ def test_public_language_reads_select_cache_without_writing(tmp_path, monkeypatc
     assert client.get('/api/ai-news/sources',headers={'accept-language':'en-US,en;q=0.9'}).json()[0]['health_reason']=='First fetch has not completed'
     assert client.get('/api/ai-news/sources',headers={'accept-language':'zh'}).json()[0]['health_reason']=='尚未完成首次抓取'
     assert cache.read_bytes()==before
+
+
+@pytest.mark.asyncio
+async def test_english_admin_cannot_change_global_chinese_enrichment(tmp_path, monkeypatch):
+    from app.workers import ai_news_translator as worker
+    from app.storage import write_json_atomic, read_json
+    article={'id':'fixture','title':'An English source','summary':'Source summary','translation_status':'pending'}
+    path=tmp_path/'articles.json'
+    write_json_atomic(path,[article])
+    monkeypatch.setattr(worker,'ARTICLES_FILE',path)
+    monkeypatch.setattr(worker,'_load_articles',lambda:[article])
+    monkeypatch.setattr(worker,'llm_configured',lambda:True)
+    monkeypatch.setattr(worker,'record_benchmark_matches',lambda *_:None)
+    async def fake_chat(*args,**kwargs):
+        assert current_language()=='zh'
+        return json.dumps([{'id':'fixture','title_zh':'中文标题','summary_zh':'中文摘要'}])
+    monkeypatch.setattr(worker,'chat_complete',fake_chat)
+    with output_language('en'):
+        assert await worker._translate_once()==1
+        assert current_language()=='en'
+    assert read_json(path,[])[0]['title_zh']=='中文标题'
