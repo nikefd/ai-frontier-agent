@@ -472,5 +472,7 @@
   "邮箱格式不正确": "Enter a valid email address.",
   "邮箱或密码错误": "Incorrect email or password.",
   "当前密码不正确": "The current password is incorrect.",
-  "重置链接无效或已过期": "The reset link is invalid or has expired."
+  "重置链接无效或已过期": "The reset link is invalid or has expired.",
+  "教程": "Tutorial",
+  "观点": "Opinion"
 }
