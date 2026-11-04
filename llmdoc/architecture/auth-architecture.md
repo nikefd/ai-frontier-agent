@@ -122,3 +122,5 @@ agent 工具也按用户绑定：`agent_tools.build_tools(uid)` 每请求构造�
 公开 `/register` 永远只创建 user；没有管理员时返回 503 并要求部署者本地初始化。`AIF_ADMIN_EMAIL` 仅用于旧数据继承，不授予角色。已有管理员、密码和会话不受升级影响。
 
 在部署者交互终端执行 `python -m app.bootstrap_admin --email you@example.com`。CLI 隐藏输入两次密码，复用邮箱/密码校验；不接受命令行密码，非 TTY 拒绝执行。首个管理员通过服务器受信路径创建并自动验证，已有管理员时拒绝覆盖。CLI 以 Unix 文件锁串行化多次初始化，用户文件修改仍使用 storage 事务；初始化后幂等迁移/继承旧数据。Linux/macOS 可裸机运行，Windows 使用 Docker 交互终端。新部署建议在开放服务前初始化；勿在额外进程并发修改已有生产用户库。
+
+管理员初始化 CLI 支持 `--language en` 使用英文密码提示与结果信息，默认仍为中文；隐藏输入、仅交互终端、首次初始化及已有管理员保护不变。英文 README 的 Docker 与裸机示例均使用此选项。
