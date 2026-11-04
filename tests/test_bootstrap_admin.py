@@ -92,3 +92,21 @@ def test_designated_legacy_email_does_not_grant_unverified_signup_access(monkeyp
     assert not migrate._is_eligible(user)
     user.role = "admin"
     assert migrate._is_eligible(user)
+
+
+def test_english_bootstrap_prompts_and_output(isolated_auth, tmp_path, monkeypatch, capsys):
+    import app.bootstrap_admin as cli
+    import app.migrate as migrate
+    monkeypatch.setattr(cli, 'AUTH_DIR', tmp_path/'auth')
+    monkeypatch.setattr(cli.sys.stdin, 'isatty', lambda:True)
+    monkeypatch.setattr(migrate, 'migrate_legacy_to_holding', lambda:None)
+    monkeypatch.setattr(migrate, 'inherit_legacy_if_eligible', lambda _:None)
+    prompts=[]
+    def password(prompt):
+        prompts.append(prompt)
+        return 'fixture-password'
+    monkeypatch.setattr(cli.getpass,'getpass',password)
+    assert cli.main(['--email','owner@example.test','--language','en'])==0
+    assert prompts==['Admin password: ', 'Confirm password: ']
+    out=capsys.readouterr().out
+    assert 'Admin created.' in out and 'fixture-password' not in out
