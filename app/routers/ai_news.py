@@ -30,6 +30,7 @@ from ..auth import current_user_optional, require_admin, require_user, require_v
 from ..benchmark_evidence import record_benchmark_matches
 from ..custom_sources import load_custom_source_specs
 from ..llm_client import LLMUnavailable, chat_complete, chat_stream, llm_configured
+from ..locale import localized_text
 from ..models import Article, ChatRequest, Guide, Track, UserPublic
 from ..news_alerts import build_breaking_alerts
 from ..settings import settings
@@ -802,6 +803,7 @@ def _save_sources_meta(meta: dict[str, dict]) -> None:
     write_json_atomic(SOURCES_FILE, meta)
 
 
+
 def _source_health(
     meta: dict,
     *,
@@ -825,14 +827,14 @@ def _source_health(
         )
         return {
             "health_status": "error",
-            "health_reason": f"最近抓取失败{f'，已连续 {failures} 次' if failures else ''}",
+            "health_reason": localized_text(f"最近抓取失败{f'，已连续 {failures} 次' if failures else ''}", f"Latest fetch failed; consecutive failures: {failures}"),
             "fetch_age_hours": age,
             "stale_after_hours": stale_after,
         }
     if not last_fetch:
         return {
             "health_status": "never",
-            "health_reason": "尚未完成首次抓取",
+            "health_reason": localized_text("尚未完成首次抓取", "First fetch has not completed"),
             "fetch_age_hours": None,
             "stale_after_hours": stale_after,
         }
@@ -841,13 +843,13 @@ def _source_health(
     if age_hours > stale_after:
         return {
             "health_status": "stale",
-            "health_reason": f"调度状态已过期，{age_hours:.1f} 小时未抓取",
+            "health_reason": localized_text(f"调度状态已过期，{age_hours:.1f} 小时未抓取", f"Overdue: no fetch for {age_hours:.1f} hours"),
             "fetch_age_hours": round(age_hours, 1),
             "stale_after_hours": stale_after,
         }
     return {
         "health_status": "healthy",
-        "health_reason": "最近一轮抓取成功",
+        "health_reason": localized_text("最近一轮抓取成功", "Latest fetch succeeded"),
         "fetch_age_hours": round(age_hours, 1),
         "stale_after_hours": stale_after,
     }
@@ -894,7 +896,7 @@ def list_sources() -> list[dict]:
             "slow": settings.slow_news_interval_hours,
         }.get(spec.get("cadence"), settings.ai_news_interval_hours)) if enabled else {
             "health_status": "disabled",
-            "health_reason": "管理员已停用，不再参与自动或全量抓取",
+            "health_reason": localized_text("管理员已停用，不再参与自动或全量抓取", "Disabled by an administrator; excluded from fetch jobs"),
             "fetch_age_hours": None,
             "stale_after_hours": None,
         }
@@ -1080,17 +1082,18 @@ def _articles_for_today(limit: int = 25) -> list[dict]:
 
 
 @router.get("/summary/today")
-def get_today_summary() -> dict:
+def get_today_summary(lang: Literal["zh", "en"] = "zh") -> dict:
     """Return cached summary (if any) and cohort metadata.
 
     The UI calls this on load.  If it's missing/stale, the user hits the
     'regenerate' button which POSTs to /summary/today.
     """
+    from ..briefing_languages import select_briefing
     cached = read_json(SUMMARY_FILE, None)
     cohort = _articles_for_today()
-    alerts = build_breaking_alerts(_load_articles())
+    alerts = build_breaking_alerts(_load_articles(), language=lang)
     return {
-        "summary": cached if isinstance(cached, dict) else None,
+        "summary": select_briefing(cached, lang),
         "cohort_size": len(cohort),
         "cohort_preview": [
             {"id": a.get("id"), "title": a.get("title"), "source": a.get("source"), "date": a.get("date")}
@@ -1181,7 +1184,16 @@ async def build_today_summary(*, force: bool = False) -> dict | None:
             "content": f"今日候选（已按质量、来源可信度和多样性预筛，共 {len(cohort)} 条）：\n\n{article_block}",
         },
     ]
-    body = await chat_complete(messages, max_tokens=1400)
+    from ..briefing_languages import parse_bilingual_briefing
+    from ..locale import output_language
+    messages[0]["content"] += (
+        "\nReturn ONLY a JSON object with two Markdown strings: body (Chinese) and body_en (English). "
+        "Both must cover the same selected events and preserve [n] citations. English headings: "
+        "## In brief / ## Top stories / ## Try it / ## What to watch / ## More updates. "
+        "Do not put the JSON inside a Markdown fence."
+    )
+    with output_language("zh"):
+        rendered = parse_bilingual_briefing(await chat_complete(messages, max_tokens=3200))
 
     payload = {
         "generated_at": _now_iso(),
@@ -1189,7 +1201,7 @@ async def build_today_summary(*, force: bool = False) -> dict | None:
         "model": settings.llm_model,
         "cohort_size": len(cohort),
         "cohort_fingerprint": cohort_fingerprint,
-        "body": body,
+        **rendered,
         "cohort": [
             {
                 "id": a.get("id"), "title": a.get("title"), "source": a.get("source"),

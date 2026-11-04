@@ -216,3 +216,9 @@ agent 主动提议（B2）：基于用户行为信号给「下一步」建议。
 基准命中证据：登记 POST 会尝试捕获已有文章，并在 admin 返回中携带 evidence。公开 `benchmark_coverage.items[]` 新增 `matched_at`、`match_evidence_retained`、`match_time_basis=ingested_at/published_at/null`；只投影命中来源，不暴露规则指纹、匹配文本和管理备注。GET 仍为只读；正式基准可使用留存证据，不因文章淘汰降为漏报。
 
 首次初始化：`POST /api/auth/register` 无管理员时返回 503；HTTP 传入 role/initial_admin 不会授予权限。请先通过服务器交互命令 `python -m app.bootstrap_admin --email ...` 初始化，之后公开注册只创建未验证的普通用户。
+
+### 中英文输出
+
+- `GET /api/ai-news/summary/today?lang=zh|en` 默认 zh，选择同一缓存对应正文；不触发翻译/写入，旧中文缓存没有英文时正文为空。新速报生成一次返回 body/body_en，两者共享 cohort 与引用。模型缺失任一语言或两者引用不一致时失败并保留旧缓存。
+- `GET|HEAD /rss/digest.xml?lang=en` 返回有英文版本的公开速报，语言元数据/标题/链接/GUID 区分英文；省略 lang 保持中文兼容。
+- 前端发出 `Accept-Language: en|zh`。个人 AI 生成（含聊天）按当前语言输出自然语言文本，保留结构化字段和枚举。来源健康/内容新鲜度说明也按请求语言选择；原始错误、来源描述和既有用户内容保留原语言。默认调度仍使用中文上下文，并单次生成双语速报。

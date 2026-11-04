@@ -151,6 +151,14 @@ except Exception as e:  # noqa: broad-except
     logging.getLogger("aif").warning("agent chat router not loaded: %s", e)
 
 
+@app.middleware("http")
+async def request_language(request, call_next):
+    from .locale import output_language
+    language = request.headers.get("accept-language", "zh").split(",", 1)[0].split(";", 1)[0].split("-", 1)[0].strip().lower()
+    with output_language(language):
+        return await call_next(request)
+
+
 @app.get("/api/health")
 def health() -> dict:
     return {

@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlsplit
 
 from .benchmark_matching import _parse_date, _normalized_url, _normalized_match_text, _event_url, find_benchmark_match
+from .locale import localized_text
 from .news_alerts import build_breaking_alerts, classify_alert
 
 
@@ -716,17 +717,17 @@ def build_quality_report(
             severity = level
 
     if fast_rate is not None and fast_rate < 0.8:
-        add("critical", "高时效源覆盖不足", f"仅 {len(fast_healthy)}/{len(fast)} 个 fast 源健康，先修复失败或过期来源。")
+        add("critical", localized_text("高时效源覆盖不足", "High-priority sources need attention"), localized_text(f"仅 {len(fast_healthy)}/{len(fast)} 个 fast 源健康，先修复失败或过期来源。", f"Only {len(fast_healthy)}/{len(fast)} fast sources are healthy. Check failed or overdue sources."))
     elif fast_rate is not None and fast_rate < 0.95:
-        add("watch", "部分高时效源异常", f"当前 {len(fast_healthy)}/{len(fast)} 个 fast 源健康。")
+        add("watch", localized_text("部分高时效源异常", "Some fast sources need attention"), localized_text(f"当前 {len(fast_healthy)}/{len(fast)} 个 fast 源健康。", f"Currently {len(fast_healthy)}/{len(fast)} fast sources are healthy."))
     if not recent:
-        add("critical", "近 30 小时没有新内容", "可能是抓取调度停止、来源集体失败或时间字段异常。")
+        add("critical", localized_text("近 30 小时没有新内容", "No new content in the last 30 hours"), localized_text("可能是抓取调度停止、来源集体失败或时间字段异常。", "Check the scheduler, upstream failures and publication dates."))
     if visible_rate is not None and visible_rate < 0.75:
-        add("critical", "高影响事件存在漏出", f"速报或重大提醒仅覆盖 {covered_events}/{event_total} 个高影响事件。")
+        add("critical", localized_text("高影响事件存在漏出", "Some high-impact events are not featured"), localized_text(f"速报或重大提醒仅覆盖 {covered_events}/{event_total} 个高影响事件。", f"The briefing or alerts feature {covered_events}/{event_total} high-impact events."))
     elif visible_rate is not None and visible_rate < 0.9:
-        add("watch", "高影响事件覆盖可提升", f"速报或重大提醒覆盖 {covered_events}/{event_total} 个高影响事件。")
+        add("watch", localized_text("高影响事件覆盖可提升", "High-impact event coverage can improve"), localized_text(f"速报或重大提醒覆盖 {covered_events}/{event_total} 个高影响事件。", f"The briefing or alerts feature {covered_events}/{event_total} high-impact events."))
     if pending > 8:
-        add("watch", "富化队列积压", f"近 {window_hours} 小时仍有 {pending} 篇等待翻译与评分。")
+        add("watch", localized_text("富化队列积压", "Enrichment backlog"), localized_text(f"近 {window_hours} 小时仍有 {pending} 篇等待翻译与评分。", f"{pending} articles from the last {window_hours} hours are awaiting enrichment."))
     benchmark_coverage = build_benchmark_coverage(
         articles, benchmarks or [], now=current, sources=sources,
     )
@@ -737,27 +738,27 @@ def build_quality_report(
     ]
     if benchmark_coverage["missed"]:
         add(
-            "critical", "基准事件存在漏报",
-            f"近 {benchmark_coverage['window_days']} 天有 {benchmark_coverage['missed']} 个必达事件超过期限仍未命中。",
+            "critical", localized_text("基准事件存在漏报", "Tracked events were missed"),
+            localized_text(f"近 {benchmark_coverage['window_days']} 天有 {benchmark_coverage['missed']} 个必达事件超过期限仍未命中。", f"{benchmark_coverage['missed']} tracked events exceeded their deadline in the last {benchmark_coverage['window_days']} days."),
         )
     elif benchmark_coverage["late"]:
         add(
-            "watch", "基准事件发现偏慢",
-            f"有 {benchmark_coverage['late']} 个必达事件在期限后才被发现。",
+            "watch", localized_text("基准事件发现偏慢", "Tracked events were discovered late"),
+            localized_text(f"有 {benchmark_coverage['late']} 个必达事件在期限后才被发现。", f"{benchmark_coverage['late']} tracked events were discovered after their deadline."),
         )
     if source_noise["possible_overfilter"]:
         names = "、".join(
             item["name"] for item in source_noise["possible_overfilter"][:3]
         )
-        add("watch", "来源门禁可能过严", f"{names} 在近 7 天有足够样本但全部被过滤，请复核关键词。")
+        add("watch", localized_text("来源门禁可能过严", "Source filtering may be too strict"), localized_text(f"{names} 在近 7 天有足够样本但全部被过滤，请复核关键词。", f"All recent samples from {names} were filtered out. Review the keyword rules."))
     if dormant_sources:
         names = "、".join(str(source.get("name") or "未命名") for source in dormant_sources[:3])
         add(
-            "watch", "来源内容疑似停更",
-            f"{names} 的抓取仍可成功，但源站条目长期未更新，请检查入口是否迁移。",
+            "watch", localized_text("来源内容疑似停更", "Some sources may be inactive"),
+            localized_text(f"{names} 的抓取仍可成功，但源站条目长期未更新，请检查入口是否迁移。", f"{names} remain reachable but have not published recently. Check whether their update pages moved."),
         )
     if not findings:
-        findings.append({"level": "healthy", "title": "覆盖链路正常", "detail": "暂未发现明显的来源、漏出或富化积压问题。"})
+        findings.append({"level": "healthy", "title": localized_text("覆盖链路正常", "Coverage pipeline is healthy"), "detail": localized_text("暂未发现明显的来源、漏出或富化积压问题。", "No clear source, event coverage or enrichment backlog issues detected.")})
 
     return {
         "status": severity,

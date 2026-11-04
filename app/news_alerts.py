@@ -81,6 +81,7 @@ def build_breaking_alerts(
     now: datetime | None = None,
     lookback_hours: int = 36,
     limit: int = 5,
+    language: str = "zh",
 ) -> list[dict]:
     """Return recent, deduplicated alerts ordered by urgency and importance."""
     current = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
@@ -97,7 +98,7 @@ def build_breaking_alerts(
         label, severity, reason = _ALERT_META[kind]
         item = {
             "id": article.get("id"),
-            "title": article.get("title_zh") or article.get("title") or "（无标题）",
+            "title": (article.get("title") if language == "en" else article.get("title_zh") or article.get("title")) or "Untitled",
             "source": article.get("source") or "",
             "url": article.get("url") or "",
             "date": article.get("date"),

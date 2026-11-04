@@ -9,6 +9,7 @@ from email.utils import format_datetime
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
 from zoneinfo import ZoneInfo
+from typing import Literal
 
 from fastapi import APIRouter, Request, Response
 
@@ -62,16 +63,19 @@ def _briefing_html(summary: dict) -> str:
     return "\n".join(blocks)
 
 
-def build_digest_rss(summaries: list[dict], base_url: str) -> bytes:
+def build_digest_rss(summaries: list[dict], base_url: str, language: str = "zh") -> bytes:
     base = base_url.rstrip("/")
-    feed_url = f"{base}/rss/digest.xml"
-    summary_url = f"{base}/summary"
+    suffix = "?lang=en" if language == "en" else ""
+    feed_url = f"{base}/rss/digest.xml{suffix}"
+    summary_url = f"{base}/summary{suffix}"
+    if language == "en":
+        summaries = [{**item, "body": item["body_en"]} for item in summaries if item.get("body_en")]
     root = ET.Element("rss", {"version": "2.0"})
     channel = ET.SubElement(root, "channel")
-    ET.SubElement(channel, "title").text = "AI 前沿速报"
+    ET.SubElement(channel, "title").text = "AI Frontier Briefing" if language == "en" else "AI 前沿速报"
     ET.SubElement(channel, "link").text = summary_url
-    ET.SubElement(channel, "description").text = "高密度中文 AI 前沿速报，保留可点击的一手来源。"
-    ET.SubElement(channel, "language").text = "zh-CN"
+    ET.SubElement(channel, "description").text = "AI updates with links to original sources." if language == "en" else "高密度中文 AI 前沿速报，保留可点击的一手来源。"
+    ET.SubElement(channel, "language").text = "en" if language == "en" else "zh-CN"
     ET.SubElement(channel, "generator").text = "AI Frontier Agent"
     ET.SubElement(
         channel,
@@ -89,10 +93,10 @@ def build_digest_rss(summaries: list[dict], base_url: str) -> bytes:
         generated = _as_datetime(summary.get("generated_at"))
         local_time = generated.astimezone(shanghai)
         item = ET.SubElement(channel, "item")
-        ET.SubElement(item, "title").text = f"AI 前沿速报 · {local_time:%Y-%m-%d %H:%M}"
+        ET.SubElement(item, "title").text = f"{'AI Frontier Briefing' if language == 'en' else 'AI 前沿速报'} · {local_time:%Y-%m-%d %H:%M}"
         ET.SubElement(item, "link").text = summary_url
         guid = ET.SubElement(item, "guid", {"isPermaLink": "false"})
-        guid.text = f"urn:ai-frontier:briefing:{summary_identity(summary)}"
+        guid.text = f"urn:ai-frontier:briefing:{summary_identity(summary)}" + (":en" if language == "en" else "")
         ET.SubElement(item, "pubDate").text = format_datetime(generated.astimezone(timezone.utc))
         ET.SubElement(item, "description").text = _briefing_html(summary)
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
@@ -107,11 +111,11 @@ def _etag_matches(header: str | None, etag: str) -> bool:
     )
 
 
-def _digest_response(request: Request, *, head_only: bool = False) -> Response:
+def _digest_response(request: Request, *, head_only: bool = False, language: str = "zh") -> Response:
     configured = str(settings.public_base_url or "").strip()
     base_url = configured or str(request.base_url)
     summaries = load_public_summaries()
-    payload = build_digest_rss(summaries, base_url)
+    payload = build_digest_rss(summaries, base_url, language)
     etag = f'"{hashlib.sha256(payload).hexdigest()}"'
     headers = {
         "Cache-Control": "public, max-age=300",
@@ -134,10 +138,10 @@ def _digest_response(request: Request, *, head_only: bool = False) -> Response:
 
 
 @router.get("/rss/digest.xml")
-def digest_feed(request: Request) -> Response:
-    return _digest_response(request)
+def digest_feed(request: Request, lang: Literal["zh", "en"] = "zh") -> Response:
+    return _digest_response(request, language=lang)
 
 
 @router.head("/rss/digest.xml")
-def digest_feed_head(request: Request) -> Response:
-    return _digest_response(request, head_only=True)
+def digest_feed_head(request: Request, lang: Literal["zh", "en"] = "zh") -> Response:
+    return _digest_response(request, head_only=True, language=lang)

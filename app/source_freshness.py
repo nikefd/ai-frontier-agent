@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from .locale import localized_text
 
 
 _QUIET_AFTER_DAYS = {"fast": 45, "standard": 120, "slow": 180}
@@ -22,7 +23,7 @@ def classify_content_freshness(
             "content_status": "unknown",
             "content_age_days": None,
             "quiet_after_days": threshold,
-            "content_reason": "尚无可信的源站最新发布时间",
+            "content_reason": localized_text("尚无可信的源站最新发布时间", "No trustworthy source publication date yet"),
         }
     try:
         parsed = datetime.fromisoformat(str(latest_entry_at).replace("Z", "+00:00"))
@@ -31,7 +32,7 @@ def classify_content_freshness(
             "content_status": "unknown",
             "content_age_days": None,
             "quiet_after_days": threshold,
-            "content_reason": "源站最新发布时间无法解析",
+            "content_reason": localized_text("源站最新发布时间无法解析", "Cannot parse the latest source publication date"),
         }
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
@@ -43,19 +44,19 @@ def classify_content_freshness(
             "content_status": "unknown",
             "content_age_days": None,
             "quiet_after_days": threshold,
-            "content_reason": "源站最新发布时间明显晚于当前时间",
+            "content_reason": localized_text("源站最新发布时间明显晚于当前时间", "The latest source date is in the future"),
         }
     age_days = round(max(0.0, (current - parsed).total_seconds()) / 86400, 1)
     dormant_after = max(threshold * 2, 180)
     if age_days > dormant_after:
         status = "dormant"
-        reason = f"最新源站条目已超过 {age_days:.0f} 天，疑似停更或入口迁移"
+        reason = localized_text(f"最新源站条目已超过 {age_days:.0f} 天，疑似停更或入口迁移", f"No source update for {age_days:.0f} days; the source may be inactive or moved")
     elif age_days > threshold:
         status = "quiet"
-        reason = f"最新源站条目已超过 {age_days:.0f} 天，需留意更新频率"
+        reason = localized_text(f"最新源站条目已超过 {age_days:.0f} 天，需留意更新频率", f"No source update for {age_days:.0f} days; check its publishing cadence")
     else:
         status = "fresh"
-        reason = "源站内容仍在预期更新窗口内"
+        reason = localized_text("源站内容仍在预期更新窗口内", "Source content is within its expected update window")
     return {
         "content_status": status,
         "content_age_days": age_days,

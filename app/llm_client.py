@@ -17,6 +17,7 @@ from typing import AsyncIterator
 import httpx
 
 from .settings import settings
+from .locale import localized_messages
 
 log = logging.getLogger("aif.llm")
 
@@ -48,7 +49,7 @@ async def chat_complete(
         raise LLMUnavailable("LLM api key is not configured (set AIF_LLM_API_KEY or DEEPSEEK_API_KEY)")
     payload = {
         "model": model or settings.llm_model,
-        "messages": messages,
+        "messages": localized_messages(messages),
         "temperature": temperature,
         "max_tokens": max_tokens,
         "stream": False,
@@ -76,7 +77,7 @@ async def chat_stream(
         raise LLMUnavailable("LLM api key is not configured")
     payload = {
         "model": model or settings.llm_model,
-        "messages": messages,
+        "messages": localized_messages(messages),
         "temperature": temperature,
         "max_tokens": max_tokens,
         "stream": True,

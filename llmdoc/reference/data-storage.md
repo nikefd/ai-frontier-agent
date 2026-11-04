@@ -123,7 +123,9 @@ list，每项是 `{url,name,kind,tier,category,cadence,custom,enabled,descriptio
 
 ### 3.5 summary_today.json / summary_history.json
 
-`{generated_at, date, model, cohort_size, cohort_fingerprint, body, cohort[]}`。`body` 是 Markdown 速报，`cohort` 是参与生成的文章列表；每个 cohort 项可带 `event_key` 与 `related_articles[]`（同一事件被合并的其它报道）。`cohort_fingerprint` 覆盖这些字段，用于让分时任务在候选未变化时跳过 LLM。候选来自最近 30 小时，先按规范化标题兼容去重，再按事件键合并不同标题并优先官方/高质量来源，然后按 importance、来源类别、tier、时效与来源多样性预筛；Trending 最多 2 条、X 最多 3 条。
+`{generated_at, date, model, cohort_size, cohort_fingerprint, body, cohort[]}`。`body` 是中文 Markdown 速报；新缓存的 `body_en` 是同批候选的英文版本，两者引用编号集合须一致。旧记录没有 body_en 时仍可中文阅读，英文 GET 返回空正文等待下一次生成，英文 RSS 不包含该项。
+
+`body` 是 Markdown 速报，`cohort` 是参与生成的文章列表；每个 cohort 项可带 `event_key` 与 `related_articles[]`（同一事件被合并的其它报道）。`cohort_fingerprint` 覆盖这些字段，用于让分时任务在候选未变化时跳过 LLM。候选来自最近 30 小时，先按规范化标题兼容去重，再按事件键合并不同标题并优先官方/高质量来源，然后按 importance、来源类别、tier、时效与来源多样性预筛；Trending 最多 2 条、X 最多 3 条。
 
 每次成功生成后，同一 payload 还会按 `cohort_fingerprint` 去重写入 `summary_history.json`；保留最近 30 天且最多 180 项。`GET /rss/digest.xml` 合并当前缓存与历史，所以功能上线后无需等待下一轮生成就能订阅现有速报。RSS 只读这两份全局文件，不接触 `users/<uid>/`。
 

@@ -18,6 +18,7 @@ from .agent_runtime import AgentConfig, Harness, Memory, configure as llm_config
 from .agent_tools import build_tools
 from .auth import current_user_optional, require_user, require_verified_user, require_llm_quota
 from .llm_client import llm_configured
+from .locale import current_language
 from .models import ChatRequest, UserPublic
 from .settings import settings
 
@@ -64,7 +65,7 @@ def _memory_for(uid: str) -> Memory:
 
 def _build_config(uid: str, memory: Memory) -> AgentConfig:
     return AgentConfig(
-        system_prompt=SYSTEM_PROMPT,
+        system_prompt=SYSTEM_PROMPT + ("\nReply in English unless the user explicitly requests another language." if current_language() == "en" else ""),
         tools=build_tools(uid),
         recall_provider=memory.journal_summary_for_prompt,
     )

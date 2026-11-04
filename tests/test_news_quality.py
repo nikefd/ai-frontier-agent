@@ -1044,7 +1044,7 @@ async def test_scheduled_summary_skips_unchanged_cohort_but_manual_force_runs(
     async def fake_chat(*args, **kwargs):
         nonlocal calls
         calls += 1
-        return "briefing"
+        return '{"body":"中文速报", "body_en":"English briefing"}'
 
     monkeypatch.setattr(news, "SUMMARY_FILE", tmp_path / "summary_today.json")
     monkeypatch.setattr(news, "_articles_for_today", lambda limit=25: [article])

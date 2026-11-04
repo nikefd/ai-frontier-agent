@@ -15,6 +15,7 @@ from collections import Counter
 from fastapi import APIRouter, Depends
 
 from ..auth import current_user_optional
+from ..locale import localized_text
 from ..models import UserPublic
 from ..storage import read_json
 from .ai_news import (
@@ -57,24 +58,24 @@ def _build_suggestions(uid: str) -> list[dict]:
             if cnt >= 3:
                 out.append({
                     "id": "path-from-pins",
-                    "text": f"你已收藏 {cnt} 篇 **{top_cat}** 相关，要不要生成一条学习路径把它们串起来？",
-                    "action": "去生成", "view": "learning",
+                    "text": localized_text(f"你已收藏 {cnt} 篇 **{top_cat}** 相关，要不要生成一条学习路径把它们串起来？", f"You saved {cnt} articles about **{top_cat}**. Connect them with a learning path?"),
+                    "action": localized_text("去生成", "Create a path"), "view": "learning",
                 })
 
     # 2) Enough pins but no portrait yet → suggest generating it.
     if n_pins >= _PINS_FOR_PROFILE and not _has_file(profile_path(uid)):
         out.append({
             "id": "make-profile",
-            "text": f"已收藏 {n_pins} 篇，数据够了 —— 生成你的 **兴趣画像** 看看？",
-            "action": "生成画像", "view": "profile",
+            "text": localized_text(f"已收藏 {n_pins} 篇，数据够了 —— 生成你的 **兴趣画像** 看看？", f"With {n_pins} saved articles, you can build an **interest profile**."),
+            "action": localized_text("生成画像", "Build profile"), "view": "profile",
         })
 
     # 3) Accumulated activity but never reflected → suggest a review.
     if n_pins >= _PINS_FOR_REFLECT and not _has_file(reflection_file(uid)):
         out.append({
             "id": "first-reflection",
-            "text": "这段时间积累了不少，来一次 **本周复盘** 把它沉淀下来？",
-            "action": "开始复盘", "view": "reflection",
+            "text": localized_text("这段时间积累了不少，来一次 **本周复盘** 把它沉淀下来？", "Review what you learned with a **weekly reflection**."),
+            "action": localized_text("开始复盘", "Reflect"), "view": "reflection",
         })
 
     return out[:2]  # at most two, never spammy
