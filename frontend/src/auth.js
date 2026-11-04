@@ -1,3 +1,4 @@
+import { uiText, uiTemplate } from './i18n.js';
 // Auth: login state, header bar, login/register modal, and UI gating.
 // Anonymous users can browse (view) everything; writes / LLM calls return 401,
 // which surfaces the login modal (wired via api.setUnauthorizedHandler).
@@ -10,7 +11,7 @@ export function isAuthed() { return !!currentUser; }
 
 // ── boot ──────────────────────────────────────────────────────────────
 export async function initAuth() {
-  setUnauthorizedHandler(() => openAuthModal('请先登录后再操作'));
+  setUnauthorizedHandler(() => openAuthModal(uiText('请先登录后再操作')));
   buildModal();
   try {
     const r = await api('GET', '/api/auth/me');
@@ -28,7 +29,7 @@ function _handleVerifyResult() {
   const params = new URLSearchParams(window.location.search);
   const v = params.get('verify');
   if (!v) return;
-  const msg = v === 'ok' ? '✅ 邮箱验证成功' : '❌ 验证链接无效或已过期';
+  const msg = v === 'ok' ? uiText('✅ 邮箱验证成功') : uiText('❌ 验证链接无效或已过期');
   const t = document.createElement('div');
   t.className = 'verify-toast';
   t.textContent = msg;
@@ -45,9 +46,9 @@ function renderAuthBar() {
   if (!slot) return;
   if (currentUser) {
     const unverified = !currentUser.email_verified
-      ? `<button class="ghost sm auth-unverified" id="btn-resend" title="邮箱未验证，点击重新发送验证邮件">📧 未验证</button>`
+      ? uiTemplate`<button class="ghost sm auth-unverified" id="btn-resend" title="邮箱未验证，点击重新发送验证邮件">📧 未验证</button>`
       : '';
-    slot.innerHTML = `
+    slot.innerHTML = uiTemplate`
       ${unverified}
       <span class="auth-user" title="${escapeAttr(currentUser.email)}">
         ${currentUser.role === 'admin' ? '👑 ' : '👤 '}${escapeAttr(currentUser.email)}
@@ -58,18 +59,18 @@ function renderAuthBar() {
     $('#btn-resend')?.addEventListener('click', resendVerification);
     $('#btn-change-pw').addEventListener('click', openChangePasswordModal);
   } else {
-    slot.innerHTML = `<button class="primary sm" id="btn-login">登录 / 注册</button>`;
+    slot.innerHTML = uiTemplate`<button class="primary sm" id="btn-login">登录 / 注册</button>`;
     $('#btn-login').addEventListener('click', () => openAuthModal());
   }
 }
 
 async function resendVerification(e) {
-  const btn = e.currentTarget; btn.disabled = true; const orig = btn.textContent; btn.textContent = '发送中…';
+  const btn = e.currentTarget; btn.disabled = true; const orig = btn.textContent; btn.textContent = uiText('发送中…');
   try {
     const r = await api('POST', '/api/auth/resend-verification');
-    btn.textContent = r.already_verified ? '✓ 已验证' : '✓ 已发送，查收邮箱';
+    btn.textContent = r.already_verified ? uiText('✓ 已验证') : uiText('✓ 已发送，查收邮箱');
   } catch (err) {
-    btn.textContent = '发送失败';
+    btn.textContent = uiText('发送失败');
     setTimeout(() => { btn.disabled = false; btn.textContent = orig; }, 2000);
   }
 }
@@ -89,7 +90,7 @@ function buildModal() {
   const wrap = document.createElement('div');
   wrap.id = 'auth-modal';
   wrap.className = 'auth-modal hidden';
-  wrap.innerHTML = `
+  wrap.innerHTML = uiTemplate`
     <div class="auth-card">
       <button class="auth-close" data-act="close" title="关闭">✕</button>
       <h3 id="auth-title">登录</h3>
@@ -116,10 +117,10 @@ function buildModal() {
 
 function setMode(m) {
   mode = m;
-  $('#auth-title').textContent = m === 'login' ? '登录' : '注册';
-  $('#auth-submit').textContent = m === 'login' ? '登录' : '注册';
-  $('#auth-switch-text').textContent = m === 'login' ? '还没有账号？' : '已有账号？';
-  $('#auth-switch-link').textContent = m === 'login' ? '去注册' : '去登录';
+  $('#auth-title').textContent = m === 'login' ? uiText('登录') : uiText('注册');
+  $('#auth-submit').textContent = m === 'login' ? uiText('登录') : uiText('注册');
+  $('#auth-switch-text').textContent = m === 'login' ? uiText('还没有账号？') : uiText('已有账号？');
+  $('#auth-switch-link').textContent = m === 'login' ? uiText('去注册') : uiText('去登录');
   $('#auth-forgot-link')?.classList.toggle('hidden', m !== 'login');
 }
 
@@ -141,8 +142,8 @@ async function submitAuth() {
   const password = $('#auth-pw').value;
   const msg = $('#auth-msg');
   const btn = $('#auth-submit');
-  if (!email || !password) { showMsg('请填写邮箱和密码'); return; }
-  btn.disabled = true; const orig = btn.textContent; btn.textContent = '处理中…';
+  if (!email || !password) { showMsg(uiText('请填写邮箱和密码')); return; }
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = uiText('处理中…');
   try {
     const r = await api('POST', `/api/auth/${mode}`, { email, password });
     currentUser = r.user;
@@ -152,7 +153,7 @@ async function submitAuth() {
     // Reload data so user-scoped views reflect the logged-in identity.
     window.dispatchEvent(new CustomEvent('aif:auth-changed'));
   } catch (e) {
-    showMsg(e.message || '操作失败');
+    showMsg(e.message || uiText('操作失败'));
   } finally {
     btn.disabled = false; btn.textContent = orig;
   }
@@ -187,7 +188,7 @@ function openPwModal({ title, fields, submitText, onSubmit }) {
   const wrap = document.createElement('div');
   wrap.id = 'pw-modal';
   wrap.className = 'auth-modal';
-  wrap.innerHTML = `
+  wrap.innerHTML = uiTemplate`
     <div class="auth-card">
       <button class="auth-close" data-act="close" title="关闭">✕</button>
       <h3>${escapeAttr(title)}</h3>
@@ -204,13 +205,13 @@ function openPwModal({ title, fields, submitText, onSubmit }) {
   const submit = async () => {
     const values = {};
     fields.forEach(f => { values[f.id] = document.getElementById(f.id).value; });
-    const btn = $('#pw-submit'); btn.disabled = true; const orig = btn.textContent; btn.textContent = '处理中…';
+    const btn = $('#pw-submit'); btn.disabled = true; const orig = btn.textContent; btn.textContent = uiText('处理中…');
     try {
       const okMsg = await onSubmit(values);
-      const msg = $('#pw-msg'); msg.textContent = okMsg || '完成'; msg.classList.remove('hidden');
+      const msg = $('#pw-msg'); msg.textContent = okMsg || uiText('完成'); msg.classList.remove('hidden');
       setTimeout(close, 1200);
     } catch (e) {
-      const msg = $('#pw-msg'); msg.textContent = e.message || '操作失败'; msg.classList.remove('hidden');
+      const msg = $('#pw-msg'); msg.textContent = e.message || uiText('操作失败'); msg.classList.remove('hidden');
       btn.disabled = false; btn.textContent = orig;
     }
   };
@@ -222,42 +223,42 @@ function openPwModal({ title, fields, submitText, onSubmit }) {
 
 export function openChangePasswordModal() {
   openPwModal({
-    title: '修改密码',
-    submitText: '保存',
+    title: uiText('修改密码'),
+    submitText: uiText('保存'),
     fields: [
-      { id: 'cp-old', label: '当前密码', placeholder: '当前密码' },
-      { id: 'cp-new', label: '新密码', placeholder: '至少 8 位' },
+      { id: 'cp-old', label: uiText('当前密码'), placeholder: uiText('当前密码') },
+      { id: 'cp-new', label: uiText('新密码'), placeholder: uiText('至少 8 位') },
     ],
     onSubmit: async (v) => {
       await api('POST', '/api/auth/change-password', { old_password: v['cp-old'], new_password: v['cp-new'] });
-      return '✅ 密码已修改';
+      return uiText('✅ 密码已修改');
     },
   });
 }
 
 function openForgotModal() {
   openPwModal({
-    title: '找回密码',
-    submitText: '发送重置链接',
-    fields: [{ id: 'fp-email', label: '邮箱', type: 'email', placeholder: 'you@example.com' }],
+    title: uiText('找回密码'),
+    submitText: uiText('发送重置链接'),
+    fields: [{ id: 'fp-email', label: uiText('邮箱'), type: 'email', placeholder: 'you@example.com' }],
     onSubmit: async (v) => {
       await api('POST', '/api/auth/forgot-password', { email: (v['fp-email'] || '').trim() });
-      return '📧 若邮箱已注册，重置链接已发出，请查收';
+      return uiText('📧 若邮箱已注册，重置链接已发出，请查收');
     },
   });
 }
 
 function openResetModal(token) {
   openPwModal({
-    title: '设置新密码',
-    submitText: '重置并登录',
-    fields: [{ id: 'rp-new', label: '新密码', placeholder: '至少 8 位' }],
+    title: uiText('设置新密码'),
+    submitText: uiText('重置并登录'),
+    fields: [{ id: 'rp-new', label: uiText('新密码'), placeholder: uiText('至少 8 位') }],
     onSubmit: async (v) => {
       const r = await api('POST', '/api/auth/reset-password', { token, new_password: v['rp-new'] });
       currentUser = r.user;
       renderAuthBar(); applyGating();
       window.dispatchEvent(new CustomEvent('aif:auth-changed'));
-      return '✅ 密码已重置，已为你登录';
+      return uiText('✅ 密码已重置，已为你登录');
     },
   });
 }

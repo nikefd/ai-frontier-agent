@@ -1,3 +1,4 @@
+import { uiText, uiTemplate } from './i18n.js';
 // Proactive nudges bar (B2): the agent suggesting the next step.
 // Renders dismissible suggestion bars above the feed; action → jump to a view.
 // Dismissed ids are remembered in localStorage so we don't nag.
@@ -23,7 +24,7 @@ export async function loadSuggestions() {
     const seen = dismissed();
     const items = (r.items || []).filter(s => !seen.includes(s.id));
     if (!items.length) { bar.innerHTML = ''; return; }
-    bar.innerHTML = items.map(s => `
+    bar.innerHTML = items.map(s => uiTemplate`
       <div class="suggest-bar" data-id="${escapeHtml(s.id)}">
         <span class="suggest-ico">🤖</span>
         <span class="suggest-text">${renderText(s.text)}</span>

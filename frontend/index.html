@@ -10,14 +10,20 @@
 <body data-agent="ai-news" class="landing-active">
 <header class="top">
   <h1 id="brand" title="返回首页"><span class="dot"></span> AI 前沿</h1>
-  <div class="auth-slot" id="auth-slot"></div>
+  <div class="header-actions">
+    <label data-language-picker class="language-picker" title="界面语言">
+      <span aria-hidden="true">🌐</span>
+      <select id="language-picker" aria-label="界面语言"><option value="zh">中文</option><option value="en">English</option></select>
+    </label>
+    <div class="auth-slot" id="auth-slot"></div>
+  </div>
 </header>
 
 <main class="fluid">
   <!-- ───────── Landing / Home (bilingual hero) ───────── -->
   <section id="view-home">
     <div class="hero hero-simple">
-      <span class="hero-badge">每天更新 · 80+ 精选 AI 信源</span>
+      <span class="hero-badge">每天更新 · 116 精选 AI 信源</span>
       <h1 class="hero-title">每天 10 分钟，<span class="grad">跟上 AI 前沿</span></h1>
       <p class="hero-lede">先看一份有引用的中文速报，再按兴趣阅读、收藏和深挖。少一点噪音，多一点真正有用的信息。</p>
       <div class="hero-cta hero-cta-row">
@@ -33,7 +39,7 @@
   <div class="page-head">
     <div>
       <h2 id="current-view-title">最新文章</h2>
-      <p class="lede" id="current-view-desc">来自 80+ 精选信源的最新 AI 动态</p>
+      <p class="lede" id="current-view-desc">来自 116 精选信源的最新 AI 动态</p>
     </div>
     <div class="row tight" id="feed-status" style="flex:0 0 auto">
       <span class="pill" id="article-count">… 篇</span>

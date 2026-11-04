@@ -1,3 +1,4 @@
+import { uiText, uiTemplate, isEnglish, formatCount } from './i18n.js';
 // Article feed: list, render, pin, pagination. Deep-dives are read/managed in
 // the separate "深度解读" view (dives.js); the feed only triggers / links to them.
 import { $, escapeHtml, fmtDate, catBadge, safeExternalUrl } from './util.js';
@@ -21,39 +22,39 @@ export async function refreshList() {
   if (state.tag) params.set('tag', state.tag);
 
   const listEl = $('#article-list');
-  listEl.innerHTML = '<div class="muted-card">加载中…</div>';
+  listEl.innerHTML = uiText('<div class="muted-card">加载中…</div>');
   try {
     const r = await api('GET', '/api/ai-news/articles?' + params.toString());
     const items = r.items || [];
     state.items = items;
     state.total = r.total || 0;
-    $('#article-count').textContent = state.total + ' 篇';
+    $('#article-count').textContent = isEnglish() ? formatCount(state.total, 'article') : state.total + ' 篇';
     $('#cnt-feed').textContent = state.total;
     renderList();
     renderPageNav();
   } catch (e) {
-    listEl.innerHTML = '<div class="muted-card">❌ 加载失败：' + escapeHtml(e.message) + '</div>';
+    listEl.innerHTML = uiText('<div class="muted-card">❌ 加载失败：') + escapeHtml(e.message) + '</div>';
   }
 }
 
 const CAT_LABELS = {
-  vendor: '官方', blog: '博客', expert: '专家', 'x-ai': '大V', community: '社区',
-  media: '媒体', paper: '论文', trending: '风向',
+  vendor: uiText('官方'), blog: uiText('博客'), expert: uiText('专家'), 'x-ai': uiText('大V'), community: uiText('社区'),
+  media: uiText('媒体'), paper: uiText('论文'), trending: uiText('风向'),
 };
 
 function renderActiveFilters() {
   const el = $('#active-filters');
   if (!el) return;
   const filters = [];
-  if (state.cat) filters.push(['cat', `来源：${CAT_LABELS[state.cat] || state.cat}`]);
-  if (state.filter === 'pinned') filters.push(['filter', '只看收藏']);
-  if (state.filter === 'translated') filters.push(['filter', '只看已翻译']);
-  if (state.filter === 'hands-on') filters.push(['filter', '只看可实践']);
-  if (state.tag) filters.push(['tag', `标签：${state.tag}`]);
+  if (state.cat) filters.push(['cat', uiTemplate`来源：${CAT_LABELS[state.cat] || state.cat}`]);
+  if (state.filter === 'pinned') filters.push(['filter', uiText('只看收藏')]);
+  if (state.filter === 'translated') filters.push(['filter', uiText('只看已翻译')]);
+  if (state.filter === 'hands-on') filters.push(['filter', uiText('只看可实践')]);
+  if (state.tag) filters.push(['tag', uiTemplate`标签：${state.tag}`]);
 
   el.classList.toggle('hidden', filters.length === 0);
   el.innerHTML = filters.map(([kind, label]) =>
-    `<button type="button" data-clear-filter="${kind}" title="清除该筛选">${escapeHtml(label)} <span aria-hidden="true">×</span></button>`
+    uiTemplate`<button type="button" data-clear-filter="${kind}" title="清除该筛选">${escapeHtml(label)} <span aria-hidden="true">×</span></button>`
   ).join('');
 
   el.querySelectorAll('[data-clear-filter]').forEach(button => button.addEventListener('click', () => {
@@ -73,43 +74,43 @@ function renderActiveFilters() {
 }
 
 function articleCardHtml(a) {
-  const title = a.title_zh || a.title || '(无标题)';
+  const title = (isEnglish() ? a.title : a.title_zh || a.title) || uiText('(无标题)');
   const pinClass = a.pinned ? 'is-pinned' : '';
-  const preview = (a.summary_zh || a.summary || '').toString()
+  const preview = ((isEnglish() ? a.summary : a.summary_zh || a.summary) || '').toString()
     .replace(/https?:\/\/\S+/g, '')
     .replace(/^["“''']+|["”''']+$/g, '')
     .replace(/\s+/g, ' ')
     .trim();
   const ddStatus = a.deep_dive_status;
-  const ddBtnLabel = ddStatus === 'ok' ? '查看解读'
-    : ddStatus === 'generating' ? '⏳ 生成中…'
-    : ddStatus === 'failed' ? '重试解读'
-    : '深度解读';
+  const ddBtnLabel = ddStatus === 'ok' ? uiText('查看解读')
+    : ddStatus === 'generating' ? uiText('⏳ 生成中…')
+    : ddStatus === 'failed' ? uiText('重试解读')
+    : uiText('深度解读');
   const ddBusy = ddStatus === 'generating' ? 'is-busy' : '';
   const ddActive = ddStatus === 'ok' ? 'is-done' : '';
   const transBadge = a.translation_status === 'failed'
-    ? '<span class="chip chip-trans-fail" title="翻译失败，可点下方按钮重试">⚠️ 翻译失败</span>'
+    ? uiText('<span class="chip chip-trans-fail" title="翻译失败，可点下方按钮重试">⚠️ 翻译失败</span>')
     : a.translation_status === 'ok' ? ''
-    : '<span class="chip chip-trans-pending" title="排队等待翻译">待翻译</span>';
+    : uiText('<span class="chip chip-trans-pending" title="排队等待翻译">待翻译</span>');
   const transAction = a.translation_status === 'ok' ? ''
     : a.translation_status === 'failed'
-    ? `<button class="btn-card ghost admin-only" data-action="translate">🔄 重新翻译</button>`
-    : `<button class="btn-card ghost admin-only" data-action="translate">🌐 立即翻译</button>`;
+    ? uiTemplate`<button class="btn-card ghost admin-only" data-action="translate">🔄 重新翻译</button>`
+    : uiTemplate`<button class="btn-card ghost admin-only" data-action="translate">🌐 立即翻译</button>`;
   const tagsHtml = (a.tags && a.tags.length)
-    ? `<div class="article-tags">${a.tags.slice(0, 2).map(t => `<span class="chip chip-tag" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</span>`).join('')}</div>`
+    ? `<div class="article-tags">${a.tags.slice(0, 2).map(t => `<span class="chip chip-tag" data-tag="${escapeHtml(t)}">${escapeHtml(uiText(t))}</span>`).join('')}</div>`
     : '';
   // Importance badge: only show for clearly high-value items (>=8) to keep signal.
   const impHtml = (typeof a.importance === 'number' && a.importance >= 8)
-    ? `<span class="imp-badge" title="重要性 ${a.importance}/10">🔥 ${a.importance}</span>` : '';
+    ? uiTemplate`<span class="imp-badge" title="重要性 ${a.importance}/10">🔥 ${a.importance}</span>` : '';
   const safeUrl = safeExternalUrl(a.url);
   const originBtn = safeUrl
-    ? `<a class="btn-card primary" href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener">原文 ↗</a>` : '';
-  const copyBtn = safeUrl ? `<button class="btn-card ghost" data-action="copy">复制链接</button>` : '';
-  const handsOn = String(a.hands_on || '').trim();
-  const expLabel = a.experiment_status === 'completed' ? '✓ 已完成'
-    : a.experiment_status ? '查看实验卡' : '生成实验卡';
+    ? uiTemplate`<a class="btn-card primary" href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener">原文 ↗</a>` : '';
+  const copyBtn = safeUrl ? uiTemplate`<button class="btn-card ghost" data-action="copy">复制链接</button>` : '';
+  const handsOn = isEnglish() ? (a.hands_on ? 'Turn this article into a small, verifiable experiment.' : '') : String(a.hands_on || '').trim();
+  const expLabel = a.experiment_status === 'completed' ? uiText('✓ 已完成')
+    : a.experiment_status ? uiText('查看实验卡') : uiText('生成实验卡');
   const handsOnHtml = handsOn
-    ? `<div class="hands-on-box">
+    ? uiTemplate`<div class="hands-on-box">
         <div><span class="hands-on-label">实践</span>${escapeHtml(handsOn)}</div>
         <div class="hands-on-actions">
           <button class="hands-on-start" data-action="experiment">${expLabel}</button>
@@ -117,7 +118,7 @@ function articleCardHtml(a) {
         </div>
       </div>
       <div class="experiment-slot hidden"></div>` : '';
-  return `
+  return uiTemplate`
     <article class="article-card ${pinClass}" data-aid="${escapeHtml(a.id)}">
       <header class="card-head">
         ${catBadge(a.category)}
@@ -125,7 +126,7 @@ function articleCardHtml(a) {
         <div class="card-titlewrap">
           <h3 class="card-title">${escapeHtml(title)}</h3>
         </div>
-        <button class="pin-btn ${a.pinned ? 'on' : ''}" data-action="pin" title="${a.pinned ? '取消收藏' : '收藏'}">${a.pinned ? '★' : '☆'}</button>
+        <button class="pin-btn ${a.pinned ? 'on' : ''}" data-action="pin" title="${a.pinned ? uiText('取消收藏') : uiText('收藏')}">${a.pinned ? '★' : '☆'}</button>
       </header>
       <div class="card-meta">
         <span class="meta-src">${escapeHtml(a.source || '')}</span>
@@ -155,7 +156,7 @@ function articleCardHtml(a) {
 export function renderList() {
   const listEl = $('#article-list');
   if (!state.items.length) {
-    listEl.innerHTML = '<div class="muted-card" style="padding:48px 16px;text-align:center">📭 这一页没有内容</div>';
+    listEl.innerHTML = uiText('<div class="muted-card" style="padding:48px 16px;text-align:center">📭 这一页没有内容</div>');
     return;
   }
   listEl.innerHTML = state.items.map(articleCardHtml).join('');
@@ -191,13 +192,13 @@ export function renderList() {
       toggleExperiment(a, el.querySelector('.experiment-slot'), event.currentTarget);
     });
     el.querySelector('[data-action="srs"]')?.addEventListener('click', async (e) => {
-      const btn = e.currentTarget, orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ 加入中…';
+      const btn = e.currentTarget, orig = btn.textContent; btn.disabled = true; btn.textContent = uiText('⏳ 加入中…');
       try {
         await api('POST', '/api/ai-news/review/cards', { source_type: 'article', source_id: aid });
-        btn.textContent = '✓ 已加入'; btn.classList.add('success');
+        btn.textContent = uiText('✓ 已加入'); btn.classList.add('success');
       } catch (err) {
-        btn.textContent = err.status === 409 ? '✓ 已在库' : '❌ 失败';
-        if (err.status !== 409) alert('加入复习失败：' + err.message);
+        btn.textContent = err.status === 409 ? uiText('✓ 已在库') : uiText('❌ 失败');
+        if (err.status !== 409) alert(uiText('加入复习失败：') + err.message);
         setTimeout(() => { btn.disabled = false; btn.textContent = orig; btn.classList.remove('success'); }, 1600);
       }
     });
@@ -207,18 +208,18 @@ export function renderList() {
       if (a?.url) {
         navigator.clipboard.writeText(a.url).then(() => {
           const btn = e.currentTarget, orig = btn.textContent;
-          btn.textContent = '✓ 已复制'; btn.classList.add('flash');
+          btn.textContent = uiText('✓ 已复制'); btn.classList.add('flash');
           setTimeout(() => { btn.textContent = orig; btn.classList.remove('flash'); }, 1400);
         });
       }
     });
     el.querySelector('[data-action="translate"]')?.addEventListener('click', async (e) => {
-      const btn = e.currentTarget; const orig = btn.textContent; btn.disabled = true; btn.textContent = '🌐 翻译中…';
+      const btn = e.currentTarget; const orig = btn.textContent; btn.disabled = true; btn.textContent = uiText('🌐 翻译中…');
       try {
         await api('POST', `/api/ai-news/articles/${aid}/retranslate`);
         await refreshList();
       } catch (err) {
-        alert('翻译失败：' + err.message);
+        alert(uiText('翻译失败：') + err.message);
         btn.disabled = false; btn.textContent = orig;
       }
     });
@@ -230,11 +231,11 @@ export function renderList() {
 // agent — same mechanism the reflection "展开聊" uses.)
 function askAboutArticle(a) {
   if (!a) return;
-  if (!isAuthed()) { openAuthModal('登录后即可用 AI 助手就这篇提问'); return; }
+  if (!isAuthed()) { openAuthModal(uiText('登录后即可用 AI 助手就这篇提问')); return; }
   const chat = window.__sparrowChat;
-  if (!chat) { alert('AI 助手未就绪'); return; }
-  const title = a.title_zh || a.title || '(无标题)';
-  const prompt = `关于这篇文章：《${title}》${a.url ? '（' + a.url + '）' : ''}\n我想了解：`;
+  if (!chat) { alert(uiText('AI 助手未就绪')); return; }
+  const title = (isEnglish() ? a.title : a.title_zh || a.title) || uiText('(无标题)');
+  const prompt = uiTemplate`关于这篇文章：《${title}》${a.url ? '（' + a.url + '）' : ''}\n我想了解：`;
   chat.toggle(true);
   chat.input.value = prompt;
   chat.input.focus();
@@ -245,13 +246,13 @@ function askAboutArticle(a) {
 
 function practiceArticle(a) {
   if (!a) return;
-  if (!isAuthed()) { openAuthModal('登录后即可让 AI 助手带你实践'); return; }
+  if (!isAuthed()) { openAuthModal(uiText('登录后即可让 AI 助手带你实践')); return; }
   const chat = window.__sparrowChat;
-  if (!chat) { alert('AI 助手未就绪'); return; }
-  const title = a.title_zh || a.title || '(无标题)';
+  if (!chat) { alert(uiText('AI 助手未就绪')); return; }
+  const title = (isEnglish() ? a.title : a.title_zh || a.title) || uiText('(无标题)');
   const step = String(a.hands_on || '').trim();
   chat.toggle(true);
-  chat.input.value = `我想实践这篇文章：《${title}》${a.url ? `（${a.url}）` : ''}\n建议起点：${step}\n请先核对原文，再给我一个 15 分钟内能完成的最小实践方案；明确前置条件、步骤和验证结果，不要编造命令或 API。`;
+  chat.input.value = uiTemplate`我想实践这篇文章：《${title}》${a.url ? `（${a.url}）` : ''}\n建议起点：${step}\n请先核对原文，再给我一个 15 分钟内能完成的最小实践方案；明确前置条件、步骤和验证结果，不要编造命令或 API。`;
   chat.input.focus();
   const len = chat.input.value.length;
   try { chat.input.setSelectionRange(len, len); } catch (e) { /* ignore */ }
@@ -271,5 +272,5 @@ export async function togglePin(aid) {
     const a = state.items.find(x => x.id === aid);
     if (a) a.pinned = r.pinned;
     renderList();
-  } catch (e) { alert('收藏失败：' + e.message); }
+  } catch (e) { alert(uiText('收藏失败：') + e.message); }
 }

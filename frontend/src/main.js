@@ -1,3 +1,4 @@
+import { uiText, uiTemplate, initI18n } from './i18n.js';
 // App entry: view switching and all event wiring.
 import { $, $$ } from './util.js';
 import { api } from './api.js';
@@ -16,23 +17,24 @@ import { renderMarkdown } from './markdown.js';
 
 // The classic chat component cannot import ES modules itself. Give it the same
 // DOMPurify-backed renderer used by every other LLM content surface.
+initI18n();
 window.__renderSafeMarkdown = renderMarkdown;
 if (window.SparrowChat) {
   window.__sparrowChat = window.SparrowChat.mount({
     endpoint: '/api/agent/chat',
     conversationsApi: '/api/agent/conversations',
-    title: '💬 AI 助理',
-    hint: '我能查文章/数据源/追踪主题，并帮你建追踪主题、收藏文章。试试「帮我盯住 RAG 进展」。',
+    title: uiText('💬 AI 助理'),
+    hint: uiText('我能查文章/数据源/追踪主题，并帮你建追踪主题、收藏文章。试试「帮我盯住 RAG 进展」。'),
     accent: '#7c3aed',
     storageKey: 'aif_conv_id',
     i18n: {
-      send: '发送', placeholder: '帮我查查最近的 Agent 进展…', history: '历史会话',
-      newChat: '新对话', resize: '放大 / 缩小', close: '收起', back: '返回',
-      thinking: '思考中', emptyNew: '开始一段新对话，或点 🕘 查看历史。',
-      newStarted: '新对话已开始 ✨', loading: '加载中…', noConversations: '还没有历史会话。',
-      loadFailed: '加载失败。', emptyConversation: '这个会话还没有消息。', sources: '来源',
-      messages: '条', untitled: '新对话', del: '删除', justNow: '刚刚',
-      minAgo: ' 分钟前', hourAgo: ' 小时前', dayAgo: ' 天前',
+      send: uiText('发送'), placeholder: uiText('帮我查查最近的 Agent 进展…'), history: uiText('历史会话'),
+      newChat: uiText('新对话'), resize: uiText('放大 / 缩小'), close: uiText('收起'), back: uiText('返回'),
+      thinking: uiText('思考中'), emptyNew: uiText('开始一段新对话，或点 🕘 查看历史。'),
+      newStarted: uiText('新对话已开始 ✨'), loading: uiText('加载中…'), noConversations: uiText('还没有历史会话。'),
+      loadFailed: uiText('加载失败。'), emptyConversation: uiText('这个会话还没有消息。'), sources: uiText('来源'),
+      messages: uiText('条'), untitled: uiText('新对话'), del: uiText('删除'), justNow: uiText('刚刚'),
+      minAgo: uiText(' 分钟前'), hourAgo: uiText(' 小时前'), dayAgo: uiText(' 天前'),
     },
   });
 }
@@ -130,14 +132,14 @@ $('#btn-fetch').addEventListener('click', async () => {
     state.offset = 0; await refreshList();
     icon.textContent = '↻';
     btn.disabled = false;
-    btn.title = `+${r.added || 0} 篇 · 总计 ${state.total}`;
-  } catch (e) { icon.textContent = '↻'; btn.disabled = false; alert('抓取失败：' + e.message); }
+    btn.title = uiTemplate`+${r.added || 0} 篇 · 总计 ${state.total}`;
+  } catch (e) { icon.textContent = '↻'; btn.disabled = false; alert(uiText('抓取失败：') + e.message); }
 });
 
 $('#btn-translate').addEventListener('click', async () => {
   const btn = $('#btn-translate'); btn.disabled = true; btn.textContent = '⏳';
   try { await api('POST', '/api/ai-news/translate/run'); await refreshList(); }
-  catch (e) { alert('翻译失败：' + e.message); }
+  catch (e) { alert(uiText('翻译失败：') + e.message); }
   finally { btn.disabled = false; btn.textContent = '🌐'; }
 });
 

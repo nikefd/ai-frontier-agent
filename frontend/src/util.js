@@ -1,3 +1,4 @@
+import { uiText, uiTemplate, isEnglish } from './i18n.js';
 // DOM helpers and formatting utilities.
 
 export const $ = (sel, root) => (root || document).querySelector(sel);
@@ -24,16 +25,22 @@ export function fmtDate(s) {
     const d = new Date(s);
     if (isNaN(d)) return '';
     const diff = (new Date() - d) / 1000;
-    if (diff < 3600) return Math.max(1, Math.floor(diff / 60)) + ' 分钟前';
-    if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
-    if (diff < 86400 * 7) return Math.floor(diff / 86400) + ' 天前';
+    if (isEnglish()) {
+      const relative = new Intl.RelativeTimeFormat('en', {numeric:'always'});
+      if (diff < 3600) return relative.format(-Math.max(1, Math.floor(diff / 60)), 'minute');
+      if (diff < 86400) return relative.format(-Math.floor(diff / 3600), 'hour');
+      if (diff < 86400 * 7) return relative.format(-Math.floor(diff / 86400), 'day');
+    }
+    if (diff < 3600) return Math.max(1, Math.floor(diff / 60)) + uiText(' 分钟前');
+    if (diff < 86400) return Math.floor(diff / 3600) + uiText(' 小时前');
+    if (diff < 86400 * 7) return Math.floor(diff / 86400) + uiText(' 天前');
     return d.toISOString().slice(0, 10);
   } catch (e) { return ''; }
 }
 
 const CAT_LABELS = {
-  vendor: '🏢 官方', media: '📰 媒体', blog: '📝 博客', paper: '📄 论文',
-  community: '🌐 社区', expert: '✍️ 专家', 'x-ai': '𝕏 大V', trending: '🔥 风向',
+  vendor: uiText('🏢 官方'), media: uiText('📰 媒体'), blog: uiText('📝 博客'), paper: uiText('📄 论文'),
+  community: uiText('🌐 社区'), expert: uiText('✍️ 专家'), 'x-ai': uiText('𝕏 大V'), trending: uiText('🔥 风向'),
 };
 
 export function catBadge(c) {

@@ -1,3 +1,4 @@
+import { uiText, uiTemplate } from './i18n.js';
 // AI reflection coach view: weekly Socratic review.
 // Generate a recap + questions; each question can be taken into the chat agent
 // or saved as a knowledge card.
@@ -7,15 +8,15 @@ import { renderMarkdownInline } from './markdown.js';
 
 export async function loadReflection() {
   const body = $('#reflection-body'), meta = $('#reflection-meta');
-  body.innerHTML = '<div class="muted-card">加载中…</div>';
+  body.innerHTML = uiText('<div class="muted-card">加载中…</div>');
   try {
     const r = await api('GET', '/api/ai-news/reflection');
     if (r.status === 'ok' && r.questions?.length) {
-      meta.textContent = r.generated_at ? '生成于 ' + fmtDate(r.generated_at) : '';
+      meta.textContent = r.generated_at ? uiText('生成于 ') + fmtDate(r.generated_at) : '';
       render(r);
     } else {
       meta.textContent = '';
-      body.innerHTML = `<div class="muted-card" style="padding:32px 20px">
+      body.innerHTML = uiTemplate`<div class="muted-card" style="padding:32px 20px">
         🪞 还没有本周复盘<br>
         <span class="text-faint" style="font-size:12px">点右上「开始本周复盘」，会基于你最近 7 天的收藏 / 解读 / 知识卡 / 对话，生成回顾和几个引导你思考的问题。</span>
       </div>`;
@@ -27,10 +28,10 @@ export async function loadReflection() {
 
 export async function regenReflection() {
   const body = $('#reflection-body');
-  body.innerHTML = '<div class="muted-card">⏳ 生成中（约 15-25s）…</div>';
+  body.innerHTML = uiText('<div class="muted-card">⏳ 生成中（约 15-25s）…</div>');
   try {
     const r = await api('POST', '/api/ai-news/reflection/generate');
-    $('#reflection-meta').textContent = '生成于刚才';
+    $('#reflection-meta').textContent = uiText('生成于刚才');
     render(r);
   } catch (e) {
     body.innerHTML = '<div class="muted-card">❌ ' + escapeHtml(e.message) + '</div>';
@@ -40,7 +41,7 @@ export async function regenReflection() {
 function render(r) {
   const body = $('#reflection-body');
   const recap = r.recap ? `<div class="reflection-recap">${renderMarkdownInline(r.recap)}</div>` : '';
-  const questions = (r.questions || []).map((q, i) => `
+  const questions = (r.questions || []).map((q, i) => uiTemplate`
     <div class="reflection-q">
       <div class="reflection-q-text">${escapeHtml(q)}</div>
       <div class="reflection-q-actions">
@@ -59,7 +60,7 @@ function render(r) {
 // Open the chat widget, prefill the question and send it.
 function askInChat(question) {
   const chat = window.__sparrowChat;
-  if (!chat) { alert('对话助手未就绪'); return; }
+  if (!chat) { alert(uiText('对话助手未就绪')); return; }
   chat.toggle(true);
   chat.input.value = question;
   chat.send();
@@ -71,9 +72,9 @@ async function saveAsCard(question, btn) {
     await api('POST', '/api/ai-news/review/cards', {
       front: question, source_type: 'manual',
     });
-    btn.textContent = '✓ 已存';
+    btn.textContent = uiText('✓ 已存');
   } catch (e) {
-    btn.textContent = '❌ 失败';
+    btn.textContent = uiText('❌ 失败');
     setTimeout(() => { btn.disabled = false; btn.textContent = orig; }, 1600);
   }
 }

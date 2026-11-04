@@ -1,3 +1,4 @@
+import { language, uiText } from './i18n.js';
 // HTTP + rendering helpers shared across views.
 import mermaid from 'mermaid';
 
@@ -9,7 +10,7 @@ let unauthorizedHandler = null;
 export function setUnauthorizedHandler(fn) { unauthorizedHandler = fn; }
 
 export async function api(method, path, body) {
-  const opts = { method, headers: { 'content-type': 'application/json' } };
+  const opts = { method, headers: { 'content-type': 'application/json', 'accept-language': language } };
   if (body !== undefined) opts.body = JSON.stringify(body);
   const r = await fetch(path, opts);
   const txt = await r.text();
@@ -19,7 +20,7 @@ export async function api(method, path, body) {
     if (r.status === 401 && unauthorizedHandler) {
       try { unauthorizedHandler(); } catch (e) { /* ignore */ }
     }
-    const err = new Error(json.detail || json.error || ('HTTP ' + r.status));
+    const err = new Error(uiText(json.detail || json.error || ('HTTP ' + r.status)));
     err.status = r.status;
     throw err;
   }

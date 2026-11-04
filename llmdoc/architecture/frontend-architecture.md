@@ -114,3 +114,13 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 覆盖页显示已保存的历史命中条数，说明已确认命中不会随文章淘汰消失；独立只读探针与未保存的历史数据限制仍保留。
 
 前端构建先运行 `frontend/scripts/licenses.mjs`，从锁定的生产依赖收集完整许可/版权文本，再由 Vite public 目录复制到产物 `THIRD_PARTY_LICENSES.txt`；生成文件不入 Git，依赖缺许可文本时构建失败。
+
+## 7. 中英文界面与内容边界
+
+`src/i18n.js` 按 URL `?lang=zh|en` → localStorage `aif_language` → 浏览器语言选择，未识别语言回退英文。顶栏选择会保存偏好并重新加载当前 URL，路由切换保留查询参数。初始 HTML 在数据加载前翻译一次；动态界面显式调用 `uiText` / `uiTemplate`，无 DOM observer。`messages.en.json` 使用原文作键，模板以 `{0}` 等占位符保留动态内容，用户输入、文章与笔记不会作为界面文案整体替换。更改文案时应同时更新目录并运行 `npm test` 检查占位符。
+
+英文文章流优先读取原文 title/summary；中文模式继续优先 title_zh/summary_zh。原文可能本来就是中文，不承诺自动生成英文译文。标签与常用操作本地化；已有个人 AI 内容保留原语言。英文实践入口从原文章生成英文实验卡，不在访问时翻译整库。
+
+`api()` 与聊天请求发送 `Accept-Language`。请求级 ContextVar 只影响当前 AI 输出，调度默认中文；新个人 AI 产物使用所选语言并保留 JSON 字段/枚举。双语速报在一次请求中返回 body/body_en，缓存与原文 cohort 共用；语言切换与公开 GET 不调用模型。历史中文速报未补齐英文时显示等待下一轮生成，英文 RSS 跳过这些历史项。
+
+完整英文 README 位于根目录，中文在 README.zh-CN.md，顶部相互链接。详细 llmdoc 暂维持中文。

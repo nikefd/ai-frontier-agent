@@ -2551,3 +2551,8 @@ body.is-admin .more-sheet-grid button.admin-only { display: flex; }
   .breaking-section { padding: 12px; }
   .breaking-head { align-items: flex-start; flex-direction: column; gap: 2px; }
 }
+
+.header-actions{display:flex;align-items:center;gap:12px;min-width:0}
+.language-picker{display:flex;align-items:center;gap:4px;font-size:12px;flex-shrink:0}
+.language-picker select{width:auto;max-width:92px;padding:5px 6px;border-radius:8px;background:#fff;color:inherit;border:1px solid #e3e2ec;font:inherit}
+@media(max-width:720px){.header-actions{gap:6px}.language-picker{gap:1px}.language-picker select{max-width:92px}.auth-user{max-width:100px;overflow:hidden;text-overflow:ellipsis}}

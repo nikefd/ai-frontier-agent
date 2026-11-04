@@ -301,7 +301,7 @@
     var self = this;
     fetch(this.cfg.endpoint, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', 'accept-language': document.documentElement.lang },
       body: JSON.stringify({ message: text, conversation_id: this.convId }),
     }).then(function (resp) {
       if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
