@@ -79,6 +79,8 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 
 `state.js` 的单例对象在模块间共享。文章流默认每页 10 篇；筛选（分类 `cat` / all-pinned-translated-hands-on 的 `filter` / 搜索 `q` / 标签 `tag`）改变 `state` 后调 `refreshList()` 重新拉数据，分页改 `state.offset`。收藏、已翻译、可实践都映射为服务端 query，在分页前过滤，因此总数和翻页结果一致。
 
+`feed-route.js` 将文章流的 `q/cat/filter/sort/tag/offset` 同步到网址，刷新、语言切换和分享后恢复条件与控件；非法枚举和页偏移回退默认值。条件变化使用 `replaceState`，保留 `lang` 等无关参数，浏览器返回文章页时重新解析。收藏筛选按访问者自身权限加载，不共享个人收藏数据。
+
 落地首页 `#view-home` 不走 side-nav，而是用 `<body>` 上的 `landing-active` 类控制（隐藏应用主体、只显首页）。路由层据 URL 决定：路径 `/` 时 `showLanding()` 加该类；首页的 `data-enter-view` 按钮可分别进入 `summary` 或 `feed`，进入视图时移除该类。点顶栏标题 brand → `showLanding()` 回 `/`。详见 §1.1 路由。
 
 ## 4. 关键交互

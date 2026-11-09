@@ -7,8 +7,12 @@ import { state } from './state.js';
 import { jumpToDive } from './dives.js';
 import { isAuthed, openAuthModal } from './auth.js';
 import { toggleExperiment } from './experiments.js';
+import { writeFeedRoute } from './feed-route.js';
 
 export async function refreshList() {
+  if (location.pathname === '/feed') {
+    history.replaceState(history.state, '', '/feed' + writeFeedRoute(location.search, state));
+  }
   renderActiveFilters();
   const params = new URLSearchParams();
   params.set('offset', String(state.offset));

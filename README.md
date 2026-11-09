@@ -17,6 +17,7 @@ Follow model releases, API changes, open-source tools and research. Read in Engl
 
 - **Follow first-party updates.** 116 built-in sources across official releases, API changelogs, engineering blogs, papers and selected communities. Fast sources refresh hourly; regular and discovery sources refresh every 4 and 12 hours.
 - **Read a concise daily briefing.** Related reports are grouped, sources are cited, and each generated briefing has English and Chinese versions. Subscribe through RSS.
+- **Keep your reading context.** Searches, filters and pagination stay in the URL, so you can bookmark or share a view and switch languages without losing it.
 - **Explore the details.** Generate deep dives and small experiment cards, save progress notes, and discuss articles with the assistant.
 - **Inspect coverage.** See source health, freshness, filtering and discovery latency. Manually registered event benchmarks retain observed evidence even when articles leave the rolling feed.
 - **Own your data.** Personal collections are isolated by user and stored in your data volume. A single FastAPI process serves the UI and scheduled jobs; no separate database server is required.

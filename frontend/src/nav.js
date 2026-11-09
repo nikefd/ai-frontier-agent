@@ -12,6 +12,7 @@ import { loadLearning } from './learning.js';
 import { loadAdminUsers } from './admin.js';
 import { loadSuggestions } from './suggestions.js';
 import { loadExperiments } from './experiments.js';
+import { readFeedRoute, syncFeedControls } from './feed-route.js';
 
 // All routable views. The landing/home page is the root path "/".
 const VIEWS = ['feed', 'foryou', 'summary', 'dives', 'review', 'reflection',
@@ -76,6 +77,10 @@ export function showLanding(push = true) {
 // Resolve the current URL path to a view on boot / back-forward navigation.
 export function applyRoute() {
   const seg = location.pathname.replace(/^\/+/, '').split('/')[0];
+  if (seg === 'feed') {
+    Object.assign(state, readFeedRoute(location.search));
+    syncFeedControls(state);
+  }
   if (VIEWS.includes(seg)) switchView(seg, false);
   else showLanding(false);
 }

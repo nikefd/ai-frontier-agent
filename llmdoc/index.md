@@ -35,6 +35,7 @@
 | 中英文 README、语言切换、界面消息目录与双语速报 | [前端架构](architecture/frontend-architecture.md#7-中英文界面与内容边界) ＋ `app/locale.py` ＋ `app/briefing_languages.py` |
 | 改前端 / 理解 ES module 结构 / 视图切换 / Vite 构建 | [前端架构](architecture/frontend-architecture.md) |
 | 理解阅读优先的信息架构 / 首页入口 / 导航分层 / 文章卡片操作 | [前端架构](architecture/frontend-architecture.md)（第 1.2/3/4 节） |
+| 搜索筛选链接分享、刷新与语言切换后恢复条件 | [前端架构](architecture/frontend-architecture.md)（第 3 节）＋ `frontend/src/feed-route.js` |
 | 排查文章分页 / 活动筛选标签 / `<details>` 弹层收起行为 | [前端架构](architecture/frontend-architecture.md)（第 3/4 节）＋ `frontend/src/state.js` / `main.js` / `feed.js` |
 | 理解今日速报的引用链接 / “更多动态”折叠 / 移动端版式 | [前端架构](architecture/frontend-architecture.md)（第 4 节）＋ [API 参考](reference/api-reference.md)（第 4 节） |
 | 订阅今日速报 RSS / 理解速报历史与缓存 | [API 参考](reference/api-reference.md)（RSS 订阅）＋ [数据存储参考](reference/data-storage.md)（3.5）＋ `app/routers/rss.py` |
