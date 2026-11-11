@@ -1,3 +1,4 @@
+import { installRouteLinks } from './route-links.js';
 import { uiText, uiTemplate, initI18n } from './i18n.js';
 // App entry: view switching and all event wiring.
 import { $, $$ } from './util.js';
@@ -9,7 +10,7 @@ import { regenReflection } from './reflection.js';
 import { generateLearning } from './learning.js';
 import { manualNewDive } from './dives.js';
 import { addManualCard } from './review.js';
-import { switchView, showLanding, applyRoute } from './nav.js';
+import { switchView, showLanding, applyRoute, navigationAuthReady } from './nav.js';
 import { initAuth } from './auth.js';
 import { renderMarkdown } from './markdown.js';
 // Chat is provided by the bundled classic component and mounted here after the
@@ -156,14 +157,13 @@ $('#btn-toggle-newcard').addEventListener('click', () => {
 });
 
 // ── Boot ─────────────────────────────────────────────────────────────
-// Resolve the persisted session before loading a user-scoped deep link. Without
-// this ordering, /experiments (and other personal views) briefly decides the
-// user is anonymous and never fetches its data after initAuth completes.
+// Resolve the destination before session I/O. Personal loaders wait for auth;
+// public learning views render immediately and internal links stay in this document.
 async function boot() {
-  await initAuth();
-  // Re-load the current view when the logged-in identity changes (login / logout).
-  window.addEventListener('aif:auth-changed', () => { state.offset = 0; applyRoute(); });
-  // Restore the view from the URL (deep-link / refresh / back-forward).
+  installRouteLinks(applyRoute);
   applyRoute();
+  await initAuth();
+  navigationAuthReady();
+  window.addEventListener('aif:auth-changed', () => { state.offset = 0; applyRoute(); });
 }
 boot();

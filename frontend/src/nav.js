@@ -1,3 +1,4 @@
+import { ROUTE_VIEWS, OFFLINE_VIEWS } from './route-links.js';
 import { uiText, uiTemplate } from './i18n.js';
 // View switching + URL routing (History API). Extracted so feed.js / dives.js
 // can trigger navigation without importing main.js (avoids an import cycle).
@@ -17,8 +18,13 @@ import { loadExperiments } from './experiments.js';
 import { readFeedRoute, syncFeedControls } from './feed-route.js';
 
 // All routable views. The landing/home page is the root path "/".
-const VIEWS = ['academy', 'context', 'feed', 'foryou', 'summary', 'dives', 'review', 'reflection',
-               'profile', 'sources', 'admin', 'learning', 'experiments'];
+const VIEWS = ROUTE_VIEWS;
+let identityReady = false;
+export function navigationAuthReady() {
+  identityReady = true;
+  if (state.view !== 'home' && !OFFLINE_VIEWS.has(state.view)) applyRoute();
+}
+
 
 const VIEW_META = {
   academy: [uiText('模型与 Agent 学习库'), uiText('探索模型、上下文与 Agent 的工作机制')],
@@ -69,7 +75,7 @@ export function switchView(v, push = true) {
   $$('.bottom-tabs button[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === v));
   $$('.view-pane').forEach(p => p.classList.toggle('hidden', p.id !== 'view-' + v));
   if (push && location.pathname !== '/' + v) history.pushState({ v }, '', '/' + v + location.search);
-  _runLoader(v);
+  if (identityReady || OFFLINE_VIEWS.has(v)) _runLoader(v);
 }
 
 // Show the landing/home page (root path).
@@ -89,6 +95,7 @@ export function applyRoute() {
   }
   if (VIEWS.includes(seg)) switchView(seg, false);
   else showLanding(false);
+  document.documentElement.classList.remove('route-pending');
 }
 
 // Browser back/forward.
