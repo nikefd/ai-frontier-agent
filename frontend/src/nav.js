@@ -11,16 +11,18 @@ import { loadReflection } from './reflection.js';
 import { loadLearning } from './learning.js';
 import { loadAdminUsers } from './admin.js';
 import { loadSuggestions } from './suggestions.js';
-import { loadContextLab } from './context-lab.js';
+import { loadAcademy } from './academy/academy.js';
+import { loadContextWorkbench } from './academy/context-workbench.js';
 import { loadExperiments } from './experiments.js';
 import { readFeedRoute, syncFeedControls } from './feed-route.js';
 
 // All routable views. The landing/home page is the root path "/".
-const VIEWS = ['context', 'feed', 'foryou', 'summary', 'dives', 'review', 'reflection',
+const VIEWS = ['academy', 'context', 'feed', 'foryou', 'summary', 'dives', 'review', 'reflection',
                'profile', 'sources', 'admin', 'learning', 'experiments'];
 
 const VIEW_META = {
-  context: [uiText('上下文实验室'), uiText('逐步看懂模型与工具的一次交互')],
+  academy: [uiText('模型与 Agent 学习库'), uiText('探索模型、上下文与 Agent 的工作机制')],
+  context: [uiText('上下文解剖台'), uiText('逐步看懂模型与工具的一次交互')],
   summary: [uiText('今日速报'), uiText('先用几分钟掌握今天最值得关注的 AI 动态')],
   feed: [uiText('最新文章'), uiText('来自精选信源的最新 AI 动态')],
   foryou: [uiText('为你推荐'), uiText('根据你的收藏、追踪和阅读偏好排序')],
@@ -28,14 +30,15 @@ const VIEW_META = {
   review: [uiText('知识卡'), uiText('复习并沉淀读过的内容')],
   reflection: [uiText('复盘'), uiText('回顾最近的关注方向和行动')],
   learning: [uiText('学习路径'), uiText('围绕一个主题建立阶段化学习路线')],
-  experiments: [uiText('实验室'), uiText('把前沿资讯变成短小、可验证的实践')],
+  experiments: [uiText('实践实验室'), uiText('把前沿资讯变成短小、可验证的实践')],
   profile: [uiText('我的画像'), uiText('查看 AI 对你关注方向的理解')],
   sources: [uiText('数据源'), uiText('查看信源覆盖与抓取状态')],
   admin: [uiText('用户管理'), uiText('管理站点用户与权限')],
 };
 
 function _runLoader(v) {
-  if (v === 'context') loadContextLab();
+  if (v === 'academy') loadAcademy();
+  if (v === 'context') loadContextWorkbench();
   if (v === 'feed') { refreshList(); loadSuggestions(); }
   if (v === 'foryou') loadForYou();
   if (v === 'summary') loadSummary();

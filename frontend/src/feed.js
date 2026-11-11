@@ -7,6 +7,7 @@ import { state } from './state.js';
 import { jumpToDive } from './dives.js';
 import { isAuthed, openAuthModal } from './auth.js';
 import { toggleExperiment } from './experiments.js';
+import { learningLinks } from './academy/learning-links.js';
 import { writeFeedRoute } from './feed-route.js';
 
 export async function refreshList() {
@@ -122,7 +123,7 @@ function articleCardHtml(a) {
         </div>
       </div>
       <div class="experiment-slot hidden"></div>` : '';
-  return uiTemplate`
+  const html = uiTemplate`
     <article class="article-card ${pinClass}" data-aid="${escapeHtml(a.id)}">
       <header class="card-head">
         ${catBadge(a.category)}
@@ -155,6 +156,7 @@ function articleCardHtml(a) {
         </details>
       </div>
     </article>`;
+  return html.replace("</article>", learningLinks(a) + "</article>");
 }
 
 export function renderList() {

@@ -29,6 +29,7 @@
       <div class="hero-cta hero-cta-row">
         <button class="primary lg" data-enter-view="summary">看今日速报</button>
         <button class="ghost lg" data-enter-view="feed">浏览最新文章</button>
+        <button class="ghost lg" data-enter-view="academy">模型与 Agent 学习库</button>
       </div>
       <div class="hero-proof" aria-label="核心能力">
         <span>✓ 自动双语</span><span>✓ 原文可追溯</span><span>✓ 收藏与深度解读</span>
@@ -59,10 +60,11 @@
         <button data-view="foryou"><span>🎯</span> 为你推荐</button>
         <button data-view="dives"><span>🧠</span> 深度解读 <span class="count" id="cnt-dives">·</span></button>
         <div class="group">沉淀</div>
-        <button data-view="experiments"><span>🧪</span> 实验室 <span class="count" id="cnt-experiments">·</span></button>
+        <button data-view="experiments"><span>🧪</span> 实践实验室 <span class="count" id="cnt-experiments">·</span></button>
         <button data-view="review"><span>🗂️</span> 知识卡 <span class="count" id="cnt-review">·</span></button>
         <button data-view="reflection"><span>🪞</span> 复盘</button>
-        <button data-view="context"><span>🔬</span> 上下文实验室</button>
+        <button data-view="academy"><span>📚</span> 模型与 Agent 学习库</button>
+        <button data-view="context"><span>🔬</span> 上下文解剖台</button>
         <button data-view="learning"><span>🗺️</span> 学习路径</button>
         <details class="side-more">
           <summary>更多</summary>
@@ -191,7 +193,7 @@
       <div class="view-pane hidden" id="view-experiments">
         <div class="card">
           <div class="card-head">
-            <h3>🧪 实验室</h3>
+            <h3>🧪 实践实验室</h3>
             <span class="text-xs text-faint">从文章生成 · 进度与结果笔记长期保留</span>
           </div>
           <div class="text-xs text-faint mb-12">每张卡都包含时间盒、前置条件、可观察步骤、成功标准、成本风险和核验入口；生成会消耗一次 LLM 配额。</div>
@@ -245,6 +247,7 @@
         </div>
       </div>
 
+      <div class="view-pane hidden" id="view-academy"><div id="academy-root"></div></div>
       <div class="view-pane hidden" id="view-context"><div id="context-lab"></div></div>
 
       <!-- VIEW: LEARNING (personalized staged roadmap) -->
@@ -328,8 +331,9 @@
     <div class="more-sheet-grid">
       <button data-view="foryou"><span>🎯</span> 为你推荐</button>
       <button data-view="reflection"><span>🪞</span> 本周复盘</button>
-      <button data-view="experiments"><span>🧪</span> 实验室</button>
-      <button data-view="context"><span>🔬</span> 上下文实验室</button>
+      <button data-view="experiments"><span>🧪</span> 实践实验室</button>
+      <button data-view="academy"><span>📚</span> 模型与 Agent 学习库</button>
+        <button data-view="context"><span>🔬</span> 上下文解剖台</button>
         <button data-view="learning"><span>🗺️</span> 学习路径</button>
       <button data-view="profile"><span>🪪</span> 我的画像</button>
       <button data-view="sources"><span>🔌</span> 数据源</button>
