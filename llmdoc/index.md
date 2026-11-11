@@ -37,6 +37,7 @@
 | 学习网站 M0–M5 规划与首版交付 | [学习网站计划](../docs/learning-platform-plan.md) |
 | 可视化学习system/tool/skill、逐步检查工具调用上下文 | [前端架构](architecture/frontend-architecture.md)（第 8 节）＋ `frontend/src/context-lab.js` / `context-example.js` |
 | 中英文 README、语言切换、界面消息目录与双语速报 | [前端架构](architecture/frontend-architecture.md#7-中英文界面与内容边界) ＋ `app/locale.py` ＋ `app/briefing_languages.py` |
+| 排查深链接先闪首页、站内学习链接整页刷新和 session 加载时序 | [前端架构](architecture/frontend-architecture.md#91-内容深化与首屏修复2026-11-11) ＋ `frontend/src/route-links.js` / `frontend/public/route-shell.js` |
 | 改前端 / 理解 ES module 结构 / 视图切换 / Vite 构建 | [前端架构](architecture/frontend-architecture.md) |
 | 理解阅读优先的信息架构 / 首页入口 / 导航分层 / 文章卡片操作 | [前端架构](architecture/frontend-architecture.md)（第 1.2/3/4 节） |
 | 搜索筛选链接分享、刷新与语言切换后恢复条件 | [前端架构](architecture/frontend-architecture.md)（第 3 节）＋ `frontend/src/feed-route.js` |
