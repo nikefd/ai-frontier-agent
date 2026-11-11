@@ -7,20 +7,52 @@
     "task": "text",
     "access": "hosted",
     "protocol": "responses",
-    "source": "https://developers.openai.com/api/docs/models/all",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6-astra",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
-    "max_output": null,
-    "pricing": null,
-    "tool_support": null,
-    "structured_output": null,
+    "context_window": 1050000,
+    "max_output": 128000,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M text tokens",
+      "input": 10,
+      "output": 50,
+      "cached_input": 1,
+      "note": [
+        "Standard、短上下文费率；输入超过 272K 时全请求输入/缓存费率 ×2、输出 ×1.5。缓存写入和工具另计。",
+        "Standard short-context rates. Above 272K input, full-request input/cache rates double and output is 1.5×. Cache writes and tools are extra."
+      ],
+      "checked_on": "2026-11-11"
+    },
+    "tool_support": true,
+    "structured_output": true,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "gpt-6-astra",
+    "summary": [
+      "面向复杂推理、研究与长程编程任务的旗舰模型。",
+      "A flagship model for demanding reasoning, research and coding."
+    ],
+    "notes": [
+      "工具示例采用 Responses；Sol/Terra 工具调用要求 Responses。Luna 的 Chat 工具调用仅适用于不推理模式。",
+      "Tool examples use Responses; Sol/Terra require it for tools. Luna Chat tool calls require non-reasoning mode."
+    ],
+    "references": [
+      {
+        "url": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "openai-gpt-6-1-sol",
@@ -30,20 +62,52 @@
     "task": "text",
     "access": "hosted",
     "protocol": "responses",
-    "source": "https://developers.openai.com/api/docs/models/all",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
-    "max_output": null,
-    "pricing": null,
-    "tool_support": null,
-    "structured_output": null,
+    "context_window": 1050000,
+    "max_output": 128000,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M text tokens",
+      "input": 2,
+      "output": 10,
+      "cached_input": 0.1,
+      "note": [
+        "Standard、短上下文费率；输入超过 272K 时全请求输入/缓存费率 ×2、输出 ×1.5。缓存写入和工具另计。",
+        "Standard short-context rates. Above 272K input, full-request input/cache rates double and output is 1.5×. Cache writes and tools are extra."
+      ],
+      "checked_on": "2026-11-11"
+    },
+    "tool_support": true,
+    "structured_output": true,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "gpt-6.1-sol",
+    "summary": [
+      "在复杂编程与专业任务中兼顾能力和成本。",
+      "Balances capability and cost for complex coding and professional tasks."
+    ],
+    "notes": [
+      "工具示例采用 Responses；Sol/Terra 工具调用要求 Responses。Luna 的 Chat 工具调用仅适用于不推理模式。",
+      "Tool examples use Responses; Sol/Terra require it for tools. Luna Chat tool calls require non-reasoning mode."
+    ],
+    "references": [
+      {
+        "url": "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "openai-gpt-6-1-terra",
@@ -53,20 +117,52 @@
     "task": "text",
     "access": "hosted",
     "protocol": "responses",
-    "source": "https://developers.openai.com/api/docs/models/all",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6.1-terra",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
-    "max_output": null,
-    "pricing": null,
-    "tool_support": null,
-    "structured_output": null,
+    "context_window": 1050000,
+    "max_output": 128000,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M text tokens",
+      "input": 1,
+      "output": 5,
+      "cached_input": 0.05,
+      "note": [
+        "Standard、短上下文费率；输入超过 272K 时全请求输入/缓存费率 ×2、输出 ×1.5。缓存写入和工具另计。",
+        "Standard short-context rates. Above 272K input, full-request input/cache rates double and output is 1.5×. Cache writes and tools are extra."
+      ],
+      "checked_on": "2026-11-11"
+    },
+    "tool_support": true,
+    "structured_output": true,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "gpt-6.1-terra",
+    "summary": [
+      "面向视觉理解、应用屏幕操作和日常专业工作的模型。",
+      "A model for visual understanding, application screens and professional work."
+    ],
+    "notes": [
+      "工具示例采用 Responses；Sol/Terra 工具调用要求 Responses。Luna 的 Chat 工具调用仅适用于不推理模式。",
+      "Tool examples use Responses; Sol/Terra require it for tools. Luna Chat tool calls require non-reasoning mode."
+    ],
+    "references": [
+      {
+        "url": "https://developers.openai.com/api/docs/models/gpt-6.1-terra",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "openai-gpt-6-luna",
@@ -76,20 +172,52 @@
     "task": "text",
     "access": "hosted",
     "protocol": "responses",
-    "source": "https://developers.openai.com/api/docs/models/all",
+    "source": "https://developers.openai.com/api/docs/models/gpt-6-luna",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
-    "max_output": null,
-    "pricing": null,
-    "tool_support": null,
-    "structured_output": null,
+    "context_window": 1050000,
+    "max_output": 128000,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M text tokens",
+      "input": 0.1,
+      "output": 0.5,
+      "cached_input": 0.01,
+      "note": [
+        "Standard、短上下文费率；输入超过 272K 时全请求输入/缓存费率 ×2、输出 ×1.5。缓存写入和工具另计。",
+        "Standard short-context rates. Above 272K input, full-request input/cache rates double and output is 1.5×. Cache writes and tools are extra."
+      ],
+      "checked_on": "2026-11-11"
+    },
+    "tool_support": true,
+    "structured_output": true,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "gpt-6-luna",
+    "summary": [
+      "面向成本敏感的大批量任务，支持可调推理力度。",
+      "A cost-oriented model for high-volume tasks with configurable reasoning."
+    ],
+    "notes": [
+      "工具示例采用 Responses；Sol/Terra 工具调用要求 Responses。Luna 的 Chat 工具调用仅适用于不推理模式。",
+      "Tool examples use Responses; Sol/Terra require it for tools. Luna Chat tool calls require non-reasoning mode."
+    ],
+    "references": [
+      {
+        "url": "https://developers.openai.com/api/docs/models/gpt-6-luna",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "openai-gpt-image-2-6-sunburst",
@@ -99,9 +227,9 @@
     "task": "image",
     "access": "hosted",
     "protocol": null,
-    "source": "https://developers.openai.com/api/docs/models/all",
+    "source": "https://developers.openai.com/api/docs/models/gpt-image-2.6-sunburst",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": null,
     "max_output": null,
@@ -110,9 +238,29 @@
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "image"
+    ],
+    "published_on": null,
+    "summary": [
+      "图像生成与编辑模型；输入文字/参考图，输出生成图像。",
+      "An image generation and editing model accepting text and reference images."
+    ],
+    "notes": [
+      "文本输入、图像输入、图像输出分开计费，不能直接套用聊天模型的每百万输出 token 价格。",
+      "Text input, image input and image output have separate rates; chat output-token pricing is not interchangeable."
+    ],
+    "references": [
+      {
+        "url": "https://developers.openai.com/api/docs/models/gpt-image-2.6-sunburst",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "openai-gpt-transcribe",
@@ -122,20 +270,51 @@
     "task": "audio",
     "access": "hosted",
     "protocol": null,
-    "source": "https://developers.openai.com/api/docs/models/all",
+    "source": "https://developers.openai.com/api/docs/models/gpt-transcribe",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": null,
     "max_output": null,
-    "pricing": null,
+    "pricing": {
+      "currency": "USD",
+      "unit": "minute of audio",
+      "input": 0.0045,
+      "output": null,
+      "cached_input": null,
+      "note": [
+        "官方标准 API 费率；其他模式、工具及地区费用另计。",
+        "Official standard API rates; other modes, tools and regional charges may differ."
+      ],
+      "checked_on": "2026-11-11"
+    },
     "tool_support": null,
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "audio",
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "summary": [
+      "将语音音频转成文字的转录模型。",
+      "A speech transcription model converting audio to text."
+    ],
+    "notes": [
+      "输入时长、语言、噪声与术语影响实际转录效果；转录文本仍需校对。",
+      "Audio duration, language, noise and terminology affect transcription quality; transcripts need review."
+    ],
+    "references": [
+      {
+        "url": "https://developers.openai.com/api/docs/models/gpt-transcribe",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "anthropic-claude-fable-5-2",
@@ -147,11 +326,22 @@
     "protocol": "claude",
     "source": "https://platform.claude.com/docs/en/models/overview",
     "verified_on": "2026-11-11",
-    "verification": "identity-task-and-listed-capabilities",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": "1M (official)",
     "max_output": "128K (official)",
-    "pricing": null,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M text tokens",
+      "input": 8,
+      "output": 40,
+      "cached_input": null,
+      "note": [
+        "Claude API 基础输入/输出价；Haiku 为起价。缓存、批处理和具体计费条件见官方定价。",
+        "Claude API base input/output rates; Haiku rates start here. See official pricing for caching, batch and billing conditions."
+      ],
+      "checked_on": "2026-11-11"
+    },
     "tool_support": true,
     "structured_output": null,
     "license": null,
@@ -163,7 +353,23 @@
     "output_modalities": [
       "text"
     ],
-    "published_on": null
+    "published_on": null,
+    "model_id": "claude-fable-5-2",
+    "summary": [
+      "面向高难推理和长程 Agent 工作。",
+      "Designed for demanding reasoning and long-horizon agent work."
+    ],
+    "notes": [
+      "支持图像输入、文本输出和工具使用；比较上下文大小时还需看任务的可靠性与执行预算。",
+      "Supports image input, text output and tools; context capacity alone does not establish task reliability."
+    ],
+    "references": [
+      {
+        "url": "https://platform.claude.com/docs/en/models/overview",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "anthropic-claude-opus-5-5",
@@ -175,11 +381,22 @@
     "protocol": "claude",
     "source": "https://platform.claude.com/docs/en/models/overview",
     "verified_on": "2026-11-11",
-    "verification": "identity-task-and-listed-capabilities",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": "1M (official)",
     "max_output": "128K (official)",
-    "pricing": null,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M text tokens",
+      "input": 4,
+      "output": 20,
+      "cached_input": null,
+      "note": [
+        "Claude API 基础输入/输出价；Haiku 为起价。缓存、批处理和具体计费条件见官方定价。",
+        "Claude API base input/output rates; Haiku rates start here. See official pricing for caching, batch and billing conditions."
+      ],
+      "checked_on": "2026-11-11"
+    },
     "tool_support": true,
     "structured_output": null,
     "license": null,
@@ -191,7 +408,23 @@
     "output_modalities": [
       "text"
     ],
-    "published_on": null
+    "published_on": null,
+    "model_id": "claude-opus-5-5",
+    "summary": [
+      "面向持续编程、知识工作与多步骤任务。",
+      "Designed for sustained coding, knowledge work and multistep tasks."
+    ],
+    "notes": [
+      "支持图像输入、文本输出和工具使用；比较上下文大小时还需看任务的可靠性与执行预算。",
+      "Supports image input, text output and tools; context capacity alone does not establish task reliability."
+    ],
+    "references": [
+      {
+        "url": "https://platform.claude.com/docs/en/models/overview",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "anthropic-claude-sonnet-5-5",
@@ -203,11 +436,22 @@
     "protocol": "claude",
     "source": "https://platform.claude.com/docs/en/models/overview",
     "verified_on": "2026-11-11",
-    "verification": "identity-task-and-listed-capabilities",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": "1M (official)",
     "max_output": "128K (official)",
-    "pricing": null,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M text tokens",
+      "input": 2,
+      "output": 10,
+      "cached_input": null,
+      "note": [
+        "Claude API 基础输入/输出价；Haiku 为起价。缓存、批处理和具体计费条件见官方定价。",
+        "Claude API base input/output rates; Haiku rates start here. See official pricing for caching, batch and billing conditions."
+      ],
+      "checked_on": "2026-11-11"
+    },
     "tool_support": true,
     "structured_output": null,
     "license": null,
@@ -219,7 +463,23 @@
     "output_modalities": [
       "text"
     ],
-    "published_on": null
+    "published_on": null,
+    "model_id": "claude-sonnet-5-5",
+    "summary": [
+      "在响应速度与复杂任务能力之间取得平衡。",
+      "Balances response speed and complex-task capability."
+    ],
+    "notes": [
+      "支持图像输入、文本输出和工具使用；比较上下文大小时还需看任务的可靠性与执行预算。",
+      "Supports image input, text output and tools; context capacity alone does not establish task reliability."
+    ],
+    "references": [
+      {
+        "url": "https://platform.claude.com/docs/en/models/overview",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "anthropic-claude-haiku-5-5",
@@ -231,11 +491,22 @@
     "protocol": "claude",
     "source": "https://platform.claude.com/docs/en/models/overview",
     "verified_on": "2026-11-11",
-    "verification": "identity-task-and-listed-capabilities",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": "1M (official)",
     "max_output": "128K (official)",
-    "pricing": null,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M text tokens",
+      "input": 0.1,
+      "output": 0.5,
+      "cached_input": null,
+      "note": [
+        "Claude API 基础输入/输出价；Haiku 为起价。缓存、批处理和具体计费条件见官方定价。",
+        "Claude API base input/output rates; Haiku rates start here. See official pricing for caching, batch and billing conditions."
+      ],
+      "checked_on": "2026-11-11"
+    },
     "tool_support": true,
     "structured_output": null,
     "license": null,
@@ -247,7 +518,23 @@
     "output_modalities": [
       "text"
     ],
-    "published_on": null
+    "published_on": null,
+    "model_id": "claude-haiku-5-5",
+    "summary": [
+      "面向分类、提取、路由等低延迟高吞吐任务。",
+      "Designed for low-latency classification, extraction and routing."
+    ],
+    "notes": [
+      "支持图像输入、文本输出和工具使用；比较上下文大小时还需看任务的可靠性与执行预算。",
+      "Supports image input, text output and tools; context capacity alone does not establish task reliability."
+    ],
+    "references": [
+      {
+        "url": "https://platform.claude.com/docs/en/models/overview",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "google-gemini-4-argon",
@@ -257,20 +544,61 @@
     "task": "text",
     "access": "hosted",
     "protocol": "gemini",
-    "source": "https://deepmind.google/models/model-cards/",
+    "source": "https://aistudio.google.com/docs/models/gemini-4-argon",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
-    "max_output": null,
-    "pricing": null,
-    "tool_support": null,
+    "context_window": 1048576,
+    "max_output": 65536,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M tokens",
+      "input": 2,
+      "output": 10,
+      "cached_input": 0.1,
+      "valid_through": "2026-11-30",
+      "note": [
+        "Standard 优惠价，截至 2026-11-30；届时官方列出的后续费率为当前的两倍。输出包含 thinking，搜索与缓存存储另计。",
+        "Standard promotional rates through 2026-11-30; official scheduled rates then double. Output includes thinking; search and cache storage are extra."
+      ],
+      "checked_on": "2026-11-11"
+    },
+    "tool_support": true,
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image",
+      "audio",
+      "video",
+      "PDF"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "gemini-4-argon",
+    "summary": [
+      "Gemini 4 中偏效率的推理模型，支持多模态输入。",
+      "An efficiency-oriented Gemini 4 reasoning model with multimodal input."
+    ],
+    "notes": [
+      "4 系列的 1,048,576 是输入输出统一窗口；同步输出默认上限 65,536，long decode 可达 1M。3.8 Flash 此处记录普通输入/输出上限。",
+      "Gemini 4 uses a unified 1,048,576 input/output window; synchronous output is 65,536, with up to 1M using long decode. Flash lists ordinary input/output limits."
+    ],
+    "references": [
+      {
+        "url": "https://aistudio.google.com/docs/models/gemini-4-argon",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      },
+      {
+        "url": "https://aistudio.google.com/docs/pricing#gemini-4-argon",
+        "label": "Pricing and effective dates",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "google-gemini-3-8-flash",
@@ -280,20 +608,61 @@
     "task": "text",
     "access": "hosted",
     "protocol": "gemini",
-    "source": "https://deepmind.google/models/model-cards/",
+    "source": "https://aistudio.google.com/docs/models/gemini-3.8-flash",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
-    "max_output": null,
-    "pricing": null,
-    "tool_support": null,
+    "context_window": 1048576,
+    "max_output": 65536,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M tokens",
+      "input": 0.75,
+      "output": 3.75,
+      "cached_input": 0.075,
+      "valid_through": "2026-12-31",
+      "note": [
+        "Standard 优惠价，截至 2026-12-31；届时官方列出的后续费率为当前的两倍。输出包含 thinking，搜索与缓存存储另计。",
+        "Standard promotional rates through 2026-12-31; official scheduled rates then double. Output includes thinking; search and cache storage are extra."
+      ],
+      "checked_on": "2026-11-11"
+    },
+    "tool_support": true,
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image",
+      "audio",
+      "video",
+      "PDF"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "gemini-3.8-flash",
+    "summary": [
+      "面向长程编程、Agent 和企业工作流的 Flash 模型。",
+      "A Flash model for long-horizon coding, agents and enterprise workflows."
+    ],
+    "notes": [
+      "4 系列的 1,048,576 是输入输出统一窗口；同步输出默认上限 65,536，long decode 可达 1M。3.8 Flash 此处记录普通输入/输出上限。",
+      "Gemini 4 uses a unified 1,048,576 input/output window; synchronous output is 65,536, with up to 1M using long decode. Flash lists ordinary input/output limits."
+    ],
+    "references": [
+      {
+        "url": "https://aistudio.google.com/docs/models/gemini-3.8-flash",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      },
+      {
+        "url": "https://aistudio.google.com/docs/pricing#gemini-3.8-flash",
+        "label": "Pricing and effective dates",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "google-nano-banana-2-1",
@@ -303,20 +672,44 @@
     "task": "image",
     "access": "hosted",
     "protocol": null,
-    "source": "https://deepmind.google/models/model-cards/",
+    "source": "https://aistudio.google.com/docs/models/gemini-nano-banana-2.1",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
-    "max_output": null,
+    "context_window": 131072,
+    "max_output": 32768,
     "pricing": null,
-    "tool_support": null,
+    "tool_support": false,
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image",
+      "video",
+      "PDF"
+    ],
+    "output_modalities": [
+      "image",
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "gemini-nano-banana-2.1",
+    "summary": [
+      "原生图像生成与多轮编辑模型，关注文字排版、画质和编辑一致性。",
+      "A native image generation and editing model focused on typography and consistency."
+    ],
+    "notes": [
+      "官方未支持 function calling；图像编辑能力不能当成通用 Agent 工具循环。",
+      "Function calling is unsupported; image editing is not a general agent tool loop."
+    ],
+    "references": [
+      {
+        "url": "https://aistudio.google.com/docs/models/gemini-nano-banana-2.1",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "google-gemini-omni-1-2-flash",
@@ -326,9 +719,9 @@
     "task": "video",
     "access": "hosted",
     "protocol": null,
-    "source": "https://deepmind.google/models/model-cards/",
+    "source": "https://aistudio.google.com/docs/models",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": null,
     "max_output": null,
@@ -337,9 +730,31 @@
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image",
+      "video"
+    ],
+    "output_modalities": [
+      "video",
+      "audio"
+    ],
+    "published_on": null,
+    "summary": [
+      "用于视频生成与编辑，支持原生音频和关键帧/延长工作流。",
+      "A video generation/editing model with native audio and keyframe/extension workflows."
+    ],
+    "notes": [
+      "官方目录描述最长 15 秒视频；具体分辨率、费用与输入约束见当前媒体 API。",
+      "The catalog describes up to 15-second video; check the current media API for resolution, pricing and input constraints."
+    ],
+    "references": [
+      {
+        "url": "https://aistudio.google.com/docs/models",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "google-gemini-3-8-flash-tts",
@@ -349,9 +764,9 @@
     "task": "audio",
     "access": "hosted",
     "protocol": null,
-    "source": "https://deepmind.google/models/model-cards/",
+    "source": "https://aistudio.google.com/docs/models",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": null,
     "max_output": null,
@@ -360,9 +775,28 @@
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "audio"
+    ],
+    "published_on": null,
+    "summary": [
+      "Gemini Flash 系列的文本转语音型号。",
+      "A text-to-speech model in the Gemini Flash family."
+    ],
+    "notes": [
+      "音频生成不等于实时双向语音；具体声音、输出格式和单次限制需查 TTS 接口。",
+      "Speech generation is not real-time bidirectional voice; check TTS voices, formats and limits."
+    ],
+    "references": [
+      {
+        "url": "https://aistudio.google.com/docs/models",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "google-gemini-embedding-2",
@@ -372,20 +806,45 @@
     "task": "embedding",
     "access": "hosted",
     "protocol": null,
-    "source": "https://aistudio.google.com/docs/changelog",
+    "source": "https://aistudio.google.com/docs/models/gemini-embedding-2",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
+    "context_window": 8192,
     "max_output": null,
     "pricing": null,
     "tool_support": null,
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image",
+      "audio",
+      "video",
+      "PDF"
+    ],
+    "output_modalities": [
+      "embedding"
+    ],
+    "published_on": null,
+    "model_id": "gemini-embedding-2",
+    "embedding_dimensions": "128–3072",
+    "summary": [
+      "把不同模态映射到统一向量空间，支持跨模态检索。",
+      "Maps multiple modalities into a shared vector space for cross-modal retrieval."
+    ],
+    "notes": [
+      "输出是向量；官方推荐维度为 768、1536、3072。改变维度后需要保持索引与查询一致。",
+      "Output is a vector; recommended dimensions are 768, 1536 and 3072. Index and query dimensions must match."
+    ],
+    "references": [
+      {
+        "url": "https://aistudio.google.com/docs/models/gemini-embedding-2",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "deepseek-deepseek-v4-1-flash",
@@ -395,20 +854,52 @@
     "task": "text",
     "access": "hosted",
     "protocol": "chat",
-    "source": "https://api-docs.deepseek.com/en/",
+    "source": "https://api-docs.deepseek.com/quick_start/pricing/",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
-    "max_output": null,
-    "pricing": null,
-    "tool_support": null,
+    "context_window": "1M",
+    "max_output": "384K",
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M text tokens",
+      "input": 0.3,
+      "output": 1.2,
+      "cached_input": 0.006,
+      "note": [
+        "此处为峰时价格，离峰减半。UTC 工作日 01–04、06–10 为峰时（中国节假日除外）。Flash API 别名当前指向 V4.1-Flash-1017。",
+        "Peak rates shown; off-peak is half. Peak: weekdays 01–04 and 06–10 UTC except Chinese public holidays. Flash alias currently resolves to V4.1-Flash-1017."
+      ],
+      "checked_on": "2026-11-11"
+    },
+    "tool_support": true,
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "deepseek-flash",
+    "summary": [
+      "支持推理/非推理模式和多种兼容 API；Flash 版本支持图像输入。",
+      "Supports thinking/non-thinking modes and compatible APIs; Flash accepts images."
+    ],
+    "notes": [
+      "JSON Output 不等于严格 JSON Schema；别名可能变化，请区分目录名称与实际 API model ID。",
+      "JSON Output is not strict JSON Schema. Aliases may change; distinguish catalog names from API model IDs."
+    ],
+    "references": [
+      {
+        "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "deepseek-deepseek-v4-pro",
@@ -418,20 +909,51 @@
     "task": "text",
     "access": "hosted",
     "protocol": "chat",
-    "source": "https://api-docs.deepseek.com/en/",
+    "source": "https://api-docs.deepseek.com/quick_start/pricing/",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
-    "max_output": null,
-    "pricing": null,
-    "tool_support": null,
+    "context_window": "1M",
+    "max_output": "384K",
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M text tokens",
+      "input": 1.32,
+      "output": 3.96,
+      "cached_input": 0.044,
+      "note": [
+        "此处为峰时价格，离峰减半。UTC 工作日 01–04、06–10 为峰时（中国节假日除外）。Flash API 别名当前指向 V4.1-Flash-1017。",
+        "Peak rates shown; off-peak is half. Peak: weekdays 01–04 and 06–10 UTC except Chinese public holidays. Flash alias currently resolves to V4.1-Flash-1017."
+      ],
+      "checked_on": "2026-11-11"
+    },
+    "tool_support": true,
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "deepseek-v4-pro",
+    "summary": [
+      "支持推理/非推理模式和多种兼容 API；Pro 版本为文本模型。",
+      "Supports thinking/non-thinking modes and compatible APIs; Pro is text-only."
+    ],
+    "notes": [
+      "JSON Output 不等于严格 JSON Schema；别名可能变化，请区分目录名称与实际 API model ID。",
+      "JSON Output is not strict JSON Schema. Aliases may change; distinguish catalog names from API model IDs."
+    ],
+    "references": [
+      {
+        "url": "https://api-docs.deepseek.com/quick_start/pricing/",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "qwen-qwen3-235b-a22b",
@@ -441,20 +963,42 @@
     "task": "text",
     "access": "open-weight",
     "protocol": null,
-    "source": "https://github.com/QwenLM/Qwen3",
+    "source": "https://huggingface.co/Qwen/Qwen3-235B-A22B",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
+    "context_window": 32768,
     "max_output": null,
     "pricing": null,
     "tool_support": null,
     "structured_output": null,
-    "license": null,
+    "license": "Apache-2.0",
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "Qwen/Qwen3-235B-A22B",
+    "summary": [
+      "Qwen3 开放权重文本模型，支持思考/非思考切换；这是原始版本，不是 2507 变体。",
+      "An original Qwen3 open-weight text model with thinking/non-thinking switching, distinct from 2507 variants."
+    ],
+    "parameters": "235B total / 22B active",
+    "architecture": "MoE",
+    "notes": [
+      "原生上下文 32,768；按官方配置使用 YaRN 可扩展到 131,072。实际工具协议与输出限制取决于推理服务和模板。",
+      "Native context is 32,768; official YaRN configuration extends to 131,072. Tool protocol and output caps depend on the serving engine and template."
+    ],
+    "references": [
+      {
+        "url": "https://huggingface.co/Qwen/Qwen3-235B-A22B",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "qwen-qwen3-30b-a3b",
@@ -464,20 +1008,42 @@
     "task": "text",
     "access": "open-weight",
     "protocol": null,
-    "source": "https://github.com/QwenLM/Qwen3",
+    "source": "https://huggingface.co/Qwen/Qwen3-30B-A3B",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
+    "context_window": 32768,
     "max_output": null,
     "pricing": null,
     "tool_support": null,
     "structured_output": null,
-    "license": null,
+    "license": "Apache-2.0",
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "Qwen/Qwen3-30B-A3B",
+    "summary": [
+      "Qwen3 开放权重文本模型，支持思考/非思考切换；这是原始版本，不是 2507 变体。",
+      "An original Qwen3 open-weight text model with thinking/non-thinking switching, distinct from 2507 variants."
+    ],
+    "parameters": "30.5B total / 3.3B active",
+    "architecture": "MoE",
+    "notes": [
+      "原生上下文 32,768；按官方配置使用 YaRN 可扩展到 131,072。实际工具协议与输出限制取决于推理服务和模板。",
+      "Native context is 32,768; official YaRN configuration extends to 131,072. Tool protocol and output caps depend on the serving engine and template."
+    ],
+    "references": [
+      {
+        "url": "https://huggingface.co/Qwen/Qwen3-30B-A3B",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "qwen-qwen3-32b",
@@ -487,20 +1053,42 @@
     "task": "text",
     "access": "open-weight",
     "protocol": null,
-    "source": "https://github.com/QwenLM/Qwen3",
+    "source": "https://huggingface.co/Qwen/Qwen3-32B",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
+    "context_window": 32768,
     "max_output": null,
     "pricing": null,
     "tool_support": null,
     "structured_output": null,
-    "license": null,
+    "license": "Apache-2.0",
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "Qwen/Qwen3-32B",
+    "summary": [
+      "Qwen3 开放权重文本模型，支持思考/非思考切换；这是原始版本，不是 2507 变体。",
+      "An original Qwen3 open-weight text model with thinking/non-thinking switching, distinct from 2507 variants."
+    ],
+    "parameters": "32.8B",
+    "architecture": "Dense",
+    "notes": [
+      "原生上下文 32,768；按官方配置使用 YaRN 可扩展到 131,072。实际工具协议与输出限制取决于推理服务和模板。",
+      "Native context is 32,768; official YaRN configuration extends to 131,072. Tool protocol and output caps depend on the serving engine and template."
+    ],
+    "references": [
+      {
+        "url": "https://huggingface.co/Qwen/Qwen3-32B",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "qwen-qwen3-embedding-0-6b",
@@ -512,18 +1100,39 @@
     "protocol": null,
     "source": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
+    "context_window": "32K",
     "max_output": null,
     "pricing": null,
     "tool_support": null,
     "structured_output": null,
-    "license": null,
+    "license": "Apache-2.0",
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "embedding"
+    ],
+    "published_on": null,
+    "parameters": "0.6B",
+    "embedding_dimensions": "32–1024",
+    "summary": [
+      "100 多种语言的文本向量模型，输出数值向量而不是自然语言答案。",
+      "A multilingual text embedding model producing vectors rather than prose answers."
+    ],
+    "notes": [
+      "用于检索、聚类和相似度；索引与查询应使用兼容的模型、维度和归一化方式。",
+      "Useful for retrieval, clustering and similarity; index and query encoders, dimensions and normalization must agree."
+    ],
+    "references": [
+      {
+        "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "mistral-mistral-large-4",
@@ -531,22 +1140,55 @@
     "provider": "Mistral",
     "family": "Mistral",
     "task": "text",
-    "access": "hosted",
+    "access": "open-weight",
     "protocol": null,
-    "source": "https://docs.mistral.ai/models",
+    "source": "https://docs.mistral.ai/models/mistral-large-4-0",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
+    "context_window": "1M",
     "max_output": null,
-    "pricing": null,
-    "tool_support": null,
-    "structured_output": null,
-    "license": null,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M text tokens",
+      "input": 0.7,
+      "output": 2.1,
+      "cached_input": null,
+      "note": [
+        "官方标准 API 费率；其他模式、工具及地区费用另计。",
+        "Official standard API rates; other modes, tools and regional charges may differ."
+      ],
+      "checked_on": "2026-11-11"
+    },
+    "tool_support": true,
+    "structured_output": true,
+    "license": "Mistral Ecosystem Open Weight License",
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "parameters": "1.05T total / 52B active",
+    "architecture": "MoE",
+    "summary": [
+      "Mistral 的多模态大型 MoE 模型。",
+      "A Mistral large multimodal MoE model."
+    ],
+    "notes": [
+      "目录同时提供开放权重信息与 Mistral 托管 API 价格；自托管成本不按这张 API 价表计算。",
+      "This entry combines weight information and Mistral hosted API pricing; self-hosting costs are separate."
+    ],
+    "references": [
+      {
+        "url": "https://docs.mistral.ai/models/mistral-large-4-0",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "mistral-mistral-small-4",
@@ -554,22 +1196,52 @@
     "provider": "Mistral",
     "family": "Mistral",
     "task": "text",
-    "access": "hosted",
+    "access": "open-weight",
     "protocol": null,
-    "source": "https://docs.mistral.ai/models",
+    "source": "https://docs.mistral.ai/models/mistral-small-4-0-26-03",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
+    "context_window": "256K",
     "max_output": null,
-    "pricing": null,
-    "tool_support": null,
-    "structured_output": null,
-    "license": null,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M text tokens",
+      "input": 0.15,
+      "output": 0.6,
+      "cached_input": null,
+      "note": [
+        "官方标准 API 费率；其他模式、工具及地区费用另计。",
+        "Official standard API rates; other modes, tools and regional charges may differ."
+      ],
+      "checked_on": "2026-11-11"
+    },
+    "tool_support": true,
+    "structured_output": true,
+    "license": "Apache-2.0",
     "replaces": null,
     "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "parameters": "119B total / 6.5B active",
+    "architecture": "MoE",
+    "summary": [
+      "Mistral 的统一指令、推理与编程的混合模型。",
+      "A Mistral hybrid model combining instruction following, reasoning and coding."
+    ],
+    "notes": [
+      "目录同时提供开放权重信息与 Mistral 托管 API 价格；自托管成本不按这张 API 价表计算。",
+      "This entry combines weight information and Mistral hosted API pricing; self-hosting costs are separate."
+    ],
+    "references": [
+      {
+        "url": "https://docs.mistral.ai/models/mistral-small-4-0-26-03",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "mistral-voxtral-tts-3",
@@ -579,20 +1251,52 @@
     "task": "audio",
     "access": "hosted",
     "protocol": null,
-    "source": "https://docs.mistral.ai/models",
+    "source": "https://docs.mistral.ai/models/voxtral-mini-tts-3-0",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": null,
     "max_output": null,
-    "pricing": null,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M characters",
+      "input": 13,
+      "output": null,
+      "cached_input": null,
+      "note": [
+        "官方标准 API 费率；其他模式、工具及地区费用另计。",
+        "Official standard API rates; other modes, tools and regional charges may differ."
+      ],
+      "checked_on": "2026-11-11"
+    },
     "tool_support": null,
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "audio reference"
+    ],
+    "output_modalities": [
+      "audio"
+    ],
+    "published_on": "2026-10-20",
+    "model_id": "voxtral-mini-tts-3-0",
+    "summary": [
+      "支持流式语音合成与声音克隆的 TTS 模型。",
+      "A TTS model with streaming speech synthesis and voice cloning."
+    ],
+    "notes": [
+      "计费单位是字符，不是聊天 token；参考音频与生成语音需要和文本处理分开理解。",
+      "Billing is by characters, not chat tokens; reference audio and generated speech are separate from text processing."
+    ],
+    "references": [
+      {
+        "url": "https://docs.mistral.ai/models/voxtral-mini-tts-3-0",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "xai-grok-4-7",
@@ -602,20 +1306,52 @@
     "task": "text",
     "access": "hosted",
     "protocol": "responses",
-    "source": "https://docs.x.ai/developers/models",
+    "source": "https://docs.x.ai/developers/models/grok-4.7",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
+    "context_window": 500000,
     "max_output": null,
-    "pricing": null,
-    "tool_support": null,
-    "structured_output": null,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M text tokens",
+      "input": 2,
+      "output": 6,
+      "cached_input": 0.5,
+      "note": [
+        "默认地区基础价；超过 200K 的高上下文价格、地区及工具费用需查官方。",
+        "Base default-region rates; check higher-context rates above 200K, regions and tool fees."
+      ],
+      "checked_on": "2026-11-11"
+    },
+    "tool_support": true,
+    "structured_output": true,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "grok-4.7",
+    "summary": [
+      "支持可调推理、工具调用与结构化输出的多模态模型。",
+      "A multimodal model with configurable reasoning, tools and structured output."
+    ],
+    "notes": [
+      "不启用搜索工具时不能凭模型本身获取实时事件；搜索结果也需要来源核验。",
+      "Without search tools the model has no live-event access; retrieved results still need source checking."
+    ],
+    "references": [
+      {
+        "url": "https://docs.x.ai/developers/models/grok-4.7",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "moonshot-kimi-k2",
@@ -627,18 +1363,39 @@
     "protocol": null,
     "source": "https://github.com/moonshotai/Kimi-K2",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
+    "context_window": "128K",
     "max_output": null,
     "pricing": null,
     "tool_support": null,
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "architecture": "MoE",
+    "parameters": "1T total / 32B active",
+    "summary": [
+      "面向工具使用、推理和编程的 Kimi K2 系列；本条记录原始 K2，而非 K2 Thinking 或 K2.5。",
+      "Kimi K2 targets tool use, reasoning and coding. This entry is the original K2, not K2 Thinking or K2.5."
+    ],
+    "notes": [
+      "Base 与 Instruct 不同；这里的 128K 来自原始 K2 模型卡。托管 API 的别名、价格与服务限制需单独核对。",
+      "Base and Instruct differ. The 128K limit is from the original K2 card; hosted aliases, pricing and service limits need separate checks."
+    ],
+    "references": [
+      {
+        "url": "https://github.com/moonshotai/Kimi-K2",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "z-ai-glm-5",
@@ -648,20 +1405,40 @@
     "task": "text",
     "access": "open-weight",
     "protocol": null,
-    "source": "https://github.com/zai-org/GLM-5",
+    "source": "https://huggingface.co/zai-org/GLM-5",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": null,
     "max_output": null,
     "pricing": null,
     "tool_support": null,
     "structured_output": null,
-    "license": null,
+    "license": "MIT",
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "architecture": "MoE",
+    "summary": [
+      "用于代码与长程 Agent 工程的 GLM-5 开放权重模型；本条固定原始版本。",
+      "An open-weight GLM-5 model for coding and long-horizon agent engineering; this entry pins the original version."
+    ],
+    "notes": [
+      "GLM-5 系列仓库已包含后续版本，不能把 5.3 的上下文或能力直接填到原始 GLM-5。",
+      "The family repository includes later versions; GLM-5.3 capabilities must not be assigned to original GLM-5."
+    ],
+    "references": [
+      {
+        "url": "https://huggingface.co/zai-org/GLM-5",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "minimax-minimax-m2",
@@ -671,20 +1448,41 @@
     "task": "text",
     "access": "open-weight",
     "protocol": null,
-    "source": "https://github.com/MiniMax-AI/MiniMax-M2",
+    "source": "https://huggingface.co/MiniMaxAI/MiniMax-M2",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": null,
     "max_output": null,
     "pricing": null,
     "tool_support": null,
     "structured_output": null,
-    "license": null,
+    "license": "MIT",
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "architecture": "MoE",
+    "parameters": "230B total / 10B active",
+    "summary": [
+      "面向编程和 Agent 工作流的稀疏 MoE 模型。",
+      "A sparse MoE model focused on coding and agent workflows."
+    ],
+    "notes": [
+      "激活参数较少不意味着只需加载 10B 权重；实际部署还需权重、KV cache 与运行时内存。",
+      "Fewer active parameters do not mean only 10B weights must be loaded; deployment also needs weights, KV cache and runtime memory."
+    ],
+    "references": [
+      {
+        "url": "https://huggingface.co/MiniMaxAI/MiniMax-M2",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "meta-llama-4-scout",
@@ -694,20 +1492,42 @@
     "task": "text",
     "access": "open-weight",
     "protocol": null,
-    "source": "https://github.com/meta-llama/llama-models/blob/main/models/llama4/MODEL_CARD.md",
+    "source": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
+    "context_window": 10000000,
     "max_output": null,
     "pricing": null,
     "tool_support": null,
     "structured_output": null,
-    "license": null,
+    "license": "Llama 4 Community License",
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": "2025-04-05",
+    "summary": [
+      "Llama 4 多模态 MoE 开放权重模型；可学习总参数、激活参数与部署成本的区别。",
+      "An open-weight multimodal Llama 4 MoE model illustrating total versus active parameters."
+    ],
+    "architecture": "MoE",
+    "parameters": "109B total / 17B active / 16 experts",
+    "notes": [
+      "超长上下文需要相应推理框架与资源；开放权重仍受 Llama 4 自定义许可约束。",
+      "Long context requires compatible serving and resources; open weights remain subject to the custom Llama 4 license."
+    ],
+    "references": [
+      {
+        "url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "meta-llama-4-maverick",
@@ -717,20 +1537,42 @@
     "task": "text",
     "access": "open-weight",
     "protocol": null,
-    "source": "https://github.com/meta-llama/llama-models/blob/main/models/llama4/MODEL_CARD.md",
+    "source": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
+    "context_window": 1000000,
     "max_output": null,
     "pricing": null,
     "tool_support": null,
     "structured_output": null,
-    "license": null,
+    "license": "Llama 4 Community License",
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": "2025-04-05",
+    "summary": [
+      "Llama 4 多模态 MoE 开放权重模型；可学习总参数、激活参数与部署成本的区别。",
+      "An open-weight multimodal Llama 4 MoE model illustrating total versus active parameters."
+    ],
+    "architecture": "MoE",
+    "parameters": "400B total / 17B active / 128 experts",
+    "notes": [
+      "超长上下文需要相应推理框架与资源；开放权重仍受 Llama 4 自定义许可约束。",
+      "Long context requires compatible serving and resources; open weights remain subject to the custom Llama 4 license."
+    ],
+    "references": [
+      {
+        "url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "bytedance-seed-seedream-5-5",
@@ -740,9 +1582,9 @@
     "task": "image",
     "access": "hosted",
     "protocol": null,
-    "source": "https://seed.bytedance.com/en/",
+    "source": "https://seed.bytedance.com/en/seedream5_5",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": null,
     "max_output": null,
@@ -751,9 +1593,29 @@
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "image"
+    ],
+    "published_on": null,
+    "summary": [
+      "面向多轮一致性编辑与视觉创作的图像模型。",
+      "An image model for consistent multistep editing and visual creation."
+    ],
+    "notes": [
+      "重点观察每轮修改区域与保留区域；API 的输出尺寸和价格需按实际平台查询。",
+      "Inspect edited versus preserved regions across turns; output sizes and prices depend on the serving platform."
+    ],
+    "references": [
+      {
+        "url": "https://seed.bytedance.com/en/seedream5_5",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "bytedance-seed-seedance-2-5",
@@ -763,9 +1625,9 @@
     "task": "video",
     "access": "hosted",
     "protocol": null,
-    "source": "https://seed.bytedance.com/en/",
+    "source": "https://seed.bytedance.com/en/seedance2_5",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": null,
     "max_output": null,
@@ -774,9 +1636,31 @@
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image",
+      "video"
+    ],
+    "output_modalities": [
+      "video",
+      "audio"
+    ],
+    "published_on": null,
+    "summary": [
+      "音视频联合生成模型，支持参考控制、视频编辑和较长叙事。",
+      "A joint audio/video generation model supporting references, editing and longer narratives."
+    ],
+    "notes": [
+      "官方介绍单次最长 30 秒并可延长两次；这不是文本上下文 token 上限。",
+      "Official material describes up to 30 seconds plus two extensions; this is not a text context-token limit."
+    ],
+    "references": [
+      {
+        "url": "https://seed.bytedance.com/en/seedance2_5",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "bytedance-seed-seed-audio-1-0",
@@ -786,9 +1670,9 @@
     "task": "audio",
     "access": "hosted",
     "protocol": null,
-    "source": "https://seed.bytedance.com/en/",
+    "source": "https://seed.bytedance.com/en/seedaudio1_0",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "identity-only",
     "lifecycle": "not-verified",
     "context_window": null,
     "max_output": null,
@@ -799,7 +1683,22 @@
     "replaces": null,
     "input_modalities": null,
     "output_modalities": null,
-    "published_on": null
+    "published_on": null,
+    "summary": [
+      "Seed 音频方向的资料条目，具体可用接口与能力仍待补充。",
+      "A Seed audio reference whose concrete interface and capabilities still need verification."
+    ],
+    "notes": [
+      "此条原始来源只覆盖品牌，暂不将未知输入输出、价格或上下文展示为事实。",
+      "The original source covered identity only; input/output, pricing and context are not asserted."
+    ],
+    "references": [
+      {
+        "url": "https://seed.bytedance.com/en/seedaudio1_0",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "baai-bge-reranker-v2-m3",
@@ -811,18 +1710,37 @@
     "protocol": null,
     "source": "https://huggingface.co/BAAI/bge-reranker-v2-m3",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": null,
     "max_output": null,
     "pricing": null,
     "tool_support": null,
     "structured_output": null,
-    "license": null,
+    "license": "Apache-2.0",
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text pair"
+    ],
+    "output_modalities": [
+      "relevance score"
+    ],
+    "published_on": null,
+    "summary": [
+      "多语言重排模型，给“问题—候选文档”对打相关性分，用于召回后的排序。",
+      "A multilingual reranker scoring query/document pairs after retrieval."
+    ],
+    "notes": [
+      "与 embedding 不同：它不直接建立向量索引，而是逐对比较，适合对少量候选精排。",
+      "Unlike an embedding encoder, it scores pairs instead of building a vector index; use it on a retrieved shortlist."
+    ],
+    "references": [
+      {
+        "url": "https://huggingface.co/BAAI/bge-reranker-v2-m3",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "openai-text-embedding-3-large",
@@ -832,20 +1750,50 @@
     "task": "embedding",
     "access": "hosted",
     "protocol": null,
-    "source": "https://developers.openai.com/api/docs/models/all",
+    "source": "https://developers.openai.com/api/docs/models/text-embedding-3-large",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": null,
     "max_output": null,
-    "pricing": null,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M input tokens",
+      "input": 0.13,
+      "output": null,
+      "cached_input": null,
+      "note": [
+        "官方标准 API 费率；其他模式、工具及地区费用另计。",
+        "Official standard API rates; other modes, tools and regional charges may differ."
+      ],
+      "checked_on": "2026-11-11"
+    },
     "tool_support": null,
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "embedding"
+    ],
+    "published_on": null,
+    "summary": [
+      "将文本映射到数值空间的向量模型，用于语义检索、聚类与推荐。",
+      "A text embedding model for semantic retrieval, clustering and recommendations."
+    ],
+    "notes": [
+      "向量相似度表示检索信号，不代表事实正确，也不是一条聊天回答。",
+      "Vector similarity is a retrieval signal, not proof of truth or a chat answer."
+    ],
+    "references": [
+      {
+        "url": "https://developers.openai.com/api/docs/models/text-embedding-3-large",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "openai-gpt-oss-20b",
@@ -855,20 +1803,39 @@
     "task": "text",
     "access": "open-weight",
     "protocol": null,
-    "source": "https://developers.openai.com/api/docs/models/all",
+    "source": "https://developers.openai.com/api/docs/models/gpt-oss-20b",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
-    "max_output": null,
+    "context_window": 131072,
+    "max_output": 131072,
     "pricing": null,
-    "tool_support": null,
-    "structured_output": null,
+    "tool_support": true,
+    "structured_output": true,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "summary": [
+      "可自行部署、可微调的开放权重推理模型。",
+      "An open-weight reasoning model for self-hosting and fine-tuning."
+    ],
+    "notes": [
+      "部署端需要支持模型的消息模板与工具协议；模型能力和服务端兼容 API 是不同层。",
+      "Serving must support its message template and tool protocol; model capability and API compatibility are different layers."
+    ],
+    "references": [
+      {
+        "url": "https://developers.openai.com/api/docs/models/gpt-oss-20b",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "google-gemini-4-carbon",
@@ -878,20 +1845,61 @@
     "task": "text",
     "access": "hosted",
     "protocol": "gemini",
-    "source": "https://deepmind.google/models/model-cards/",
+    "source": "https://aistudio.google.com/docs/models/gemini-4-carbon",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
-    "max_output": null,
-    "pricing": null,
-    "tool_support": null,
+    "context_window": 1048576,
+    "max_output": 65536,
+    "pricing": {
+      "currency": "USD",
+      "unit": "1M tokens",
+      "input": 2,
+      "output": 10,
+      "cached_input": 0.1,
+      "valid_through": "2026-11-30",
+      "note": [
+        "Standard 优惠价，截至 2026-11-30；届时官方列出的后续费率为当前的两倍。输出包含 thinking，搜索与缓存存储另计。",
+        "Standard promotional rates through 2026-11-30; official scheduled rates then double. Output includes thinking; search and cache storage are extra."
+      ],
+      "checked_on": "2026-11-11"
+    },
+    "tool_support": true,
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image",
+      "audio",
+      "video",
+      "PDF"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "model_id": "gemini-4-carbon",
+    "summary": [
+      "面向复杂软件工程、科学推理和自主多步骤任务。",
+      "Designed for complex engineering, scientific reasoning and multistep work."
+    ],
+    "notes": [
+      "4 系列的 1,048,576 是输入输出统一窗口；同步输出默认上限 65,536，long decode 可达 1M。3.8 Flash 此处记录普通输入/输出上限。",
+      "Gemini 4 uses a unified 1,048,576 input/output window; synchronous output is 65,536, with up to 1M using long decode. Flash lists ordinary input/output limits."
+    ],
+    "references": [
+      {
+        "url": "https://aistudio.google.com/docs/models/gemini-4-carbon",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      },
+      {
+        "url": "https://aistudio.google.com/docs/pricing#gemini-4-carbon",
+        "label": "Pricing and effective dates",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "google-gemma-4",
@@ -901,20 +1909,42 @@
     "task": "text",
     "access": "open-weight",
     "protocol": null,
-    "source": "https://deepmind.google/models/model-cards/",
+    "source": "https://ai.google.dev/gemma/docs/core",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
-    "context_window": null,
+    "context_window": "128K / 256K (variant-dependent)",
     "max_output": null,
     "pricing": null,
-    "tool_support": null,
+    "tool_support": true,
     "structured_output": null,
     "license": null,
     "replaces": null,
-    "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "input_modalities": [
+      "text",
+      "image",
+      "audio/video (variant-dependent)"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "published_on": null,
+    "parameters": "E2B / E4B / 12B / 26B A4B / 31B",
+    "summary": [
+      "从移动端到服务器的 Gemma 4 开放模型家族，含 dense、MoE 和多模态变体。",
+      "An open model family spanning mobile and server deployment, dense, MoE and multimodal variants."
+    ],
+    "notes": [
+      "家族条目不是单一型号：小模型 128K，中型 256K；音频支持限 E2B/E4B/12B。选择具体变体和量化后再估算内存。",
+      "This is a family: small models have 128K, medium 256K; audio is on E2B/E4B/12B. Choose a variant and quantization before sizing memory."
+    ],
+    "references": [
+      {
+        "url": "https://ai.google.dev/gemma/docs/core",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   },
   {
     "id": "google-veo-3-1-lite",
@@ -926,7 +1956,7 @@
     "protocol": null,
     "source": "https://deepmind.google/models/model-cards/",
     "verified_on": "2026-11-11",
-    "verification": "identity-and-task",
+    "verification": "official-specifications",
     "lifecycle": "not-verified",
     "context_window": null,
     "max_output": null,
@@ -936,7 +1966,24 @@
     "license": null,
     "replaces": null,
     "input_modalities": null,
-    "output_modalities": null,
-    "published_on": null
+    "output_modalities": [
+      "video"
+    ],
+    "published_on": null,
+    "summary": [
+      "Veo 3.1 系列的 Lite 视频生成条目。",
+      "A Lite video-generation entry in the Veo 3.1 family."
+    ],
+    "notes": [
+      "保留家族身份来源；当前 API 的分辨率、时长与费用尚未补齐，不能从其他 Veo 版本套用。",
+      "Identity is sourced; API resolution, duration and pricing remain unverified and cannot be copied from other Veo versions."
+    ],
+    "references": [
+      {
+        "url": "https://deepmind.google/models/model-cards/",
+        "label": "Model specifications",
+        "checked_on": "2026-11-11"
+      }
+    ]
   }
 ]

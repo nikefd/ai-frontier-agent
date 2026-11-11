@@ -6,7 +6,9 @@ import { lessons, lessonTrace } from '../src/academy/lessons.js';
 import { inspectRequest } from '../src/academy/inspect-request.js';
 test('catalog identities are unique, sourced and distinguish unverified properties',()=>{
  assert.ok(models.length>=30);assert.ok(new Set(models.map(m=>m.provider)).size>=10);assert.equal(new Set(models.map(m=>m.id)).size,models.length);
- for(const m of models){assert.match(m.source,/^https:\/\//);assert.match(m.verified_on,/^\d{4}-\d{2}-\d{2}$/);assert.ok(m.verification);assert.equal(m.pricing,null);assert.equal(m.lifecycle,'not-verified');}
+ for(const m of models){assert.match(m.source,/^https:\/\//);assert.match(m.verified_on,/^\d{4}-\d{2}-\d{2}$/);assert.ok(m.verification);if(m.pricing){assert.equal(m.pricing.currency,'USD');assert.ok(m.pricing.unit);assert.ok(m.pricing.note.length===2);assert.ok(m.pricing.checked_on);}assert.equal(m.lifecycle,'not-verified');}
+ assert.ok(models.filter(m=>m.context_window!=null).length>=25);assert.ok(models.filter(m=>m.pricing!=null).length>=18);
+ for(const m of models){assert.equal(m.summary.length,2);assert.equal(m.notes.length,2);assert.ok(m.references.every(r=>r.url.startsWith('https://')));}
  assert.ok(filterModels('claude','Anthropic','text').length>=3);assert.equal(filterModels('no-such-model').length,0);assert.equal(relatedModels('Claude Sonnet 5.5 news')[0].provider,'Anthropic');
  assert.equal(staleRecord({verified_on:'2020-01-01'},Date.UTC(2026,10,11)),true);
 });
