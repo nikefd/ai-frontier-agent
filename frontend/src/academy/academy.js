@@ -1,18 +1,17 @@
+import { lessonWalkthrough } from './lesson-walkthrough.js';
 import { escapeHtml as esc } from '../util.js';
 import { tr } from '../context-panels.js';
 import { models, filterModels, readProgress, saveCompletion, clearProgress } from './catalog.js';
-import { componentExplanation } from './agent-components.js';
+import { agentGuidePanel, agentComponentPanel } from './agent-guides.js';
 import { agents } from './agents.js';
 import { lessons, lessonTrace, lessonOutcome, traceLabels } from './lessons.js';
 import { academyUrl, modelCard, modelDetail, modelComparison } from './model-views.js';
-import { pretty } from './inspect-panels.js';
-import { inspectRequest } from './inspect-request.js';
 import { protocolDocs } from './protocol-examples.js';
 import './academy.css';
 const compared = new Set();
 const l = pair => tr(...pair);
 function agentDetail(agent) {
-  return `<section class="ax-study"><h2>${esc(agent.name)}</h2><p>${esc(l(agent.summary))}</p><p>${tr('依据公开资料整理 · 2026-11-11 · 教学抽象，非真实运行记录或完整内部实现。产品版本与配置会改变行为。', 'Public-documentation summary · 2026-11-11 · A teaching abstraction, not a captured run or complete internals. Behavior varies with version and configuration.')}</p><div class="cx-flow">${agent.components.map((component,i) => `<button data-agent-part="${i}"><small>0${i+1}</small><b>${esc(l(component))}</b><span>${tr('点击查看职责与边界', 'Select to inspect responsibility and boundaries')} →</span></button>`).join('')}</div><div id="ax-agent-part" class="cx-boundary">${tr('选择一个部件。模型、工具、记忆和执行权限属于不同边界。', 'Select a component. Models, tools, memory and execution permissions have different boundaries.')}</div><p><a href="${esc(agent.source)}" target="_blank" rel="noopener noreferrer">${tr('公开来源 ↗', 'Public source ↗')}</a> · <a href="${academyUrl({tab:'lessons',lesson:agent.lesson})}">${tr('进入相关教学轨迹 →', 'Open a related teaching trace →')}</a></p><p>${tr('下方关联案例是通用教学，不是该产品导出的会话。模型读取上下文；应用或服务执行工具、检查权限并选择记忆。', 'The linked case is generic teaching, not an exported session from this product. The model reads context; the app or service runs tools, checks permissions and selects memory.')}</p></section>`;
+  return `<section class="ax-study"><h2>${esc(agent.name)}</h2><p>${esc(l(agent.summary))}</p><p>${tr('依据公开资料整理 · 2026-11-11 · 教学抽象，非真实运行记录或完整内部实现。产品版本与配置会改变行为。', 'Public-documentation summary · 2026-11-11 · A teaching abstraction, not a captured run or complete internals. Behavior varies with version and configuration.')}</p><div class="cx-flow">${agent.components.map((component,i) => `<button data-agent-part="${i}" aria-pressed="${i===0}"><small>0${i+1}</small><b>${esc(l(component))}</b><span>${tr('点击查看职责与边界', 'Select to inspect responsibility and boundaries')} →</span></button>`).join('')}</div><div id="ax-agent-part" class="cx-boundary">${agentComponentPanel(agent,0)}</div>${agentGuidePanel(agent)}<p><a href="${esc(agent.source)}" target="_blank" rel="noopener noreferrer">${tr('公开来源 ↗', 'Public source ↗')}</a> · <a href="${academyUrl({tab:'lessons',lesson:agent.lesson})}">${tr('进入相关教学轨迹 →', 'Open a related teaching trace →')}</a></p><p>${tr('下方关联案例是通用教学，不是该产品导出的会话。模型读取上下文；应用或服务执行工具、检查权限并选择记忆。', 'The linked case is generic teaching, not an exported session from this product. The model reads context; the app or service runs tools, checks permissions and selects memory.')}</p></section>`;
 }
 function caseDetail(lesson) {
   const trace = lessonTrace(lesson.id), done = readProgress()[lesson.id] === true;
@@ -31,14 +30,14 @@ export function loadAcademy() {
     body.innerHTML = agentDetail(selectedAgent);
     body.querySelectorAll('[data-agent-part]').forEach(button => button.onclick = () => {
       const i = Number(button.dataset.agentPart);
-      body.querySelector('#ax-agent-part').textContent = l(selectedAgent.components[i]) + ' — ' + componentExplanation(selectedAgent, i);
+      body.querySelector('#ax-agent-part').innerHTML = agentComponentPanel(selectedAgent, i);
+      body.querySelectorAll('[data-agent-part]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
     }); return;
   }
   if (selectedCase) {
     body.innerHTML = caseDetail(selectedCase); const trace = lessonTrace(selectedCase.id);
     const renderStep = step => {
-      const report = inspectRequest(trace[step], selectedCase.protocol);
-      body.querySelector('#ax-case-trace').innerHTML = `<div class="ax-metrics"><b>${report.bytes} B</b><span>${report.links.length} ${tr('已出现的工具调用', 'tool calls so far')}</span><a href="/context?${new URLSearchParams({lang:document.documentElement.lang === 'en'?'en':'zh',protocol:selectedCase.protocol,case:selectedCase.id,step:String(step)})}">${tr('在解剖台检查这一轮 →', 'Inspect this turn →')}</a></div>${pretty(trace[step])}`;
+      body.querySelector('#ax-case-trace').innerHTML = lessonWalkthrough(selectedCase, trace, step);
       body.querySelectorAll('[data-case-step]').forEach(b => b.setAttribute('aria-pressed',String(Number(b.dataset.caseStep)===step)));
     };
     renderStep(0);body.querySelectorAll('[data-case-step]').forEach(b => b.onclick=()=>renderStep(Number(b.dataset.caseStep)));

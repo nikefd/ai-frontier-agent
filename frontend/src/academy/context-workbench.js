@@ -1,3 +1,5 @@
+import { models } from './catalog.js';
+import { exampleForModel } from './model-views.js';
 import { escapeHtml as esc } from '../util.js';
 import { loadContextLab } from '../context-lab.js';
 import { tr } from '../context-panels.js';
@@ -27,10 +29,12 @@ function comparison() {
 }
 export function loadContextWorkbench() {
   const container = document.querySelector('#view-context');
-  const params = new URLSearchParams(location.search), link = [params.get('protocol'), params.get('case'), params.get('step')].join(':');
+  const params = new URLSearchParams(location.search), link = [params.get('protocol'), params.get('case'), params.get('step'), params.get('model')].join(':');
   if (link !== previousLink) {
     const requested = params.get('protocol');
     if (protocolNames[requested]) { protocol = requested; mode = 'request'; source = ''; report = null; error = ''; }
+    const model = models.find(m => m.id === params.get('model'));
+    if (model?.protocol) { protocol = model.protocol; mode = 'request'; source = JSON.stringify(exampleForModel(model), null, 2); other = JSON.stringify(exampleForModel(model, false), null, 2); parse(); }
     const lesson = lessons.find(l => l.id === params.get('case'));
     if (lesson) {
       const trace = lessonTrace(lesson.id), step = Math.max(0, Math.min(trace.length - 1, Number(params.get('step')) || 0));
