@@ -481,5 +481,8 @@
   "探索模型、上下文与 Agent 的工作机制": "Explore models, context and agent mechanics",
   "上下文解剖台": "Context inspector",
   "实践实验室": "Practice lab",
-  "🧪 实践实验室": "🧪 Practice lab"
+  "🧪 实践实验室": "🧪 Practice lab",
+  "运行拆解": "Runtime inspector",
+  "用真实记录研究 Codex 与 Claude Code": "Study Codex and Claude Code through real traces",
+  "拆解 Codex / Claude Code": "Inspect Codex / Claude Code"
 }

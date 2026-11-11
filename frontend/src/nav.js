@@ -1,3 +1,4 @@
+import { loadRuntimeLab } from './runtime/runtime-lab.js';
 import { ROUTE_VIEWS, OFFLINE_VIEWS } from './route-links.js';
 import { uiText, uiTemplate } from './i18n.js';
 // View switching + URL routing (History API). Extracted so feed.js / dives.js
@@ -27,6 +28,7 @@ export function navigationAuthReady() {
 
 
 const VIEW_META = {
+  runtime: [uiText('运行拆解'), uiText('用真实记录研究 Codex 与 Claude Code')],
   academy: [uiText('模型与 Agent 学习库'), uiText('探索模型、上下文与 Agent 的工作机制')],
   context: [uiText('上下文解剖台'), uiText('逐步看懂模型与工具的一次交互')],
   summary: [uiText('今日速报'), uiText('先用几分钟掌握今天最值得关注的 AI 动态')],
@@ -43,6 +45,7 @@ const VIEW_META = {
 };
 
 function _runLoader(v) {
+  if (v === 'runtime') loadRuntimeLab();
   if (v === 'academy') loadAcademy();
   if (v === 'context') loadContextWorkbench();
   if (v === 'feed') { refreshList(); loadSuggestions(); }
