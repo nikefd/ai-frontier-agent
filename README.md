@@ -18,12 +18,17 @@ Follow model releases, API changes, open-source tools and research. Read in Engl
 - **Follow first-party updates.** 116 built-in sources across official releases, API changelogs, engineering blogs, papers and selected communities. Fast sources refresh hourly; regular and discovery sources refresh every 4 and 12 hours.
 - **Read a concise daily briefing.** Related reports are grouped, sources are cited, and each generated briefing has English and Chinese versions. Subscribe through RSS.
 - **Keep your reading context.** Searches, filters and pagination stay in the URL, so you can bookmark or share a view and switch languages without losing it.
-- **Learn how context works.** Open `/context` for an offline context-inspection prototype: explore context-size blocks, linked tool calls/results, request comparisons and a minimal agent anatomy. No API key or model calls required.
+- **Explore models and agents.** The [academy](https://ai.zhangyangbin.com/academy?lang=en) includes 40 sourced model references across 13 providers, searchable filters, side-by-side comparison, seven agent/product/pattern entries and five interactive lessons with local completion progress.
+- **Inspect real request structures locally.** The [context inspector](https://ai.zhangyangbin.com/context?lang=en) accepts Chat Completions, Responses, Claude Messages and Gemini GenerateContent JSON, plus common streaming events. Explore byte composition, schemas, call/result links, request differences and stream reconstruction. Inputs stay in browser memory; no API key or model call is needed. Teaching traces are authored examples, not captured product runs.
 - **Explore the details.** Generate deep dives and small experiment cards, save progress notes, and discuss articles with the assistant.
 - **Inspect coverage.** See source health, freshness, filtering and discovery latency. Manually registered event benchmarks retain observed evidence even when articles leave the rolling feed.
 - **Own your data.** Personal collections are isolated by user and stored in your data volume. A single FastAPI process serves the UI and scheduled jobs; no separate database server is required.
 
 ## Screenshots
+
+**Model & agent academy** — searchable references, protocol inspection and guided lessons (2026-11-11).
+
+[![Model and agent academy](docs/images/academy-en.png)](https://ai.zhangyangbin.com/academy?lang=en)
 
 **Article feed** — search, sort, read source summaries and open the original article.
 
@@ -33,7 +38,7 @@ Follow model releases, API changes, open-source tools and research. Read in Engl
 
 [![Source health and coverage overview](docs/images/source-health-en.png)](https://ai.zhangyangbin.com/sources?lang=en)
 
-Screenshots show the public demo on 2026-11-04; the live content changes over time.
+News screenshots show the public demo on 2026-11-04; the academy screenshot shows the 2026-11-11 release. Live content changes over time.
 
 ## Quick start with Docker Compose
 

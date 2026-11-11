@@ -6,6 +6,8 @@
 
 ## 快速导航
 
+学习库与四协议解剖台：[内容维护](guides/learning-content-maintenance.md) ＋ [前端架构第 9 节](architecture/frontend-architecture.md#9-模型与-agent-学习库及通用解剖台)。
+
 | 如果你需要... | 从这里开始 |
 |---|---|
 | 了解项目概况、技术栈、目录结构、核心机制 | [项目概览](overview/project-overview.md) |
@@ -32,7 +34,7 @@
 | 理解对话 agent（sparrow ReAct）怎么工作 / 加工具 | [Agent 架构](architecture/agent-architecture.md) |
 | agent 能调哪些工具 | [Agent 架构](architecture/agent-architecture.md)（第 3 节） |
 | 准备中英文社区介绍、Show HN 短帖和演示提纲 | [宣传文案包](../docs/launch-kit.md) |
-| 学习网站阶段规划与 M0 体验验收 | [学习网站计划](../docs/learning-platform-plan.md) |
+| 学习网站 M0–M5 规划与首版交付 | [学习网站计划](../docs/learning-platform-plan.md) |
 | 可视化学习system/tool/skill、逐步检查工具调用上下文 | [前端架构](architecture/frontend-architecture.md)（第 8 节）＋ `frontend/src/context-lab.js` / `context-example.js` |
 | 中英文 README、语言切换、界面消息目录与双语速报 | [前端架构](architecture/frontend-architecture.md#7-中英文界面与内容边界) ＋ `app/locale.py` ＋ `app/briefing_languages.py` |
 | 改前端 / 理解 ES module 结构 / 视图切换 / Vite 构建 | [前端架构](architecture/frontend-architecture.md) |
