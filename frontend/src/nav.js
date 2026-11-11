@@ -11,14 +11,16 @@ import { loadReflection } from './reflection.js';
 import { loadLearning } from './learning.js';
 import { loadAdminUsers } from './admin.js';
 import { loadSuggestions } from './suggestions.js';
+import { loadContextLab } from './context-lab.js';
 import { loadExperiments } from './experiments.js';
 import { readFeedRoute, syncFeedControls } from './feed-route.js';
 
 // All routable views. The landing/home page is the root path "/".
-const VIEWS = ['feed', 'foryou', 'summary', 'dives', 'review', 'reflection',
+const VIEWS = ['context', 'feed', 'foryou', 'summary', 'dives', 'review', 'reflection',
                'profile', 'sources', 'admin', 'learning', 'experiments'];
 
 const VIEW_META = {
+  context: [uiText('上下文实验室'), uiText('逐步看懂模型与工具的一次交互')],
   summary: [uiText('今日速报'), uiText('先用几分钟掌握今天最值得关注的 AI 动态')],
   feed: [uiText('最新文章'), uiText('来自精选信源的最新 AI 动态')],
   foryou: [uiText('为你推荐'), uiText('根据你的收藏、追踪和阅读偏好排序')],
@@ -33,6 +35,7 @@ const VIEW_META = {
 };
 
 function _runLoader(v) {
+  if (v === 'context') loadContextLab();
   if (v === 'feed') { refreshList(); loadSuggestions(); }
   if (v === 'foryou') loadForYou();
   if (v === 'summary') loadSummary();

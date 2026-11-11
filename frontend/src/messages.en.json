@@ -474,5 +474,7 @@
   "当前密码不正确": "The current password is incorrect.",
   "重置链接无效或已过期": "The reset link is invalid or has expired.",
   "教程": "Tutorial",
-  "观点": "Opinion"
+  "观点": "Opinion",
+  "上下文实验室": "Context lab",
+  "逐步看懂模型与工具的一次交互": "Explore a model and tool interaction step by step"
 }
