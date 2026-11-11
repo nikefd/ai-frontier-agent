@@ -15,6 +15,9 @@ Follow model releases, API changes, open-source tools and research. Read in Engl
 
 ## What it does
 
+- **Study real agent execution.** The [runtime inspector](https://ai.zhangyangbin.com/runtime?lang=en&case=codex-route) replays an actual Codex bug fix with failing tests, file changes, a diff and successful verification. Import Codex/Claude JSONL locally and follow commit-pinned Codex source. The Claude capture honestly records a startup authentication failure; it is not a successful tool run.
+
+
 - **Follow first-party updates.** 116 built-in sources across official releases, API changelogs, engineering blogs, papers and selected communities. Fast sources refresh hourly; regular and discovery sources refresh every 4 and 12 hours.
 - **Read a concise daily briefing.** Related reports are grouped, sources are cited, and each generated briefing has English and Chinese versions. Subscribe through RSS.
 - **Keep your reading context.** Searches, filters and pagination stay in the URL, so you can bookmark or share a view and switch languages without losing it.
@@ -26,6 +29,10 @@ Follow model releases, API changes, open-source tools and research. Read in Engl
 - **Own your data.** Personal collections are isolated by user and stored in your data volume. A single FastAPI process serves the UI and scheduled jobs; no separate database server is required.
 
 ## Screenshots
+
+**Real runtime evidence** — a Codex test failure, linked CLI actions and reported usage (2026-11-11).
+
+[![Codex runtime evidence inspector](docs/images/runtime-en.png)](https://ai.zhangyangbin.com/runtime?lang=en&case=codex-route)
 
 **Model & agent academy** — searchable references, protocol inspection and guided lessons (2026-11-11).
 

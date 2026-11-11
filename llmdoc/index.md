@@ -34,6 +34,7 @@
 | 理解对话 agent（sparrow ReAct）怎么工作 / 加工具 | [Agent 架构](architecture/agent-architecture.md) |
 | agent 能调哪些工具 | [Agent 架构](architecture/agent-architecture.md)（第 3 节） |
 | 准备中英文社区介绍、Show HN 短帖和演示提纲 | [宣传文案包](../docs/launch-kit.md) |
+| 研究 Codex/Claude Code 真实运行、日志导入、调用证据与源码路线 | [运行拆解维护](guides/runtime-inspection.md) ＋ [真实运行研究记录](../docs/runtime-research/README.md) |
 | 学习网站 M0–M5 规划与首版交付 | [学习网站计划](../docs/learning-platform-plan.md) |
 | 可视化学习system/tool/skill、逐步检查工具调用上下文 | [前端架构](architecture/frontend-architecture.md)（第 8 节）＋ `frontend/src/context-lab.js` / `context-example.js` |
 | 中英文 README、语言切换、界面消息目录与双语速报 | [前端架构](architecture/frontend-architecture.md#7-中英文界面与内容边界) ＋ `app/locale.py` ＋ `app/briefing_languages.py` |

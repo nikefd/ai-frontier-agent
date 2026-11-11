@@ -17,6 +17,9 @@
 
 ## 能做什么
 
+- **研究真实 Agent 执行**：[运行拆解](https://ai.zhangyangbin.com/runtime?lang=zh&case=codex-route)回放一次真实 Codex 修复，核对测试失败、文件修改、diff 与验证。支持本地导入 Codex/Claude JSONL、按证据追踪和固定提交源码入口；Claude 样本如实保留启动认证失败，不冒充成功执行。
+
+
 - **跟踪一手变化**：116 个内置信源，模型/API 官方源每小时检查，常规内容每 4 小时、论文与发现源每 12 小时检查。
 - **减少重复阅读**：相关性过滤、同事件聚合、中文翻译和带原文引用的每日速报；支持 RSS 订阅 `/rss/digest.xml`。
 - **保存阅读入口**：搜索、筛选和分页同步到网址，刷新、切换语言或分享链接后保留条件。
@@ -28,6 +31,10 @@
 - **保留自己的资料**：收藏、解读、实验和对话按用户隔离，数据存于自己的文件卷。
 
 ## 界面预览
+
+**真实运行证据**：查看 Codex 的失败测试、对应 CLI 动作与 usage（2026-11-11，英文截图）。
+
+[![Codex 真实运行拆解](docs/images/runtime-en.png)](https://ai.zhangyangbin.com/runtime?lang=zh&case=codex-route)
 
 **模型与 Agent 学习库**：资料筛选、协议解剖和案例学习（2026-11-11，英文界面截图）。
 

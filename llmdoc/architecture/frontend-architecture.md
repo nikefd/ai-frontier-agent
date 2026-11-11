@@ -153,3 +153,9 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 agent-guides.js 补各 Agent 的具体指导文件、上下文选择、运行边界和来源；子任务作为工具与 SDK handoff 区分，后者默认历史继承不能用最小教学 fixture 推断。lesson-notes.js 与 lesson-walkthrough.js 用逐轮讲解和数据派生结果替代以 JSON 为主的案例正文。
 
 首屏不再等待 initAuth 后才从首页恢复路由：head 外部 route-shell.js 先隐藏深链首页 hero，主模块立即恢复目标；公开离线视图立即加载，用户视图仍等待身份。route-links.js 让同语言站内链接在原文档中切换，语言变化/外链/特殊点击保留浏览器行为。
+
+## 10. 真实 Agent 运行拆解
+
+用户把研究主线转为 Codex/Claude Code 的真实运行机制。`/runtime` 由独立 `runtime/` 模块提供本地 JSONL 导入、生命周期与调用结果关联、搜索、原始证据和固定源码路线，作为公开离线视图接入现有客户端路由。模型目录与人工案例保留为辅助。
+
+首批公开样本来自明确授权的各一次受控 CLI 实验：Codex 完成首屏故障最小复现修复；Claude 未完成认证，没有执行工具，保留失败记录。所有公开样本已逐条检查并替换私人路径/会话标识；原始产物留在被忽略的 `.run/`，不自动发布。普通日志不冒充完整 API 请求，CLI item ID 不冒充模型调用 ID。来源、维护、安全与验证见 [运行拆解维护](../guides/runtime-inspection.md)。
