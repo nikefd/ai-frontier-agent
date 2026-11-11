@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 globalThis.location={search:'?lang=en'};
+Object.defineProperty(globalThis,'navigator',{value:{language:'en-US'},configurable:true});
 const {analyzeTrace}=await import('../src/runtime/analyze-trace.js');
 const {nodePanel,evidenceSummary,eventList}=await import('../src/runtime/runtime-panels.js');
 const {sourceMap,sourceUrl,codexSnapshot}=await import('../src/runtime/source-map.js');
