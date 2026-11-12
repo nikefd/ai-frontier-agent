@@ -1,5 +1,7 @@
 # 维护真实运行拆解台
 
+> 历史记录：相关三个学习模块已于 2026-11-12 移除；以下不是当前使用说明。新方案见 `docs/live-agent-lab-plan.md`。
+
 公开路由 `/runtime` 已加入 `ROUTE_VIEWS` 和 `OFFLINE_VIEWS`，不等登录检查，不增加后端 API。资料主线参见 [研究记录](../../docs/runtime-research/README.md)。
 
 ## 数据流

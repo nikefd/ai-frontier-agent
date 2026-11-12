@@ -17,28 +17,15 @@
 
 ## 能做什么
 
-- **研究真实 Agent 执行**：[运行拆解](https://ai.zhangyangbin.com/runtime?lang=zh&case=codex-route)回放一次真实 Codex 修复，核对测试失败、文件修改、diff 与验证。支持本地导入 Codex/Claude JSONL、按证据追踪和固定提交源码入口；Claude 样本如实保留启动认证失败，不冒充成功执行。
-
-
 - **跟踪一手变化**：116 个内置信源，模型/API 官方源每小时检查，常规内容每 4 小时、论文与发现源每 12 小时检查。
 - **减少重复阅读**：相关性过滤、同事件聚合、中文翻译和带原文引用的每日速报；支持 RSS 订阅 `/rss/digest.xml`。
 - **保存阅读入口**：搜索、筛选和分页同步到网址，刷新、切换语言或分享链接后保留条件。
-- **学习模型与 Agent**：[学习库](https://ai.zhangyangbin.com/academy?lang=zh)收录 13 个提供方的 40 条有来源模型资料，支持搜索筛选、最多三项比较；提供 7 项 Agent 产品/框架/模式介绍、5 条交互案例和本地学习进度。
 - **不止模型名称**：提供各类任务数据流、已核验规格与价格条件、Agent 具体指导文件，以及逐轮解释和调用/结果对照；站内学习链接直接切换，修复先闪首页的问题。
-- **检查真实请求结构**：[上下文解剖台](https://ai.zhangyangbin.com/context?lang=zh)支持 Chat Completions、Responses、Claude Messages、Gemini GenerateContent 请求与常见流式事件，联动查看字节组成、参数树、调用/结果、请求差异和流式重组。导入内容仅在浏览器内存处理，无需密钥、不调用模型；教学轨迹为人工编写，非产品实测。
 - **把阅读变成实践**：按需深度解读、结构化实验卡、进度和结果笔记，可交给对话助手逐步讨论。
 - **看清覆盖质量**：来源健康、内容陈旧度、噪声率和发现延迟可查；人工必达基准会保留最早命中证据，文章淘汰后仍可核验。
 - **保留自己的资料**：收藏、解读、实验和对话按用户隔离，数据存于自己的文件卷。
 
 ## 界面预览
-
-**真实运行证据**：查看 Codex 的失败测试、对应 CLI 动作与 usage（2026-11-11，英文截图）。
-
-[![Codex 真实运行拆解](docs/images/runtime-en.png)](https://ai.zhangyangbin.com/runtime?lang=zh&case=codex-route)
-
-**模型与 Agent 学习库**：资料筛选、协议解剖和案例学习（2026-11-11，英文界面截图）。
-
-[![模型与 Agent 学习库](docs/images/academy-en.png)](https://ai.zhangyangbin.com/academy?lang=zh)
 
 **最新文章**：按时间或重要性浏览中文摘要，搜索感兴趣的话题，直接打开原文或进一步解读。
 

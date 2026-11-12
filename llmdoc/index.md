@@ -6,7 +6,8 @@
 
 ## 快速导航
 
-学习库与四协议解剖台：[内容维护](guides/learning-content-maintenance.md) ＋ [前端架构第 9 节](architecture/frontend-architecture.md#9-模型与-agent-学习库及通用解剖台)。
+2026-11-12：运行拆解、模型与 Agent 学习库、上下文解剖台已移除；[真实 Agent 可视化实验台提案](../docs/live-agent-lab-plan.md) 尚未实现。
+
 
 | 如果你需要... | 从这里开始 |
 |---|---|
@@ -34,11 +35,8 @@
 | 理解对话 agent（sparrow ReAct）怎么工作 / 加工具 | [Agent 架构](architecture/agent-architecture.md) |
 | agent 能调哪些工具 | [Agent 架构](architecture/agent-architecture.md)（第 3 节） |
 | 准备中英文社区介绍、Show HN 短帖和演示提纲 | [宣传文案包](../docs/launch-kit.md) |
-| 交互理解 Agent 反馈闭环、路由时序实验、真实日志与源码路线 | [运行拆解维护](guides/runtime-inspection.md) ＋ [真实运行研究记录](../docs/runtime-research/README.md) |
-| 学习网站 M0–M5 规划与首版交付 | [学习网站计划](../docs/learning-platform-plan.md) |
-| 可视化学习system/tool/skill、逐步检查工具调用上下文 | [前端架构](architecture/frontend-architecture.md)（第 8 节）＋ `frontend/src/context-lab.js` / `context-example.js` |
 | 中英文 README、语言切换、界面消息目录与双语速报 | [前端架构](architecture/frontend-architecture.md#7-中英文界面与内容边界) ＋ `app/locale.py` ＋ `app/briefing_languages.py` |
-| 排查深链接先闪首页、站内学习链接整页刷新和 session 加载时序 | [前端架构](architecture/frontend-architecture.md#91-内容深化与首屏修复2026-11-11) ＋ `frontend/src/route-links.js` / `frontend/public/route-shell.js` |
+| 排查深链接先闪首页、站内学习链接整页刷新和 session 加载时序 | [前端架构](architecture/frontend-architecture.md#8-学习实验模块已移除2026-11-12) ＋ `frontend/src/route-links.js` / `frontend/public/route-shell.js` |
 | 改前端 / 理解 ES module 结构 / 视图切换 / Vite 构建 | [前端架构](architecture/frontend-architecture.md) |
 | 理解阅读优先的信息架构 / 首页入口 / 导航分层 / 文章卡片操作 | [前端架构](architecture/frontend-architecture.md)（第 1.2/3/4 节） |
 | 搜索筛选链接分享、刷新与语言切换后恢复条件 | [前端架构](architecture/frontend-architecture.md)（第 3 节）＋ `frontend/src/feed-route.js` |

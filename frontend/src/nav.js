@@ -1,5 +1,4 @@
-import { loadRuntimeLab } from './runtime/runtime-lab.js';
-import { ROUTE_VIEWS, OFFLINE_VIEWS } from './route-links.js';
+import { ROUTE_VIEWS } from './route-links.js';
 import { uiText, uiTemplate } from './i18n.js';
 // View switching + URL routing (History API). Extracted so feed.js / dives.js
 // can trigger navigation without importing main.js (avoids an import cycle).
@@ -13,8 +12,6 @@ import { loadReflection } from './reflection.js';
 import { loadLearning } from './learning.js';
 import { loadAdminUsers } from './admin.js';
 import { loadSuggestions } from './suggestions.js';
-import { loadAcademy } from './academy/academy.js';
-import { loadContextWorkbench } from './academy/context-workbench.js';
 import { loadExperiments } from './experiments.js';
 import { readFeedRoute, syncFeedControls } from './feed-route.js';
 
@@ -23,14 +20,11 @@ const VIEWS = ROUTE_VIEWS;
 let identityReady = false;
 export function navigationAuthReady() {
   identityReady = true;
-  if (state.view !== 'home' && !OFFLINE_VIEWS.has(state.view)) applyRoute();
+  if (state.view !== 'home') applyRoute();
 }
 
 
 const VIEW_META = {
-  runtime: [uiText('运行拆解'), uiText('用真实记录研究 Codex 与 Claude Code')],
-  academy: [uiText('模型与 Agent 学习库'), uiText('探索模型、上下文与 Agent 的工作机制')],
-  context: [uiText('上下文解剖台'), uiText('逐步看懂模型与工具的一次交互')],
   summary: [uiText('今日速报'), uiText('先用几分钟掌握今天最值得关注的 AI 动态')],
   feed: [uiText('最新文章'), uiText('来自精选信源的最新 AI 动态')],
   foryou: [uiText('为你推荐'), uiText('根据你的收藏、追踪和阅读偏好排序')],
@@ -45,9 +39,6 @@ const VIEW_META = {
 };
 
 function _runLoader(v) {
-  if (v === 'runtime') loadRuntimeLab();
-  if (v === 'academy') loadAcademy();
-  if (v === 'context') loadContextWorkbench();
   if (v === 'feed') { refreshList(); loadSuggestions(); }
   if (v === 'foryou') loadForYou();
   if (v === 'summary') loadSummary();
@@ -78,7 +69,7 @@ export function switchView(v, push = true) {
   $$('.bottom-tabs button[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === v));
   $$('.view-pane').forEach(p => p.classList.toggle('hidden', p.id !== 'view-' + v));
   if (push && location.pathname !== '/' + v) history.pushState({ v }, '', '/' + v + location.search);
-  if (identityReady || OFFLINE_VIEWS.has(v)) _runLoader(v);
+  if (identityReady) _runLoader(v);
 }
 
 // Show the landing/home page (root path).

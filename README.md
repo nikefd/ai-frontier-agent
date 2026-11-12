@@ -15,28 +15,15 @@ Follow model releases, API changes, open-source tools and research. Read in Engl
 
 ## What it does
 
-- **Study real agent execution.** The [runtime inspector](https://ai.zhangyangbin.com/runtime?lang=en&case=codex-route) replays an actual Codex bug fix with failing tests, file changes, a diff and successful verification. Import Codex/Claude JSONL locally and follow commit-pinned Codex source. The Claude capture honestly records a startup authentication failure; it is not a successful tool run.
-
-
 - **Follow first-party updates.** 116 built-in sources across official releases, API changelogs, engineering blogs, papers and selected communities. Fast sources refresh hourly; regular and discovery sources refresh every 4 and 12 hours.
 - **Read a concise daily briefing.** Related reports are grouped, sources are cited, and each generated briefing has English and Chinese versions. Subscribe through RSS.
 - **Keep your reading context.** Searches, filters and pagination stay in the URL, so you can bookmark or share a view and switch languages without losing it.
-- **Explore models and agents.** The [academy](https://ai.zhangyangbin.com/academy?lang=en) includes 40 sourced model references across 13 providers, searchable filters, side-by-side comparison, seven agent/product/pattern entries and five interactive lessons with local completion progress.
 - **Go beyond model names.** Read task-specific data flows, documented limits and pricing conditions, concrete agent guidance files, and turn-by-turn explanations with matched calls and results. Internal learning links switch without reloading the landing page.
-- **Inspect real request structures locally.** The [context inspector](https://ai.zhangyangbin.com/context?lang=en) accepts Chat Completions, Responses, Claude Messages and Gemini GenerateContent JSON, plus common streaming events. Explore byte composition, schemas, call/result links, request differences and stream reconstruction. Inputs stay in browser memory; no API key or model call is needed. Teaching traces are authored examples, not captured product runs.
 - **Explore the details.** Generate deep dives and small experiment cards, save progress notes, and discuss articles with the assistant.
 - **Inspect coverage.** See source health, freshness, filtering and discovery latency. Manually registered event benchmarks retain observed evidence even when articles leave the rolling feed.
 - **Own your data.** Personal collections are isolated by user and stored in your data volume. A single FastAPI process serves the UI and scheduled jobs; no separate database server is required.
 
 ## Screenshots
-
-**Real runtime evidence** — a Codex test failure, linked CLI actions and reported usage (2026-11-11).
-
-[![Codex runtime evidence inspector](docs/images/runtime-en.png)](https://ai.zhangyangbin.com/runtime?lang=en&case=codex-route)
-
-**Model & agent academy** — searchable references, protocol inspection and guided lessons (2026-11-11).
-
-[![Model and agent academy](docs/images/academy-en.png)](https://ai.zhangyangbin.com/academy?lang=en)
 
 **Article feed** — search, sort, read source summaries and open the original article.
 
@@ -46,7 +33,7 @@ Follow model releases, API changes, open-source tools and research. Read in Engl
 
 [![Source health and coverage overview](docs/images/source-health-en.png)](https://ai.zhangyangbin.com/sources?lang=en)
 
-News screenshots show the public demo on 2026-11-04; the academy screenshot shows the 2026-11-11 release. Live content changes over time.
+News screenshots show the public demo on 2026-11-04. Live content changes over time.
 
 ## Quick start with Docker Compose
 

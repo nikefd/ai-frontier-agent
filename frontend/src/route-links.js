@@ -1,5 +1,4 @@
-export const ROUTE_VIEWS = ['runtime', 'academy', 'context', 'feed', 'foryou', 'summary', 'dives', 'review', 'reflection', 'profile', 'sources', 'admin', 'learning', 'experiments'];
-export const OFFLINE_VIEWS = new Set(['runtime', 'academy', 'context']);
+export const ROUTE_VIEWS = ['feed', 'foryou', 'summary', 'dives', 'review', 'reflection', 'profile', 'sources', 'admin', 'learning', 'experiments'];
 export function clientRoute(href, current, language) {
   const url = new URL(href, current), origin = new URL(current);
   if (url.origin !== origin.origin || url.hash || !ROUTE_VIEWS.includes(url.pathname.slice(1))) return null;

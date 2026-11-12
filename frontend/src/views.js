@@ -3,7 +3,6 @@ import { uiText, uiTemplate, language, isEnglish, formatCount } from './i18n.js'
 import { $, $$, escapeHtml, fmtDate, catBadge, safeExternalUrl } from './util.js';
 import { api, renderMermaidInside } from './api.js';
 import { getUser } from './auth.js';
-import { learningLinks } from './academy/learning-links.js';
 import { renderMarkdown } from './markdown.js';
 
 // ── Today's summary ──────────────────────────────────────────────────
@@ -83,8 +82,6 @@ async function renderSummary(body, summary) {
   body.innerHTML = renderMarkdown((isEnglish() ? summary.body_en || summary.body : summary.body) || '');
   linkSummaryCitations(body, summary.cohort || []);
   collapseSecondarySummary(body);
-  const links = learningLinks({ title: (summary.cohort || []).map(a => a.title).join(" ") });
-  if (links) body.insertAdjacentHTML("beforeend", links);
   await renderMermaidInside(body);
 }
 
