@@ -56,6 +56,7 @@ def build_tools(uid: str) -> list:
         ddir = news.deep_dives_dir(uid)
         items = [{
             "id": a.get("id"),
+            "url": a.get("url"),
             "title": a.get("title_zh") or a.get("title"),
             "source": a.get("source"),
             "category": a.get("category"),
@@ -88,6 +89,8 @@ def build_tools(uid: str) -> list:
             "id": id,
             "title": a.get("title"),
             "title_zh": a.get("title_zh"),
+            "date": a.get("date"),
+            "publication": a.get("source"),
             "url": a.get("url"),
             "source": a.get("source"),
             "summary": a.get("summary_zh") or a.get("summary"),

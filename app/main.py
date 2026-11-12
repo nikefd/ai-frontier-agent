@@ -147,6 +147,8 @@ app.include_router(auth_router)
 try:
     from .agent_chat import router as agent_router
     app.include_router(agent_router)
+    from .agent_research import router as research_router
+    app.include_router(research_router)
 except Exception as e:  # noqa: broad-except
     logging.getLogger("aif").warning("agent chat router not loaded: %s", e)
 
