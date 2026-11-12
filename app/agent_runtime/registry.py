@@ -56,10 +56,14 @@ def _build_schema(fn: Callable, explicit: Optional[dict]) -> dict:
         return explicit
     props, required = {}, []
     sig = inspect.signature(fn)
+    try:
+        annotations = inspect.get_annotations(fn, eval_str=True)
+    except (NameError, TypeError, ValueError):
+        annotations = {}
     for pname, p in sig.parameters.items():
         if pname in ("self", "args", "_args"):
             continue
-        ann = p.annotation
+        ann = annotations.get(pname, p.annotation)
         jtype = _JSON_TYPES.get(ann, "string")
         props[pname] = {"type": jtype}
         if p.default is inspect.Parameter.empty:

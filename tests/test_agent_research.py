@@ -77,6 +77,9 @@ def test_research_uses_only_existing_read_only_article_tools():
     assert all(not tool.writes for tool in harness.config.tools)
     assert harness.config.max_tool_rounds==4
     assert harness.config.recall_provider is None
+    properties=harness.registry.get('query_articles').schema['properties']
+    assert properties['limit']['type']=='integer'
+    assert properties['pinned_only']['type']=='boolean'
 
 
 def test_endpoint_requires_identity_and_releases_admission(monkeypatch):
