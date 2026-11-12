@@ -13,6 +13,7 @@ overridden with ``configure()`` so a host app can inject its own credentials
 without touching env state.
 """
 import json
+from copy import deepcopy
 import os
 import time
 import urllib.request
@@ -57,25 +58,34 @@ def _request(payload: dict):
     return urllib.request.urlopen(req, timeout=120)
 
 
+def request_payload(messages, tools=None, temperature=0.3, max_tokens=2000,
+                    response_format=None, stream=False):
+    """The exact JSON body used by chat; never contains authentication headers."""
+    payload = {
+        "model": _CFG["model"],
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+        "stream": stream,
+    }
+    if tools:
+        payload["tools"] = tools
+    if response_format:
+        payload["response_format"] = response_format
+
+    return deepcopy(payload)
+
+
 def chat(messages, tools=None, temperature=0.3, max_tokens=2000,
-         response_format=None, on_delta=None, retries=2):
+         response_format=None, on_delta=None, retries=2, prepared_payload=None):
     """Call the LLM. When ``on_delta`` is set, stream (text deltas only). Returns
     a unified structure:
         {"content": str, "tool_calls": [{"id","name","arguments"}], "usage": {...}}
     """
     if not _CFG["api_key"]:
         raise LLMError("LLM api key is not configured (SPARROW_LLM_API_KEY / DEEPSEEK_API_KEY)")
-    payload = {
-        "model": _CFG["model"],
-        "messages": messages,
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-        "stream": on_delta is not None,
-    }
-    if tools:
-        payload["tools"] = tools
-    if response_format:
-        payload["response_format"] = response_format
+    payload = deepcopy(prepared_payload) if prepared_payload is not None else request_payload(
+        messages, tools, temperature, max_tokens, response_format, on_delta is not None)
 
     last_err = None
     for attempt in range(retries + 1):
@@ -90,6 +100,7 @@ def chat(messages, tools=None, temperature=0.3, max_tokens=2000,
                                   usage.get("completion_tokens", 0),
                                   int((time.time() - t0) * 1000)))
                 return {
+                    "message": msg,
                     "content": msg.get("content") or "",
                     "tool_calls": [
                         {"id": tc["id"], "name": tc["function"]["name"],

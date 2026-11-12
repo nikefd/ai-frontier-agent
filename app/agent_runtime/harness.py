@@ -17,8 +17,10 @@ The engine is domain-agnostic: all domain knowledge comes from
 :class:`~sparrow.registry.AgentConfig` (system prompt, tools, memory paths).
 """
 import json
+from copy import deepcopy
+from time import monotonic
 
-from .llm import chat, LLMError
+from .llm import chat, request_payload, LLMError
 from .registry import AgentConfig, ToolRegistry
 
 
@@ -49,7 +51,7 @@ class Harness:
                 pass  # recall must never block the conversation
         return system
 
-    def run(self, user_messages, conversation_id=""):
+    def run(self, user_messages, conversation_id="", *, trace=False, cancelled=None):
         """Main loop. ``user_messages``: [{"role","content"}, ...]; yields event
         dicts."""
         cfg = self.config
@@ -59,7 +61,10 @@ class Harness:
         citations = []
         try:
             for _round in range(cfg.max_tool_rounds):
-                result = chat(messages, tools=self.registry.openai_specs())
+                if cancelled and cancelled.is_set():
+                    yield {"type": "cancelled"}
+                    return
+                result = yield from self._model_turn(messages, self.registry.openai_specs(), _round + 1, trace)
 
                 if not result["tool_calls"]:
                     yield {"type": "final", "content": result["content"],
@@ -68,19 +73,19 @@ class Harness:
 
                 # Echo the assistant's tool-call intent back into history
                 # (required by the OpenAI protocol)
-                messages.append({
-                    "role": "assistant",
-                    "content": result["content"] or None,
-                    "tool_calls": [{"id": tc["id"], "type": "function",
-                                    "function": {"name": tc["name"],
-                                                 "arguments": json.dumps(tc["arguments"], ensure_ascii=False)}}
-                                   for tc in result["tool_calls"]],
-                })
+                messages.append(deepcopy(result.get("message") or {
+                    "role": "assistant", "content": result["content"] or None,
+                    "tool_calls": [{"id": tc["id"], "type": "function", "function": {
+                        "name": tc["name"], "arguments": json.dumps(tc["arguments"], ensure_ascii=False)}}
+                        for tc in result["tool_calls"]]}))
                 for tc in result["tool_calls"]:
+                    if cancelled and cancelled.is_set():
+                        yield {"type": "cancelled"}
+                        return
                     tool = self.registry.get(tc["name"])
                     label = tool.label if tool else tc["name"]
                     yield {"type": "tool_call", "name": tc["name"], "label": label,
-                           "arguments": tc["arguments"]}
+                           "arguments": deepcopy(tc["arguments"]), "call_id": tc["id"], "turn": _round + 1}
 
                     # Inject conversation_id into write tools that accept it
                     if tool and tool.writes and isinstance(tc["arguments"], dict):
@@ -92,8 +97,12 @@ class Harness:
                         citations.append(src)
                     is_err = isinstance(out, dict) and out.get("error")
 
-                    yield {"type": "tool_result", "name": tc["name"], "label": label,
-                           "summary": _summarize(out)}
+                    content = _truncate(out, cfg.tool_result_max_chars)
+                    event = {"type": "tool_result", "name": tc["name"], "label": label,
+                             "summary": _summarize(out), "call_id": tc["id"], "turn": _round + 1}
+                    if trace:
+                        event.update(result=deepcopy(out), content=content, truncated=len(json.dumps(out, ensure_ascii=False, default=str)) > cfg.tool_result_max_chars)
+                    yield event
 
                     # Episodic memory: journal only meaningful state changes
                     if tool and tool.writes and self._journal_fn and cfg.enable_journal and not is_err:
@@ -109,18 +118,34 @@ class Harness:
                         yield {"type": "panel_created", "id": out.get("id", "")}
 
                     messages.append({"role": "tool", "tool_call_id": tc["id"],
-                                     "content": _truncate(out, cfg.tool_result_max_chars)})
+                                     "content": content})
 
             # Tool-round budget exceeded: force a close-out
             messages.append({"role": "user",
                              "content": "(system: tool-call limit reached; answer now from what you have)"})
-            result = chat(messages)
+            if cancelled and cancelled.is_set():
+                yield {"type": "cancelled"}
+                return
+            result = yield from self._model_turn(messages, None, cfg.max_tool_rounds + 1, trace)
             yield {"type": "final", "content": result["content"],
                    "citations": sorted(set(citations))}
         except LLMError as e:
             yield {"type": "error", "message": str(e)}
         except Exception as e:  # noqa: broad-except
             yield {"type": "error", "message": f"{type(e).__name__}: {e}"}
+
+
+    def _model_turn(self, messages, tools, turn, trace):
+        if not trace:
+            return chat(messages, tools=tools)
+        payload = request_payload(messages, tools)
+        yield {"type": "model_request", "turn": turn, "payload": deepcopy(payload)}
+        started = monotonic()
+        result = chat(messages, tools=tools, retries=0, prepared_payload=payload)
+        yield {"type": "model_response", "turn": turn,
+               "message": deepcopy(result.get("message") or {"role": "assistant", "content": result["content"]}),
+               "usage": deepcopy(result.get("usage", {})), "elapsed_ms": round((monotonic() - started) * 1000)}
+        return result
 
 
 def _summarize(out) -> str:
