@@ -15,7 +15,7 @@
 - `app/agent_research.py`：身份/额度、只读工具选择、研究提示、并发占用、断连取消与 SSE；阻塞 provider 与工具在工作线程执行，不阻塞单 uvicorn 的事件循环。复用现有 `build_tools` 与 Harness，没有第二套 Agent 引擎。
 - `frontend/src/article-agent/run-state.js`：SSE 分块解码与事件投影，文章只从成功工具结果提取并按 ID 合并。
 - `run-view.js`：回答/文章、上下文→模型→工具流程、可点选时间线、请求消息与工具 schema 检查器。实际发出正文可以完整展开。token 只累计 API 已报告的输入/输出，不再加缓存 token；缺失时不伪装零。
-- `article-agent.js`：表单、fetch/AbortController、状态与 DOM 交互；身份变化中止并清空私有记录。样式局部作用域，移动端先显示过程再显示回答。
+- `article-agent.js`：表单、fetch/AbortController、状态与 DOM 交互；身份变化中止并清空私有记录。样式局部作用域，桌面和移动端均按过程在上、回答在下排列。成功完成时过程自动收起，用户可重开；失败/停止保留过程。上下文标题用角色与工具用途/搜索词/文章标题，按前一批 assistant 调用关联结果，原始 ID 与消息保留在折叠详情。
 
 ## 验证
 
