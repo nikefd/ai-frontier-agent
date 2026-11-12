@@ -2,3 +2,5 @@
 @media(max-width:900px){.ar-workspace{grid-template-columns:1fr}.ar-panel>summary{flex-direction:column;gap:5px}.ar-body{padding:0 14px 16px}.ar-status{flex-wrap:wrap}.ar-status>span:last-child{margin-left:0;width:100%}.ar-inspector{max-height:440px}.ar-process{grid-row:1}.ar-results{grid-row:2}}
 
 .ar-flow .ar-active{border-color:#5c7ad0;background:#eef2ff;box-shadow:0 0 0 2px #e3eafd}.ar-flow small{font-size:9px;display:block;margin-top:6px;overflow-wrap:anywhere}@media(prefers-reduced-motion:no-preference){.ar-flow button{transition:background .2s,border-color .2s,box-shadow .2s}}
+
+.ar-more-articles>summary{font-size:12px;color:#667eac;cursor:pointer;padding:10px 0}
