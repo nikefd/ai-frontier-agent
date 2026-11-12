@@ -15,6 +15,8 @@ Follow model releases, API changes, open-source tools and research. Read in Engl
 
 ## What it does
 
+- **Research articles with a live agent.** On the [article feed](https://ai.zhangyangbin.com/feed?lang=en), ask a question and inspect real model requests, article searches, reads and feedback. Requires a verified account and configured DeepSeek access; this is a basic read-only tool loop, capped at five model calls per run.
+
 - **Follow first-party updates.** 116 built-in sources across official releases, API changelogs, engineering blogs, papers and selected communities. Fast sources refresh hourly; regular and discovery sources refresh every 4 and 12 hours.
 - **Read a concise daily briefing.** Related reports are grouped, sources are cited, and each generated briefing has English and Chinese versions. Subscribe through RSS.
 - **Keep your reading context.** Searches, filters and pagination stay in the URL, so you can bookmark or share a view and switch languages without losing it.
