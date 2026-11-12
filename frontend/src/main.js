@@ -1,3 +1,4 @@
+import { mountArticleAgent } from './article-agent/article-agent.js';
 import { installRouteLinks } from './route-links.js';
 import { uiText, uiTemplate, initI18n } from './i18n.js';
 // App entry: view switching and all event wiring.
@@ -19,6 +20,7 @@ import { renderMarkdown } from './markdown.js';
 // The classic chat component cannot import ES modules itself. Give it the same
 // DOMPurify-backed renderer used by every other LLM content surface.
 initI18n();
+mountArticleAgent(document.querySelector('#article-agent'));
 window.__renderSafeMarkdown = renderMarkdown;
 if (window.SparrowChat) {
   window.__sparrowChat = window.SparrowChat.mount({
