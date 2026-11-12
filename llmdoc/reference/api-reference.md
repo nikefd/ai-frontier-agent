@@ -222,3 +222,8 @@ agent 主动提议（B2）：基于用户行为信号给「下一步」建议。
 - `GET /api/ai-news/summary/today?lang=zh|en` 默认 zh，选择同一缓存对应正文；不触发翻译/写入，旧中文缓存没有英文时正文为空。新速报生成一次返回 body/body_en，两者共享 cohort 与引用。模型缺失任一语言或两者引用不一致时失败并保留旧缓存。
 - `GET|HEAD /rss/digest.xml?lang=en` 返回有英文版本的公开速报，语言元数据/标题/链接/GUID 区分英文；省略 lang 保持中文兼容。
 - 前端发出 `Accept-Language: en|zh`。个人 AI 生成（含聊天）按当前语言输出自然语言文本，保留结构化字段和枚举。来源健康/内容新鲜度说明也按请求语言选择；原始错误、来源描述和既有用户内容保留原语言。默认调度仍使用中文上下文，并单次生成双语速报。
+
+
+## 文章检索可视化（2026-11-12）
+
+`POST /api/agent/research`，JSON `{ "message": "查找 Agent 相关文章" }`（1–2000 字符，拒绝纯空白）。沿用登录、邮箱验证与每日 AI 额度；同用户一个在途研究，重复返回409，未配置模型返回503。SSE 包含 model_request（实际 payload）、model_response（message/usage/elapsed_ms）、tool_call/tool_result（turn/call_id；结果含 result/content/truncated）、final/error/cancelled。不存会话；仅两个既有只读文章工具。断开连接停止后续动作，在途 provider 请求可能继续完成。详情见 `guides/article-agent.md`。

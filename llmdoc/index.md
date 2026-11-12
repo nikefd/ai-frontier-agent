@@ -6,7 +6,7 @@
 
 ## 快速导航
 
-2026-11-12：运行拆解、模型与 Agent 学习库、上下文解剖台已移除；[真实 Agent 可视化实验台提案](../docs/live-agent-lab-plan.md) 尚未实现。
+2026-11-12：运行拆解、模型与 Agent 学习库、上下文解剖台已移除；[真实 Agent 可视化实验台提案](../docs/live-agent-lab-plan.md) 尚未全部实现；文章页已有基础真实检索可视化，见下方指南。
 
 
 | 如果你需要... | 从这里开始 |
@@ -32,6 +32,7 @@
 | 检查来源覆盖 / 噪声率 / 价值评分 / 必达候选 / 绝对召回 / 漏报根因诊断、未接入来源发现、RSS/Sitemap/更新页半自动接入与自定义源停用/删除、JS 官网专用适配、单源复测和处理闭环 / 高影响事件漏出 / 富化积压 / 发现延迟 | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 2.2/2.5/5 节）＋ [API 参考](reference/api-reference.md)（第 7 节）＋ [数据存储参考](reference/data-storage.md)（2.1/3.2b）＋ `app/quality_report.py` / `app/source_discovery.py` / `app/source_adapter_validation.py` / `app/source_activation.py` / `app/auto_listing.py` / `app/official_page_adapters.py` / `app/source_management.py` / `app/custom_sources.py` |
 | 找出可实践内容 / 理解实践建议怎么生成 / “带我做”如何接 AI | [RSS 抓取管线架构](architecture/rss-pipeline-architecture.md)（第 3/4 节）＋ [前端架构](architecture/frontend-architecture.md)（第 3/4 节）＋ [数据存储参考](reference/data-storage.md)（3.1） |
 | 结构化实验卡怎么生成 / 外链如何防幻觉 / 进度笔记存哪 | [API 参考](reference/api-reference.md)（第 4e 节）＋ [数据存储参考](reference/data-storage.md)（3.11）＋ `app/routers/experiments.py` |
+| 文章页真实 Agent 检索、上下文与工具执行可视化 | [文章检索 Agent](guides/article-agent.md) |
 | 理解对话 agent（sparrow ReAct）怎么工作 / 加工具 | [Agent 架构](architecture/agent-architecture.md) |
 | agent 能调哪些工具 | [Agent 架构](architecture/agent-architecture.md)（第 3 节） |
 | 准备中英文社区介绍、Show HN 短帖和演示提纲 | [宣传文案包](../docs/launch-kit.md) |

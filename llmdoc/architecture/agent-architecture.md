@@ -116,3 +116,8 @@ system prompt（英文写，见 `agent_chat.py`）给 agent 定了几条铁律�
 ## 4. 前端组件
 
 对话 UI 用仓库内的 `frontend/public/sparrow-chat.js`，Vite 原样输出到 `/sparrow-chat.js`。`main.js` 先注册安全 Markdown renderer，再执行 `SparrowChat.mount({...})`，因此历史消息和 SSE 最终答案统一经 DOMPurify 清洗。可直接修改组件源码，改完需 `npm run build`。详见 [前端架构](frontend-architecture.md)。
+
+
+## 5. 文章页可观察研究
+
+`/api/agent/research` 复用同一 Harness 但仅注入 query_articles/read_article，不注入 journal 和记忆。`trace=True` 通过单一请求组装点捕获真正发出的正文，并给出模型返回、usage、工具 ID/原始输出/实际回填。默认旧聊天不开启详细捕获，避免改变原界面事件负担。文章查询增加原文 URL，读取详情增加日期与原始来源 publication。前端入口和取消语义见 [文章检索指南](../guides/article-agent.md)。
