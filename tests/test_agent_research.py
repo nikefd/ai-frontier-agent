@@ -83,13 +83,12 @@ def test_endpoint_requires_identity_and_releases_admission(monkeypatch):
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
     from app import agent_research as research
-    from app.auth import require_llm_quota
     from app.models import UserPublic
     app=FastAPI()
     app.include_router(research.router)
     client=TestClient(app)
     assert client.post('/api/agent/research',json={'message':'find Agent'}).status_code==401
-    app.dependency_overrides[require_llm_quota]=lambda: UserPublic(id='research-test',email='test@example.org',email_verified=True)
+    app.dependency_overrides[research.require_llm_quota]=lambda: UserPublic(id='research-test',email='test@example.org',email_verified=True)
     monkeypatch.setattr(research,'llm_configured',lambda:True)
     class StubHarness:
         def run(self,*args,**kwargs):
