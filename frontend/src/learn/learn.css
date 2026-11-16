@@ -2,3 +2,4 @@ body.learning-active .page-head,body.learning-active .split-2,body.learning-acti
 @media(max-width:720px){.ln-nav{align-items:flex-start;flex-direction:column}.ln-nav>div{gap:15px;flex-wrap:wrap}.ln-hero{padding:35px 0}.ln-workspace{grid-template-columns:1fr}.ln-workspace>aside{max-height:260px}.ln-controls label{width:100%;margin-left:0}.ln-input details{min-width:0;width:100%;flex-basis:100%}.ln-input input[type=file]{max-width:300px}.ln-detail{padding:15px}.ln-app{padding-bottom:25px}.ln-step{font-size:20px}.ln-roadmap article{gap:16px}}
 
 .side-nav .learn-entry,.more-sheet-grid .learn-entry{display:block;text-decoration:none;padding:12px;font-size:12px;color:#5f78b7;border:1px solid #dfe6f5;border-radius:8px;margin:10px 0}.more-sheet-grid .learn-entry{grid-column:1/-1}
+.ln-controls label{white-space:nowrap}.ln-controls input[type=range]{width:160px;max-width:48vw;min-width:0}
