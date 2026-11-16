@@ -67,3 +67,23 @@ test('reviewed repair artifacts preserve independent checks and disclose missing
  assert.equal(artifact.same_session_resumed,true);assert.equal(artifact.tests_unchanged,true);assert.equal(artifact.source_unchanged_during_followup,true);assert.equal(artifact.child_task_observed,false);
  assert.match(artifact.before_tests,/fail 5/);assert.match(artifact.after_tests,/pass 7/);assert.match(artifact.followup_tests,/pass 7/);assert.match(artifact.diff,/diff --git a\/search.mjs b\/search.mjs/);
 });
+
+test('real Explore capture associates child reads and hand-back before editing',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const source=await readFile(new URL('../public/learn/examples/search-child.jsonl',import.meta.url),'utf8');
+ const rows=parseTrace(source).rows;
+ const report=projectTrace(rows);
+ assert.equal(report.calls.length,10);assert.equal(report.diagnostics.length,0);
+ const delegation=report.calls.find(node=>node.title==='Agent');
+ assert.ok(delegation);
+ assert.equal(report.calls.filter(node=>node.parentKey===delegation.key).length,2);
+ assert.equal(report.calls.filter(node=>node.status==='pending').length,0);
+ assert.equal(projectTrace(rows.slice(0,15)).calls.find(node=>node.title==='Agent').status,'pending');
+ assert.equal(projectTrace(rows.slice(0,16)).calls.find(node=>node.title==='Agent').status,'completed');
+ assert.equal(report.results.length,2);assert.ok(report.results.every(r=>r.is_error===false));
+ assert.equal(new Set(report.results.map(r=>r.session_id)).size,1);
+ assert.ok(!source.includes('/Users/'));
+ const artifact=JSON.parse(await readFile(new URL('../public/learn/examples/search-child-artifacts.json',import.meta.url),'utf8'));
+ assert.equal(artifact.child_task_observed,true);assert.equal(artifact.source_unchanged_during_followup,true);
+ assert.match(artifact.before_tests,/fail 5/);assert.match(artifact.after_tests,/pass 7/);assert.match(artifact.followup_tests,/pass 7/);
+});

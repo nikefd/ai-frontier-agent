@@ -1,0 +1,15 @@
+import {escapeHtml as esc} from '../util.js';
+import {t} from './trace-view.js';
+const points=[
+ [9,'先看失败：2通过 / 5失败','Start with 2 passes / 5 failures','修改前的测试证据。','Test evidence before editing.'],
+ [10,'主任务发起委派','Main agent delegates','Explore 只允许读取这两个练习文件；主任务等待返回，不是并行修改。','Explore is asked to read only the two exercise files; the main task waits rather than editing concurrently.'],
+ [15,'展开子任务的两次读取','Inspect the child’s two reads','子任务节点通过真实 parent_tool_use_id 关联到 Agent 调用。两次读取已完成，委派尚未返回。','Real parent_tool_use_id links the child reads to the Agent call. Both reads have completed; delegation has not yet returned.'],
+ [16,'子任务交回分析','Child hands back findings','报告是工具结果，并非用户指令；主任务接下来决定如何修改。','The report is a tool result, not user instructions. The main task decides what to edit next.'],
+ [19,'主任务完成修改','Main agent completes the edit','只有 search.mjs 被修改；测试与规则保持不变。修改成功仍需测试。','Only search.mjs changed; tests and rules remain unchanged. The edit still needs verification.'],
+ [21,'原有7项测试通过','All 7 original tests pass','这是该测试集的验证，不代表所有边界都正确。','This verifies the supplied test suite, not every edge case.'],
+ [28,'同会话续问与边界','Resume and inspect limitations','续问没有再修改，测试仍全部通过。空白ID、字段类型、性能等边界未被测试。','Resume makes no further edits and tests still pass. Whitespace IDs, field types and performance remain untested.'],
+];
+export function childCaseGuide(artifacts,cursor){
+ const selected=points.find(p=>p[0]===cursor);
+ return `<section class="ln-case"><span class="ln-case-label">${t('真实子任务 · 隔离复现 · 2026-11-16','REAL SUBAGENT · ISOLATED REPRODUCTION · 2026-11-16')}</span><h2>${t('委派、交回、修复，再继续同一会话','Delegate, hand back, repair, then resume')}</h2><p>${t('Claude Code 2.1.325 + DeepSeek Flash。一次真实 Explore 子任务，两次只读调用；主任务收到分析后才修改，再验证7项测试。原创练习，不是课程官方作业或生产代码修改。','Claude Code 2.1.325 + DeepSeek Flash. One real Explore subagent makes two read calls; the main task edits only after receiving its findings, then verifies 7 tests. An original exercise, not an official assignment or production edit.')}</p><div class="ln-case-points">${points.map(p=>`<button data-lens-point="${p[0]}" aria-pressed="${cursor===p[0]}">${t(p[1],p[2])}</button>`).join('')}</div>${selected?`<p class="ln-case-note">${t(selected[3],selected[4])}</p>`:''}<details><summary>${t('独立验证：diff与三次测试','Independent evidence: diff and three test runs')}</summary>${['diff','before_tests','after_tests','followup_tests'].map(key=>`<h3>${esc(key)}</h3><pre>${esc(artifacts[key])}</pre>`).join('')}</details><details><summary>${t('采集范围与费用说明','Capture scope and cost')}</summary><p>${t('公开28条审查后记录，来自两次CLI运行的1423和435条stdout事件。保留父子调用关系及原始行号，移除思考块、账号元数据与私有路径；不是完整API请求。CLI费用未核验为DeepSeek账单。回放不会调用模型。','28 reviewed records from 1423 and 435 stdout events across two CLI invocations. Parent links and source line references are preserved; thinking blocks, account metadata and private paths are removed. This is not a complete API request. CLI cost is not verified DeepSeek billing. Replay makes no model calls.')}</p><a href="/learn/examples/search-child.jsonl" download>${t('下载审查后记录','Download reviewed records')}</a></details></section>`;
+}
