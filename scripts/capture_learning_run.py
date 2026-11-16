@@ -43,6 +43,7 @@ def main():
     parser.add_argument('--allow-agent-run',action='store_true')
     parser.add_argument('--provider-config',type=Path)
     parser.add_argument('--resume-capture',type=Path)
+    parser.add_argument('--mode',choices=['bare','safe'],default='bare',help='safe retains built-in delegation; bare is the earlier minimal baseline')
     args=parser.parse_args()
     if not args.allow_agent_run:parser.error('Explicit user authorization required')
     try:provider=provider_environment(args.provider_config)
@@ -67,19 +68,21 @@ def main():
         prompt='Work only in this controlled directory. Read TRACE_RULES.md, search.mjs and search.test.mjs. Run node --test search.test.mjs before editing. Use the reviewer subagent exactly once to inspect these files read-only for likely bugs; tell it not to spawn agents. Then fix only search.mjs according to the tests; do not modify tests or rules. Run node --test search.test.mjs after the edit. No other directories, configuration, private sessions, environment inspection, network tools, installs, commits or pushes. Describe actual results and limitations.'
         tools='Read,Edit,Bash,Agent';allowed='Read,Edit,Bash(node --test search.test.mjs),Agent'
         session_flags=['--session-id',session_id]
+    if args.mode=='safe' and not args.resume_capture:
+        prompt=prompt.replace('Use the reviewer subagent exactly once to inspect these files read-only for likely bugs; tell it not to spawn agents.', 'Use the Agent tool exactly once with the built-in Explore subagent to inspect search.mjs and search.test.mjs read-only for likely bugs. Tell it to use Read only, never shell commands, modifications, other directories or additional agents. Wait for its result before editing.')
     tests_before=(workspace/'search.test.mjs').read_bytes()
     before=execute(['node','--test','search.test.mjs'],workspace)
     env=os.environ.copy();env.update(provider)
     env.update({'CLAUDE_CONFIG_DIR':str(config),'ANTHROPIC_MODEL':'deepseek-flash','CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC':'1','DISABLE_TELEMETRY':'1','DISABLE_ERROR_REPORTING':'1'})
     for family in ['OPUS','SONNET','HAIKU']:env['ANTHROPIC_DEFAULT_'+family+'_MODEL']='deepseek-flash'
     reviewer={'reviewer':{'description':'Read-only review of the controlled search fixture','prompt':'Read search.mjs and search.test.mjs in the current directory. Identify likely bugs. Never modify files, run commands, inspect other paths or start another agent.','tools':['Read'],'model':'inherit'}}
-    command=['claude','--bare','-p',prompt,'--model','deepseek-flash','--output-format','stream-json','--verbose','--strict-mcp-config','--mcp-config','{"mcpServers":{}}','--tools',tools,'--allowedTools',allowed,'--permission-mode','acceptEdits','--max-turns','12','--max-budget-usd','1',*session_flags]
-    if not args.resume_capture:command+=['--agents',json.dumps(reviewer)]
+    command=['claude','--safe-mode' if args.mode=='safe' else '--bare','-p',prompt,'--model','deepseek-flash','--output-format','stream-json','--verbose','--strict-mcp-config','--mcp-config','{"mcpServers":{}}','--tools',tools,'--allowedTools',allowed,'--permission-mode','acceptEdits','--max-turns','12','--max-budget-usd','1',*session_flags]
+    if not args.resume_capture and args.mode=='bare':command+=['--agents',json.dumps(reviewer)]
     version=execute(['claude','--version'],workspace)
     result=execute(command,workspace,timeout=240,env=env)
     after=execute(['node','--test','search.test.mjs'],workspace)
     diff=execute(['git','diff','--','search.mjs','search.test.mjs'],workspace)
-    metadata={'profile':'learn-search-v1','session_id':session_id,'workspace':str(workspace),'config_directory':str(config),'captured_at':stamp,'model':'deepseek-flash','provider_host':urlsplit(provider['ANTHROPIC_BASE_URL']).hostname,'cli_version':version['stdout'].strip(),'exit_code':result['exit_code'],'timed_out':result['timed_out'],'tests_unchanged':tests_before==(workspace/'search.test.mjs').read_bytes(),'resume':bool(args.resume_capture),'trace_sha256':hashlib.sha256(result['stdout'].encode()).hexdigest()}
+    metadata={'profile':'learn-search-v1','session_id':session_id,'workspace':str(workspace),'config_directory':str(config),'captured_at':stamp,'model':'deepseek-flash','provider_host':urlsplit(provider['ANTHROPIC_BASE_URL']).hostname,'cli_version':version['stdout'].strip(),'exit_code':result['exit_code'],'timed_out':result['timed_out'],'tests_unchanged':tests_before==(workspace/'search.test.mjs').read_bytes(),'resume':bool(args.resume_capture),'cli_mode':args.mode,'trace_sha256':hashlib.sha256(result['stdout'].encode()).hexdigest()}
     for name,value in [('manifest.json',metadata),('before-tests.json',before),('after-tests.json',after),('diff.json',diff)]:write_json_atomic(destination/name,value)
     write_text_atomic(destination/'trace.jsonl',result['stdout']);write_text_atomic(destination/'stderr.txt',result['stderr'])
     print(json.dumps({'capture_directory':str(destination),'exit_code':result['exit_code'],'timed_out':result['timed_out'],'tests_unchanged':metadata['tests_unchanged'],'before_tests_exit':before['exit_code'],'after_tests_exit':after['exit_code']}))
