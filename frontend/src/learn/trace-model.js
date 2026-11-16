@@ -25,7 +25,8 @@ export function projectTrace(rows) {
    const message=record.message||{},blocks=typeof message.content==='string'?[{type:'text',text:message.content}]:Array.isArray(message.content)?message.content:[];
    blocks.forEach((block,i)=>{
     if(!block||typeof block!=='object')return;
-    const snapshot=typeof message.id==='string'?`${segment}:${scope}:${message.id}:${i}`:null;
+    const blockKey=block.type==='tool_use'&&typeof block.id==='string'?`tool:${block.id}`:`${block.type}:${i}`;
+    const snapshot=typeof message.id==='string'?`${segment}:${scope}:${message.id}:${blockKey}`:null;
     if(block.type==='tool_result'){
      const id=typeof block.tool_use_id==='string'?block.tool_use_id:'';const group=id?calls.get(`${segment}:${scope}:${id}`)||[]:[];
      if(group.length===1){const node=group[0];node.status=block.is_error?'failed':'completed';node.output=printable(block.content);node.lines.push(row.line);}
@@ -34,7 +35,7 @@ export function projectTrace(rows) {
     }
     if(!['text','tool_use'].includes(block.type))return;
     const old=snapshot?snapshots.get(snapshot):null;
-    if(old){old.lines.push(row.line);if(block.type==='text')old.text=printable(block.text);else old.input=block.input;return;}
+    if(old&&(block.type==='tool_use'||printable(block.text).startsWith(old.text)||old.text.startsWith(printable(block.text)))){old.lines.push(row.line);if(block.type==='text'){if(printable(block.text).length>=old.text.length)old.text=printable(block.text);}else old.input=block.input;return;}
     const node=push(block.type==='tool_use'?{...base,kind:'call',title:typeof block.name==='string'?block.name:'Unknown tool',id:typeof block.id==='string'?block.id:'',input:block.input,status:'pending'}:{...base,kind:'message',title:record.type,text:printable(block.text),status:record.is_api_error_message===true?'failed':'observed'});
     if(snapshot)snapshots.set(snapshot,node);
     if(node.kind==='call'&&node.id){

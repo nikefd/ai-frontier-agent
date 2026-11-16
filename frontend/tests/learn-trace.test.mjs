@@ -44,3 +44,26 @@ test('public startup example is an actual error with no tool execution and no pr
  assert.equal(report.calls.length,0);assert.equal(report.nodes[0].kind,'config');assert.equal(report.nodes.at(-1).status,'failed');assert.equal(report.results[0].is_error,true);assert.equal(report.results[0].subtype,'success');
  assert.ok(!source.includes('session_id'));assert.ok(!source.includes('cwd'));assert.ok(!source.includes('apiKeySource'));
 });
+
+test('real Claude block-wise messages with one message ID preserve separate tool calls',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const source=await readFile(new URL('../public/learn/examples/search-repair.jsonl',import.meta.url),'utf8');
+ const report=projectTrace(parseTrace(source).rows);
+ assert.equal(report.calls.length,7);assert.equal(report.diagnostics.length,0);assert.equal(report.calls.filter(node=>node.status==='pending').length,0);
+ assert.equal(report.calls.filter(node=>node.status==='failed').length,1);assert.equal(report.results.length,2);assert.ok(report.results.every(record=>record.is_error===false));
+ assert.equal(new Set(report.results.map(record=>record.session_id)).size,1);
+ assert.equal(report.nodes.filter(node=>node.parentKey).length,0);
+});
+test('text followed by a tool block under the same message ID keeps both',()=>{
+ const a=assistant([{type:'text',text:'Inspect then edit.'}]);a.message.id='same';
+ const b=assistant([call('a')]);b.message.id='same';
+ const report=projectTrace(parse([a,b,result('a')]).rows);
+ assert.equal(report.calls.length,1);assert.equal(report.nodes.filter(node=>node.kind==='message').length,1);assert.equal(report.calls[0].status,'completed');
+});
+
+test('reviewed repair artifacts preserve independent checks and disclose missing delegation',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const artifact=JSON.parse(await readFile(new URL('../public/learn/examples/search-artifacts.json',import.meta.url),'utf8'));
+ assert.equal(artifact.same_session_resumed,true);assert.equal(artifact.tests_unchanged,true);assert.equal(artifact.source_unchanged_during_followup,true);assert.equal(artifact.child_task_observed,false);
+ assert.match(artifact.before_tests,/fail 5/);assert.match(artifact.after_tests,/pass 7/);assert.match(artifact.followup_tests,/pass 7/);assert.match(artifact.diff,/diff --git a\/search.mjs b\/search.mjs/);
+});
