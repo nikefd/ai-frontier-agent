@@ -41,6 +41,6 @@ test('public startup example is an actual error with no tool execution and no pr
  const {readFile}=await import('node:fs/promises');
  const source=await readFile(new URL('../public/learn/examples/claude-startup.jsonl',import.meta.url),'utf8');
  const report=projectTrace(parseTrace(source).rows);
- assert.equal(report.calls.length,0);assert.equal(report.nodes.at(-1).status,'failed');assert.equal(report.results[0].is_error,true);assert.equal(report.results[0].subtype,'success');
+ assert.equal(report.calls.length,0);assert.equal(report.nodes[0].kind,'config');assert.equal(report.nodes.at(-1).status,'failed');assert.equal(report.results[0].is_error,true);assert.equal(report.results[0].subtype,'success');
  assert.ok(!source.includes('session_id'));assert.ok(!source.includes('cwd'));assert.ok(!source.includes('apiKeySource'));
 });

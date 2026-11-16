@@ -20,6 +20,7 @@ export function projectTrace(rows) {
   const scope=typeof record.parent_tool_use_id==='string'?record.parent_tool_use_id:'';
   if(record.type==='system'&&record.subtype==='init'){session=typeof record.session_id==='string'?record.session_id:session;model=typeof record.model==='string'?record.model:model;}
   const base={line:row.line,segment,scope,parentId:scope,session};
+  if(record.type==='system'&&record.subtype==='init')push({...base,kind:'config',title:'session init',text:printable({model,tools:record.tools}),status:'observed'});
   if(['assistant','user'].includes(record.type)){
    const message=record.message||{},blocks=typeof message.content==='string'?[{type:'text',text:message.content}]:Array.isArray(message.content)?message.content:[];
    blocks.forEach((block,i)=>{
