@@ -1,3 +1,4 @@
+import {isLearningPath,loadLearningArea,leaveLearning} from './learn/learn-app.js';
 import { ROUTE_VIEWS } from './route-links.js';
 import { uiText, uiTemplate } from './i18n.js';
 // View switching + URL routing (History API). Extracted so feed.js / dives.js
@@ -20,7 +21,7 @@ const VIEWS = ROUTE_VIEWS;
 let identityReady = false;
 export function navigationAuthReady() {
   identityReady = true;
-  if (state.view !== 'home') applyRoute();
+  if (state.view !== 'home' && state.view !== 'learn') applyRoute();
 }
 
 
@@ -55,6 +56,7 @@ function _runLoader(v) {
 // Switch view + update the URL. `push` is false when driven by popstate / boot
 // (the URL is already correct, so we must not push a duplicate history entry).
 export function switchView(v, push = true) {
+  leaveLearning();
   state.view = v;
   document.body.classList.remove('landing-active');
   document.body.dataset.view = v;
@@ -74,6 +76,7 @@ export function switchView(v, push = true) {
 
 // Show the landing/home page (root path).
 export function showLanding(push = true) {
+  leaveLearning();
   state.view = 'home';
   document.body.classList.add('landing-active');
   delete document.body.dataset.view;
@@ -82,6 +85,7 @@ export function showLanding(push = true) {
 
 // Resolve the current URL path to a view on boot / back-forward navigation.
 export function applyRoute() {
+  if(isLearningPath(location.pathname)){state.view='learn';loadLearningArea(location.pathname);document.documentElement.classList.remove('route-pending');return;}
   const seg = location.pathname.replace(/^\/+/, '').split('/')[0];
   if (seg === 'feed') {
     Object.assign(state, readFeedRoute(location.search));

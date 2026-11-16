@@ -22,6 +22,7 @@
 
 <main class="fluid">
   <p id="route-loading" role="status">正在打开页面… / Opening page…</p>
+  <section id="learn-root"></section>
   <!-- ───────── Landing / Home (bilingual hero) ───────── -->
   <section id="view-home">
     <div class="hero hero-simple">
@@ -31,6 +32,7 @@
       <div class="hero-cta hero-cta-row">
         <button class="primary lg" data-enter-view="summary">看今日速报</button>
         <button class="ghost lg" data-enter-view="feed">浏览最新文章</button>
+        <a class="ghost lg" href="/learn">进入学习区 →</a>
       </div>
       <div class="hero-proof" aria-label="核心能力">
         <span>✓ 自动双语</span><span>✓ 原文可追溯</span><span>✓ 收藏与深度解读</span>
@@ -60,6 +62,7 @@
         <button class="on" data-view="feed"><span>📰</span> 最新文章 <span class="count" id="cnt-feed">·</span></button>
         <button data-view="foryou"><span>🎯</span> 为你推荐</button>
         <button data-view="dives"><span>🧠</span> 深度解读 <span class="count" id="cnt-dives">·</span></button>
+        <a class="learn-entry" href="/learn">学习区 · Agent 到推理系统 →</a>
         <div class="group">沉淀</div>
         <button data-view="experiments"><span>🧪</span> 实践实验室 <span class="count" id="cnt-experiments">·</span></button>
         <button data-view="review"><span>🗂️</span> 知识卡 <span class="count" id="cnt-review">·</span></button>
@@ -327,6 +330,7 @@
   <div class="more-sheet-panel">
     <div class="more-sheet-head"><b>更多</b><button id="more-close">✕</button></div>
     <div class="more-sheet-grid">
+      <a class="learn-entry" href="/learn">学习区 · Agent 到推理系统 →</a>
       <button data-view="foryou"><span>🎯</span> 为你推荐</button>
       <button data-view="reflection"><span>🪞</span> 本周复盘</button>
       <button data-view="experiments"><span>🧪</span> 实践实验室</button>

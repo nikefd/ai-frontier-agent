@@ -484,5 +484,7 @@
   "🧪 实践实验室": "🧪 Practice lab",
   "运行拆解": "Runtime inspector",
   "用真实记录研究 Codex 与 Claude Code": "Study Codex and Claude Code through real traces",
-  "拆解 Codex / Claude Code": "Inspect Codex / Claude Code"
+  "拆解 Codex / Claude Code": "Inspect Codex / Claude Code",
+  "进入学习区 →": "Enter learning area →",
+  "学习区 · Agent 到推理系统 →": "Learn · Agents to inference systems →"
 }

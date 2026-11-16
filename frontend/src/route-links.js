@@ -1,7 +1,7 @@
 export const ROUTE_VIEWS = ['feed', 'foryou', 'summary', 'dives', 'review', 'reflection', 'profile', 'sources', 'admin', 'learning', 'experiments'];
 export function clientRoute(href, current, language) {
   const url = new URL(href, current), origin = new URL(current);
-  if (url.origin !== origin.origin || url.hash || !ROUTE_VIEWS.includes(url.pathname.slice(1))) return null;
+  if (url.origin !== origin.origin || url.hash || !ROUTE_VIEWS.includes(url.pathname.slice(1)) && !['/learn','/learn/observe'].includes(url.pathname.replace(/\/+$/, ''))) return null;
   // Language is initialized at module load; language changes need a document load.
   if ((url.searchParams.get('lang') || language) !== (origin.searchParams.get('lang') || language)) return null;
   return url;

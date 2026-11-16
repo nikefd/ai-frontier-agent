@@ -17,3 +17,11 @@ test('retired learning modules are no longer client routes',()=>{
   assert.equal(clientRoute('/'+view,'https://example.org/feed','zh'),null);
  }
 });
+
+test('learning area routes stay in the same document and unknown stages do not',()=>{
+ const current='https://example.org/feed?lang=zh';
+ assert.equal(clientRoute('/learn?lang=zh',current).pathname,'/learn');
+ assert.equal(clientRoute('/learn/observe?lang=zh',current).pathname,'/learn/observe');
+ assert.equal(clientRoute('/learn/observe/?lang=zh',current).pathname,'/learn/observe/');
+ assert.equal(clientRoute('/learn/missing',current),null);
+});
