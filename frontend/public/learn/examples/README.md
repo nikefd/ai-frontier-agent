@@ -6,3 +6,11 @@
 公开 JSONL 是人工审查的白名单字段：初始化类型/模型配置/工具名、错误文本、结果标记与CLI报告数字。删除路径、会话/消息标识、账号来源和其它元数据。初始化model与tools不是实际模型调用或工具执行的证明。is_error=true优先于同记录里的subtype=success。
 
 这里只用于观察启动/失败边界，不代表编码修复、续问、子任务或课程作业已完成。
+
+## search-repair.jsonl 与 search-artifacts.json
+
+2026-11-16，以 Claude Code 2.1.283 客户端连接 DeepSeek Flash，先实际修复原创文章检索复现，再使用同一新建 session 与目录续问。两次CLI退出0、未超时，测试文件保持不变；独立测试从2通过/5失败变为7通过，续问后仍7通过，代码diff未再次改变。
+
+原始两次stdout为1092和22条。公开21条经审查的初始化/可见文字/工具请求与结果/结束记录；删除思考块、估计思考token事件及无关账号元数据，路径和标识匿名化。每条 capture_source_line 对应 capture_segment 内的原采集行号。不是完整stdout，也不是API请求级捕获。工具输入/输出实际来自运行；测试与diff另为独立采集产物。
+
+本次配置实际只暴露Bash、Edit、Read，未产生子任务。助手也明确报告无法调用reviewer；不能把这份记录当真实子任务树验收。CLI报告的费用数字未独立核验为DeepSeek账单。
