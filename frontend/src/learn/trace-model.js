@@ -34,7 +34,7 @@ export function projectTrace(rows) {
     if(!['text','tool_use'].includes(block.type))return;
     const old=snapshot?snapshots.get(snapshot):null;
     if(old){old.lines.push(row.line);if(block.type==='text')old.text=printable(block.text);else old.input=block.input;return;}
-    const node=push(block.type==='tool_use'?{...base,kind:'call',title:typeof block.name==='string'?block.name:'Unknown tool',id:typeof block.id==='string'?block.id:'',input:block.input,status:'pending'}:{...base,kind:'message',title:record.type,text:printable(block.text),status:record.is_api_error_message?'failed':'observed'});
+    const node=push(block.type==='tool_use'?{...base,kind:'call',title:typeof block.name==='string'?block.name:'Unknown tool',id:typeof block.id==='string'?block.id:'',input:block.input,status:'pending'}:{...base,kind:'message',title:record.type,text:printable(block.text),status:record.is_api_error_message===true?'failed':'observed'});
     if(snapshot)snapshots.set(snapshot,node);
     if(node.kind==='call'&&node.id){
      const key=`${segment}:${scope}:${node.id}`;const group=calls.get(key)||[];group.push(node);calls.set(key,group);

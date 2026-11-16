@@ -4,7 +4,7 @@ import {renderMarkdown} from '../markdown.js';
 import {traceTree} from './trace-model.js';
 export const t=(zh,en)=>isEnglish()?en:zh;
 const labels={Read:['读取文件','Read file'],Bash:['运行命令','Run command'],Edit:['修改文件','Edit file'],Write:['写入文件','Write file'],Agent:['子任务','Subagent'],Task:['子任务','Subagent']};
-export function nodeTitle(node){return node.kind==='call'?t(...(labels[node.title]||[node.title,node.title])):node.kind==='final'?t('本轮结束','Run result'):node.kind==='message'?node.title==='assistant'?t('助手消息','Assistant message'):t('用户消息','User message'):t('未关联结果','Unmatched result');}
+export function nodeTitle(node){return node.kind==='call'?t(...(Object.hasOwn(labels,node.title)?labels[node.title]:[node.title,node.title])):node.kind==='final'?t('本轮结束','Run result'):node.kind==='message'?node.title==='assistant'?t('助手消息','Assistant message'):t('用户消息','User message'):t('未关联结果','Unmatched result');}
 const pretty=value=>`<pre>${esc((typeof value==='string'?value:JSON.stringify(value??'',null,2)).slice(0,16000))}</pre>`;
 export function outline(report,selected,limit){
  let shown=0;
