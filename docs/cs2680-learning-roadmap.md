@@ -89,3 +89,6 @@
 - [Assignment 3 · Harness competition](https://cs2680.seas.harvard.edu/assignments/assignment3)
 - [Assignment 4 · Own the model](https://cs2680.seas.harvard.edu/assignments/assignment4)
 - [Assignment 5 · Optimize the full stack](https://cs2680.seas.harvard.edu/assignments/assignment5)
+
+
+2026-11-16 后续更新（取代上一段额度与子任务缺口）：用户已明确撤销受控运行次数上限。safe模式实际完成一次Explore委派及同会话续问，真实父子树、报告交回、编辑和测试时序已经验证；公开28条审查后记录与独立diff/测试，可在“载入真实子任务修复”回放。网页实时执行仍未连接，不能将回放验收等同完整第一阶段交付。
