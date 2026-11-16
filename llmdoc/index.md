@@ -6,13 +6,14 @@
 
 ## 快速导航
 
-2026-11-16：用户确认以 Harvard CS2680 课程为学习主线，参见 [五阶段实施路线](../docs/cs2680-learning-roadmap.md)。目前只完成计划，现有文章 Agent 不等同课程作业已完成。
+2026-11-16：用户确认以 Harvard CS2680 课程为学习主线，参见 [五阶段实施路线](../docs/cs2680-learning-roadmap.md)。已上线学习区入口和第一阶段导入/回放工作区，实时编码执行尚未接入，现有文章 Agent 不等同课程作业已完成。
 
 2026-11-12：运行拆解、模型与 Agent 学习库、上下文解剖台已移除；[真实 Agent 可视化实验台提案](../docs/live-agent-lab-plan.md) 尚未全部实现；文章页已有基础真实检索可视化，见下方指南。
 
 
 | 如果你需要... | 从这里开始 |
 |---|---|
+| `/learn`独立学习区、Claude日志导入/回放与父子调用树 | [学习区维护](guides/learning-area.md) |
 | 了解项目概况、技术栈、目录结构、核心机制 | [项目概览](overview/project-overview.md) |
 | **★ 第一次接手，先读这篇** | [项目概览](overview/project-overview.md) ＋ [后端架构](architecture/backend-architecture.md) |
 | 本地把项目跑起来（裸机 / Docker） | [运行指南](guides/how-to-run.md) |

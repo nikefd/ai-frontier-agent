@@ -137,3 +137,8 @@ ES module，靠 `import` 互相引用，入口是 `index.html` 末尾的 `<scrip
 ## 9. 文章页内的真实 Agent 检索
 
 `#article-agent` 随 main 初始化一次，默认收起，既有阅读列表保持原流程。`article-agent/` 独立组织事件状态、呈现、交互与样式；右侧流程/时间线/检查器来自同一真实事件集合，左侧文章来自工具输出，答案经现有 renderMarkdown 清洗。UI 使用局部中英文案，不自动翻译文章内容。见 [文章检索指南](../guides/article-agent.md)。
+
+
+## 10. `/learn` 独立学习区
+
+`learn/`按页面壳、观察控制、纯记录模型与视图分责，`#learn-root`为资讯split外的独立挂载点；`learning-active`隐藏资讯导航与移动底栏。学习路由在auth前渲染；认证初始化结束不重挂学习页，身份变化则清空导入。客户端导航允许`/learn`和`/learn/observe`两个路径，后续阶段未实现不注册。见[学习区维护](../guides/learning-area.md)。
