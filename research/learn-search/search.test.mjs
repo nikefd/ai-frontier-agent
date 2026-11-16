@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {searchArticles} from './search.mjs';
+const rows=[{id:'a',title:'Agent memory',title_zh:'智能体记忆',summary:'Context engineering'}, {id:'b',title:'GPU serving',summary_zh:'智能体推理服务'}, {id:'a',title:'Agent memory duplicate'}];
+test('matches case-insensitively',()=>assert.equal(searchArticles(rows,'MEMORY')[0].id,'a'));
+test('searches translated titles and summaries',()=>assert.deepEqual(searchArticles(rows,'智能体').map(row=>row.id),['a','b']));
+test('normalizes full-width Unicode query characters',()=>assert.equal(searchArticles(rows,'ＡＧＥＮＴ')[0]?.id,'a'));
+test('deduplicates by ID, preserving the first matching row',()=>assert.deepEqual(searchArticles(rows,'agent').map(row=>row.id),['a']));
+test('skips malformed rows and rows without a nonempty string ID',()=>assert.deepEqual(searchArticles([null,{},...rows],'agent').map(row=>row.id),['a']));
+test('returns no rows for an empty or whitespace query',()=>assert.deepEqual(searchArticles(rows,'  '),[]));
+test('does not modify source rows',()=>{const snapshot=JSON.stringify(rows);searchArticles(rows,'agent');assert.equal(JSON.stringify(rows),snapshot);});

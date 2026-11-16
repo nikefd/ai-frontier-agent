@@ -25,9 +25,9 @@ PROMPT = (
 )
 
 
-def execute(command: list[str], cwd: Path, timeout: int = 180) -> dict:
+def execute(command: list[str], cwd: Path, timeout: int = 180, *, env: dict | None = None) -> dict:
     process = subprocess.Popen(command, cwd=cwd, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, start_new_session=True)
+                               stderr=subprocess.PIPE, start_new_session=True, env=env)
     timed_out = False
     try:
         stdout, stderr = process.communicate(timeout=timeout)
