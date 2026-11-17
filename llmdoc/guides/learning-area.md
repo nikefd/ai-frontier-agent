@@ -66,3 +66,14 @@ nav的applyRoute对学习路由立即呈现，不等待auth；navigationAuthRead
 内容范围：工具参数按字段展开，文本工具结果从JSON包装中解码后以转义文本呈现；可选原消息块JSON及关联ID。消息范围分主任务/Explore，user封装的tool_result明确标注为反馈。字节条仅统计当前游标之前保留的消息块的序列化UTF-8字节，不是API请求组成、Token或真实上下文窗口。配置区列初始化模型/工具名，明确缺失完整System提示词、工具Schema、Skill定义与API请求，不能推断未观察到的Skill就未被加载。
 
 代码视图显示实际Edit的old/new字符串；写入请求、写入返回与测试通过分别呈现，独立diff与测试产物只在对应进度出现。调用关联、子报告等待/返回、范围筛选、字节统计、未来证据隔离和文本转义有回归测试；浏览器核验中英文、四个视图、主/子切换、代码/报告展开、390px布局及清空/私有导入。
+
+
+## 2026-11-17：真实HTTP请求与原生Skill采集
+
+用户追问为什么不采集缺失内容，已补实际HTTP采集。`scripts/learning_http_capture.py`仅在127.0.0.1随机端口/随机路径接收messages/count_tokens，固定转发官方DeepSeek HTTPS、禁止重定向；凭证只注入出站header，不保存header。请求/响应正文原始产物只写忽略目录，8MiB单体上限。`capture_learning_run.py --capture-http --mode safe`可为新隔离修复记录正文；`capture_learning_skill.py`独立创建自己的只读插件、空setting-sources/禁用hooks/独立config/严格空MCP，实际调用Skill。目录隔离不是OS沙箱，仍只在用户明确授权的练习范围使用。
+
+新公开http-repair.json为7个实际请求（3/4 Explore）；http-skill.json为5个请求，实际Skill调用及后续注入正文可核对。Skill实验只检查，文件未变、测试仍2通过5失败；修复实验测试未改、最终7通过。原safe模式关闭定制Skill，bare尝试也未提供Skill；不能把配置缺口当成提供方不支持。
+
+公开请求去除metadata/计费元数据/私有路径/思考块与签名，ID匿名化；认证头根本未采集。SSE必须先合并同一块的text/input_json_delta，再脱敏完整内容，避免路径分片绕过替换。公开事件不保留原始分片边界，capture_merged_deltas只是合并数量。响应usage是提供方报告，不是已核验账单。
+
+观察页新增独立“真实API请求”模式，`api-capture.js`懒加载这两组公开正文，按请求选择System、Tools/Schema、Messages、重组响应/审查后合并事件、请求JSON。Skill正文注入的消息自动展开并标记。它与旧CLI九步导读是不同日期的新实验，不假装已有逐行映射。API模式不执行CLI或联网模型；销毁/清空撤销异步载入并清除DOM。原CLI配置区“缺少System/Schema/Skill”仅描述旧采集，完整新采集从独立入口查看。
