@@ -20,3 +20,13 @@
 2026-11-16 在独立练习目录中使用 Claude Code 2.1.325、DeepSeek Flash、`--safe-mode` 实际运行并续问同一会话。原始 stdout 分别1423与435条；公开28条审查后事件。一次内置 Explore 委派、两次子任务 Read；父调用收到报告后才执行 Edit。测试从2通过/5失败变为7通过，续问复核仍为7通过，测试未改，续问源码未改。保留历史 bare 案例供对照，不能将两次实验当作同一运行。
 
 公开记录保留实际工具输入/结果、父子关系、匿名会话标识及原采集行号；删除思考块、思考计数事件、账号元数据与私有路径。仅审查过的原创练习文件可公开；原始日志仍被忽略。费用为CLI报告值，未经DeepSeek账单核验。测试未覆盖空白ID等所有边界，模型的总结不替代测试。网页只回放，不启动CLI。
+
+## http-repair.json / http-skill.json（2026-11-17）
+
+新增真实HTTP正文采集，不与旧的九步CLI导读混成同一运行。Claude Code 2.1.325通过127.0.0.1随机端口及随机路径的本机桥转发到官方api.deepseek.com/anthropic；只保存请求JSON/响应正文，不保存或公开认证头。原始日志仅在忽略目录，公开版本经过审查。
+
+- repair：safe-mode新隔离修复实验，7次实际请求，其中3/4为Explore子任务。测试文件未改，独立测试从2通过5失败变为7通过。公开System正文、工具input_schema、每轮Messages和响应。
+- skill：新的只读插件实验，自己的search-check:verify-search，标准模式、空setting-sources、禁用hooks、独立CLI配置、严格空MCP。共5次请求；请求1的响应实际调用Skill，请求2的Messages实际包含注入的SKILL.md正文。原练习文件未变、测试2通过5失败，未声称修复。模型还请求列目录，该命令不在预授权测试命令中；记录保留实际反馈。
+- 中间另做过一次bare Skill尝试，未提供Skill工具；失败尝试仅保留忽略目录，不冒充成功采集。
+
+公开处理：移除request.metadata与客户端计费元数据；替换私有路径与调用标识；删除thinking/redacted_thinking内容及signature。SSE文本和参数增量先按块合并，再对完整字符串/JSON脱敏，避免路径跨片段造成漏删；公开事件保留块索引与capture_merged_deltas计数，不保留原始分片边界。提供方usage保留为报告值，非独立账单核验。系统提示词和Schema来自实际请求，不是根据工具名补写。Skill原文为本项目自己的原创练习。仅点击回放，不产生模型调用。
