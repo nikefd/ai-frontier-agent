@@ -77,3 +77,12 @@ nav的applyRoute对学习路由立即呈现，不等待auth；navigationAuthRead
 公开请求去除metadata/计费元数据/私有路径/思考块与签名，ID匿名化；认证头根本未采集。SSE必须先合并同一块的text/input_json_delta，再脱敏完整内容，避免路径分片绕过替换。公开事件不保留原始分片边界，capture_merged_deltas只是合并数量。响应usage是提供方报告，不是已核验账单。
 
 观察页新增独立“真实API请求”模式，`api-capture.js`懒加载这两组公开正文，按请求选择System、Tools/Schema、Messages、重组响应/审查后合并事件、请求JSON。Skill正文注入的消息自动展开并标记。它与旧CLI九步导读是不同日期的新实验，不假装已有逐行映射。API模式不执行CLI或联网模型；销毁/清空撤销异步载入并清除DOM。原CLI配置区“缺少System/Schema/Skill”仅描述旧采集，完整新采集从独立入口查看。
+
+
+## 2026-11-17：真实API分析复用现有Inspector
+
+用户明确要求将真实请求复制到inspector.zhangyangbin.com，复用已有解析代码。本轮删除本项目重复的API System/Tools/Messages/SSE解析视图及响应重组函数；`api-capture.js`只保留实验/请求选择、正文/SSE导出、复制与外站链接。九步任务导读和CLI记录检查保留。
+
+Inspector当前无跨页面导入接口。点击“复制内容并打开Inspector”先复制选中内容，复制成功后新标签打开固定HTTPS地址；用户在①请求Body或②SSE输入框粘贴、点解析。复制失败不打开新页，展开只读导出框并选中内容供手动复制；弹窗未打开可用独立链接。无query/hash传输、不上传、无自动Clipboard读取。请求导出严格为exchange.request，不含采集包装；响应导出标准event/data SSE，去capture_merged_deltas注释字段，保留审查后事件顺序与块索引。原分片已合并的限制仍标明。
+
+异步复制有generation/dispose保护，切换请求/实验或离开后不再触发过期弹窗与状态更新。导出协议有真实样本回归；浏览器实际复制、打开Inspector、粘贴解析均通过，请求识别DeepSeek/工具Schema，SSE正确重组4个Read/Bash工具调用。
