@@ -13,7 +13,7 @@
 
 | 如果你需要... | 从这里开始 |
 |---|---|
-| `/learn`独立学习区、真实Explore子任务修复/续问案例、日志导入与父子调用树 | [学习区维护](guides/learning-area.md) |
+| `/learn`独立学习区、任务导读、真实Explore修复/续问、日志导入与父子调用树 | [学习区维护](guides/learning-area.md) |
 | 了解项目概况、技术栈、目录结构、核心机制 | [项目概览](overview/project-overview.md) |
 | **★ 第一次接手，先读这篇** | [项目概览](overview/project-overview.md) ＋ [后端架构](architecture/backend-architecture.md) |
 | 本地把项目跑起来（裸机 / Docker） | [运行指南](guides/how-to-run.md) |
