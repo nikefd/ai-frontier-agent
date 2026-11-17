@@ -16,7 +16,7 @@ export function mountObserve(root){
  const story=document.createElement('div');story.id='ln-story';story.textContent=t('正在载入真实任务…','Loading the real task…');
  const advanced=document.createElement('details');advanced.className='ls-advanced';
  const summary=document.createElement('summary');summary.textContent=t('深入检查：真实日志、其他案例，或导入自己的记录','Inspect further: raw logs, other cases, or import your own trace');advanced.append(summary);
- [...root.children].filter(node=>node!==intro).forEach(node=>advanced.append(node));const entry=document.createElement('div');entry.className='wa-entry';entry.innerHTML=`<button id="ln-guided-mode" aria-pressed="true">${t('任务导读','Task walkthrough')}</button><button id="ln-api-mode" aria-pressed="false">${t('真实API请求 · System / Tools / Skill','Actual API requests · System / Tools / Skill')}</button>`;
+ [...root.children].filter(node=>node!==intro).forEach(node=>advanced.append(node));const entry=document.createElement('div');entry.className='wa-entry';entry.innerHTML=`<button id="ln-guided-mode" aria-pressed="true">${t('任务导读','Task walkthrough')}</button><button id="ln-api-mode" aria-pressed="false">${t('真实API采集 → Inspector','Actual API captures → Inspector')}</button>`;
  const apiRoot=document.createElement('section');apiRoot.className='wa-panel';apiRoot.hidden=true;
  root.append(entry,story,apiRoot,advanced);
  const $=selector=>root.querySelector(selector);

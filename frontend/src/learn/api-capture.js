@@ -1,39 +1,37 @@
 import {escapeHtml as esc} from '../util.js';
 import {t} from './trace-view.js';
-const pre=value=>`<pre>${esc(typeof value==='string'?value:JSON.stringify(value,null,2))}</pre>`;
-export function assembleResponse(events){
- const blocks=new Map();let usage={},stopReason='',model='';
- for(const e of events){
-  if(e.type==='message_start'){model=e.message?.model||'';usage={...usage,...e.message?.usage};}
-  if(e.type==='content_block_start')blocks.set(e.index,{...e.content_block});
-  if(e.type==='content_block_delta'){
-   const b=blocks.get(e.index);if(!b)continue;
-   if(e.delta?.type==='text_delta')b.text=(b.text||'')+e.delta.text;
-   if(e.delta?.type==='input_json_delta')b.partial=(b.partial||'')+e.delta.partial_json;
-  }
-  if(e.type==='message_delta'){usage={...usage,...e.usage};stopReason=e.delta?.stop_reason||stopReason;}
- }
- return {model,stopReason,usage,blocks:[...blocks.values()].map(b=>{if(!b.partial)return b;const {partial,...rest}=b;try{return {...rest,input:JSON.parse(partial)};}catch{return {...rest,unparsed_input:partial};}})};
+export const INSPECTOR_URL='https://inspector.zhangyangbin.com/';
+export function inspectorPayload(exchange,format='request'){
+ if(format==='request')return JSON.stringify(exchange.request,null,2);
+ return exchange.response_events.map(({capture_merged_deltas,...event})=>`event: ${event.type}\ndata: ${JSON.stringify(event)}`).join('\n\n')+'\n\n';
 }
-function requestView(body,tab){
- if(tab==='system')return `<h3>System · ${body.system?.length||0} ${t('块','blocks')}</h3>${(body.system||[]).map((b,i)=>`<details ${i===2?'open':''}><summary>#${i} · ${esc(b.type)} · ${b.text?.length||0} ${t('字符','characters')}</summary>${pre(b.text||b)}${b.cache_control?pre({cache_control:b.cache_control}):''}</details>`).join('')}`;
- if(tab==='tools')return `<h3>Tools · ${body.tools?.length||0}</h3>${(body.tools||[]).map(tool=>`<details ${tool.name==='Skill'?'open':''}><summary>${esc(tool.name)} · ${Object.keys(tool.input_schema?.properties||{}).length} ${t('参数','parameters')}</summary><p>${esc(tool.description||'')}</p><h4>input_schema</h4>${pre(tool.input_schema||tool)}</details>`).join('')}`;
- if(tab==='messages')return `<h3>Messages · ${body.messages?.length||0}</h3>${(body.messages||[]).map((m,i)=>`<details ${JSON.stringify(m.content).includes('A failed test is an observed finding')?'open':''}><summary>#${i+1} · ${esc(m.role)}${JSON.stringify(m.content).includes('A failed test is an observed finding')?' · '+t('Skill正文注入','Skill body injected'):''} · ${Array.isArray(m.content)?m.content.map(b=>esc(b.type)).join(' / '):'text'}</summary>${typeof m.content==='string'?pre(m.content):(m.content||[]).map(b=>`<h4>${esc(b.type)}${b.name?' · '+esc(b.name):''}</h4>${pre(b.type==='text'?b.text:b.type==='tool_result'?b.content:b)}`).join('')}</details>`).join('')}`;
- return pre(body);
-}
-export function apiCaptureView(data,index=0,tab='system'){
- const exchange=data.exchanges[index],body=exchange.request,response=assembleResponse(exchange.response_events);
- const tabs=[['system','System'],['tools','Tools / Schema'],['messages','Messages'],['response',t('响应 / SSE','Response / SSE')],['raw',t('请求JSON','Request JSON')]];
- return `<div class="wa-toolbar"><label>${t('实验','Experiment')} <select data-wire-case><option value="repair" ${data.case_id==='learn-search-v1'?'selected':''}>${t('真实修复与Explore · 7请求','Repair + Explore · 7 requests')}</option><option value="skill" ${data.case_id==='learn-skill-v1'?'selected':''}>${t('原生Skill只读检查 · 5请求','Native Skill read-only check · 5 requests')}</option></select></label><span>${esc(data.cli_version)} · DeepSeek Flash</span></div><p class="li-note">${t('2026-11-17新采集，独立于旧的九步导读。下方是某一次真实发送的请求正文与响应事件，不是CLI日志拼出的上下文。认证头未记录；账户元数据、私有路径、思考块及签名已去除。','New capture on 2026-11-17, separate from the older nine-step walkthrough. Each entry is an actual transmitted request body and response events, not context inferred from CLI logs. No auth headers recorded; account metadata, private paths, thinking blocks and signatures removed.')}</p>${data.skill_source?`<details><summary>${t('本实验自己的SKILL.md原文','This exercise’s own SKILL.md')}</summary>${pre(data.skill_source)}<p>${t('文件保持不变，故障测试仍为2通过/5失败；此实验检查而不修复。可在请求1的响应看到Skill调用，再在后续Messages找到注入的正文。','Files remain unchanged, with 2 passes / 5 failures; this experiment inspects without repairing. Request 1’s response contains the Skill call; subsequent Messages contain the injected instructions.')}</p></details>`:''}<div class="wa-layout"><aside class="wa-requests">${data.exchanges.map((r,i)=>`<button data-wire-request="${i}" aria-pressed="${i===index}"><b>#${r.sequence} · ${r.scope==='child'?'Explore':t('主任务','Main')}</b><small>${r.request.messages?.length||0} messages · ${r.request.tools?.length||0} tools</small><small>HTTP ${r.status} · ${r.duration_ms} ms</small></button>`).join('')}</aside><article class="wa-detail"><nav>${tabs.map(([key,title])=>`<button data-wire-tab="${key}" aria-pressed="${tab===key}">${title}</button>`).join('')}</nav><div class="wa-body">${tab==='response'?`<h3>${t('由真实SSE片段重组','Reassembled from captured SSE fragments')}</h3>${pre({model:response.model,stop_reason:response.stopReason,usage:response.usage})}${response.blocks.map(b=>`<h4>${esc(b.type)}${b.name?' · '+esc(b.name):''}</h4>${pre(b.type==='text'?b.text:b)}`).join('')}<details><summary>${t('脱敏合并后的SSE事件JSON','Redacted, coalesced SSE event JSON')} · ${exchange.response_events.length}</summary>${pre(exchange.response_events)}</details>`:requestView(body,tab)}</div></article></div><p class="li-note">${t('请求序号按采集器收到的顺序排列，不等于模型Turn编号。响应Token来自提供方usage字段，未经账单核验；思考内容过滤后不在正文中。文本及参数片段先合并再脱敏，不保留原始分片边界。','Request numbers follow capture arrival order, not model turn numbers. Tokens come from provider usage, not verified billing; filtered thinking content is absent from the body. Text and parameter deltas are coalesced before redaction; original fragment boundaries are not retained.')}</p>`;
+export function apiCaptureView(data,index=0,format='request'){
+ const exchange=data.exchanges[index],payload=inspectorPayload(exchange,format),request=format==='request';
+ return `<div class="wa-toolbar"><label>${t('实验','Experiment')} <select data-wire-case><option value="repair" ${data.case_id==='learn-search-v1'?'selected':''}>${t('真实修复与Explore · 7请求','Repair + Explore · 7 requests')}</option><option value="skill" ${data.case_id==='learn-skill-v1'?'selected':''}>${t('原生Skill只读检查 · 5请求','Native Skill read-only check · 5 requests')}</option></select></label><span>${esc(data.cli_version)} · DeepSeek Flash</span></div><p class="li-note">${t('选择一次真实采集，复制到现有Inspector解析。此处只选择与导出内容，System、Tools、Messages和响应分析复用Inspector。2026-11-17的新实验独立于旧的九步导读。','Choose a captured exchange and copy it into the existing Inspector. This page selects and exports data; Inspector handles System, Tools, Messages and response analysis. These captures from 2026-11-17 are separate from the older walkthrough.')}</p>${data.skill_source?`<p class="li-note">${t('想看Skill正文怎样注入：选择请求2，复制请求JSON，在Inspector的Messages中查看。该实验只检查，文件未改。','To inspect Skill injection, choose request 2 and copy its request JSON, then inspect Messages in Inspector. This experiment only checks; files stay unchanged.')}</p>`:''}<div class="wa-layout"><aside class="wa-requests">${data.exchanges.map((r,i)=>`<button data-wire-request="${i}" aria-pressed="${i===index}"><b>#${r.sequence} · ${r.scope==='child'?'Explore':t('主任务','Main')}</b><small>${r.request.messages?.length||0} messages · ${r.request.tools?.length||0} tools</small><small>HTTP ${r.status} · ${r.duration_ms} ms</small></button>`).join('')}</aside><article class="wa-detail"><nav><button data-wire-format="request" aria-pressed="${request}">${t('请求JSON → Inspector ①','Request JSON → Inspector ①')}</button><button data-wire-format="response" aria-pressed="${!request}">${t('响应SSE → Inspector ②','Response SSE → Inspector ②')}</button></nav><div class="wa-body"><h3>${t('在Inspector中查看','Inspect in Inspector')}</h3><ol class="wa-instructions"><li>${t('点击下方按钮，复制当前内容并打开Inspector。','Click below to copy the current payload and open Inspector.')}</li><li>${request?t('在“① 解析请求 Body”的左侧输入框粘贴。','Paste into the left input of “① 解析请求 Body”.'):t('切换到“② 解析 SSE 输出”，在左侧输入框粘贴。','Switch to “② 解析 SSE 输出” and paste into the left input.')}</li><li>${t('点“解析 ▸”，使用原来的分区、参数树与消息分析。','Click “解析 ▸” to use the existing sections, parameter trees and message analysis.')}</li></ol><div class="wa-actions"><button data-wire-copy-open>${t('复制内容并打开Inspector ↗','Copy payload and open Inspector ↗')}</button><button data-wire-copy>${t('仅复制','Copy only')}</button><a href="${INSPECTOR_URL}" target="_blank" rel="noopener noreferrer">${t('打开Inspector ↗','Open Inspector ↗')}</a></div><p data-wire-status role="status" aria-live="polite"></p><details class="wa-export"><summary>${t('查看导出内容 / 手动复制','Preview export / copy manually')} · ${new TextEncoder().encode(payload).length.toLocaleString()} B</summary><label>${request?t('请求正文JSON','Request body JSON'):t('审查后合并的SSE','Reviewed, coalesced SSE')}<textarea data-wire-payload readonly rows="12" spellcheck="false">${esc(payload)}</textarea></label><button data-wire-select>${t('选中全部内容','Select all content')}</button></details></div></article></div><p class="li-note">${t('只复制当前选中的请求正文或SSE，不含采集包装信息。认证头未记录；公开内容已脱敏。SSE已去除思考块并合并增量，不保留原始分片边界。内容不放进外站URL，打开页面不会自动上传采集。','Only the selected request body or SSE is copied, without the capture wrapper. Auth headers were never recorded; public content is redacted. Thinking blocks are removed and SSE deltas coalesced; original fragment boundaries are not retained. Payloads are not placed in external URLs or uploaded by opening the page.')}</p>`;
 }
 export function mountApiCapture(root){
- let disposed=false,generation=0,data=null,index=0,tab='system';
- async function load(kind){const current=++generation;root.textContent=t('正在载入真实API采集…','Loading actual API capture…');try{const response=await fetch(`/learn/examples/http-${kind}.json`);if(!response.ok)throw new Error('HTTP '+response.status);const result=await response.json();if(disposed||current!==generation)return;data=result;index=0;tab='system';render();}catch(error){if(!disposed&&current===generation)root.textContent=t('采集载入失败：','Capture load failed: ')+error.message;}}
+ let disposed=false,generation=0,data=null,index=0,format='request',copyGeneration=0;
+ async function load(kind){const current=++generation;copyGeneration++;root.textContent=t('正在载入真实API采集…','Loading actual API capture…');try{const response=await fetch(`/learn/examples/http-${kind}.json`);if(!response.ok)throw new Error('HTTP '+response.status);const result=await response.json();if(disposed||current!==generation)return;data=result;index=0;format='request';render();}catch(error){if(!disposed&&current===generation)root.textContent=t('采集载入失败：','Capture load failed: ')+error.message;}}
+ async function copy(open){
+  const current=++copyGeneration,payload=inspectorPayload(data.exchanges[index],format);
+  try{
+   await navigator.clipboard.writeText(payload);
+   if(disposed||current!==copyGeneration)return;
+   if(open)window.open(INSPECTOR_URL,'_blank','noopener,noreferrer');
+   root.querySelector('[data-wire-status]').textContent=t('已复制。在Inspector粘贴后点“解析 ▸”。如未打开，可使用旁边的链接。','Copied. Paste in Inspector and click “解析 ▸”. If no tab opened, use the adjacent link.');
+  }catch{
+   if(disposed||current!==copyGeneration)return;
+   root.querySelector('.wa-export').open=true;root.querySelector('[data-wire-payload]').select();
+   root.querySelector('[data-wire-status]').textContent=t('浏览器未允许自动复制。内容已选中，请按⌘C / Ctrl+C，再打开Inspector粘贴。','Automatic copy was unavailable. Text is selected: press ⌘C / Ctrl+C, then open Inspector and paste.');
+  }
+ }
  function render(){
-  root.innerHTML=apiCaptureView(data,index,tab);
+  copyGeneration++;root.innerHTML=apiCaptureView(data,index,format);
   root.querySelector('[data-wire-case]').onchange=e=>load(e.target.value);
   root.querySelectorAll('[data-wire-request]').forEach(b=>b.onclick=()=>{index=Number(b.dataset.wireRequest);render();root.querySelector(`[data-wire-request="${index}"]`)?.focus({preventScroll:true});});
-  root.querySelectorAll('[data-wire-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.wireTab;render();root.querySelector(`[data-wire-tab="${tab}"]`)?.focus({preventScroll:true});});
+  root.querySelectorAll('[data-wire-format]').forEach(b=>b.onclick=()=>{format=b.dataset.wireFormat;render();root.querySelector(`[data-wire-format="${format}"]`)?.focus({preventScroll:true});});
+  root.querySelector('[data-wire-copy-open]').onclick=()=>copy(true);root.querySelector('[data-wire-copy]').onclick=()=>copy(false);
+  root.querySelector('[data-wire-select]').onclick=()=>root.querySelector('[data-wire-payload]').select();
  }
- load('repair');return ()=>{disposed=true;generation++;data=null;root.innerHTML='';};
+ load('repair');return ()=>{disposed=true;generation++;copyGeneration++;data=null;root.innerHTML='';};
 }
