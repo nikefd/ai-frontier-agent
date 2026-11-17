@@ -7,6 +7,7 @@ import os
 import shutil
 import sys
 import uuid
+from contextlib import nullcontext
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -44,6 +45,7 @@ def main():
     parser.add_argument('--provider-config',type=Path)
     parser.add_argument('--resume-capture',type=Path)
     parser.add_argument('--mode',choices=['bare','safe'],default='bare',help='safe retains built-in delegation; bare is the earlier minimal baseline')
+    parser.add_argument('--capture-http',action='store_true',help='Capture new exercise request/response bodies through a loopback bridge; never headers')
     args=parser.parse_args()
     if not args.allow_agent_run:parser.error('Explicit user authorization required')
     try:provider=provider_environment(args.provider_config)
@@ -79,10 +81,14 @@ def main():
     command=['claude','--safe-mode' if args.mode=='safe' else '--bare','-p',prompt,'--model','deepseek-flash','--output-format','stream-json','--verbose','--strict-mcp-config','--mcp-config','{"mcpServers":{}}','--tools',tools,'--allowedTools',allowed,'--permission-mode','acceptEdits','--max-turns','12','--max-budget-usd','1',*session_flags]
     if not args.resume_capture and args.mode=='bare':command+=['--agents',json.dumps(reviewer)]
     version=execute(['claude','--version'],workspace)
-    result=execute(command,workspace,timeout=240,env=env)
+    from scripts.learning_http_capture import LearningHttpCapture
+    bridge=LearningHttpCapture(provider,destination/'http') if args.capture_http else nullcontext()
+    with bridge as capture:
+        if capture:env['ANTHROPIC_BASE_URL']=capture.base_url
+        result=execute(command,workspace,timeout=240,env=env)
     after=execute(['node','--test','search.test.mjs'],workspace)
     diff=execute(['git','diff','--','search.mjs','search.test.mjs'],workspace)
-    metadata={'profile':'learn-search-v1','session_id':session_id,'workspace':str(workspace),'config_directory':str(config),'captured_at':stamp,'model':'deepseek-flash','provider_host':urlsplit(provider['ANTHROPIC_BASE_URL']).hostname,'cli_version':version['stdout'].strip(),'exit_code':result['exit_code'],'timed_out':result['timed_out'],'tests_unchanged':tests_before==(workspace/'search.test.mjs').read_bytes(),'resume':bool(args.resume_capture),'cli_mode':args.mode,'trace_sha256':hashlib.sha256(result['stdout'].encode()).hexdigest()}
+    metadata={'profile':'learn-search-v1','session_id':session_id,'workspace':str(workspace),'config_directory':str(config),'captured_at':stamp,'model':'deepseek-flash','provider_host':urlsplit(provider['ANTHROPIC_BASE_URL']).hostname,'cli_version':version['stdout'].strip(),'exit_code':result['exit_code'],'timed_out':result['timed_out'],'tests_unchanged':tests_before==(workspace/'search.test.mjs').read_bytes(),'resume':bool(args.resume_capture),'cli_mode':args.mode,'http_capture':args.capture_http,'trace_sha256':hashlib.sha256(result['stdout'].encode()).hexdigest()}
     for name,value in [('manifest.json',metadata),('before-tests.json',before),('after-tests.json',after),('diff.json',diff)]:write_json_atomic(destination/name,value)
     write_text_atomic(destination/'trace.jsonl',result['stdout']);write_text_atomic(destination/'stderr.txt',result['stderr'])
     print(json.dumps({'capture_directory':str(destination),'exit_code':result['exit_code'],'timed_out':result['timed_out'],'tests_unchanged':metadata['tests_unchanged'],'before_tests_exit':before['exit_code'],'after_tests_exit':after['exit_code']}))
