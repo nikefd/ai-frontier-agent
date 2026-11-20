@@ -86,3 +86,12 @@ nav的applyRoute对学习路由立即呈现，不等待auth；navigationAuthRead
 Inspector当前无跨页面导入接口。点击“复制内容并打开Inspector”先复制选中内容，复制成功后新标签打开固定HTTPS地址；用户在①请求Body或②SSE输入框粘贴、点解析。复制失败不打开新页，展开只读导出框并选中内容供手动复制；弹窗未打开可用独立链接。无query/hash传输、不上传、无自动Clipboard读取。请求导出严格为exchange.request，不含采集包装；响应导出标准event/data SSE，去capture_merged_deltas注释字段，保留审查后事件顺序与块索引。原分片已合并的限制仍标明。
 
 异步复制有generation/dispose保护，切换请求/实验或离开后不再触发过期弹窗与状态更新。导出协议有真实样本回归；浏览器实际复制、打开Inspector、粘贴解析均通过，请求识别DeepSeek/工具Schema，SSE正确重组4个Read/Bash工具调用。
+
+
+## 2026-11-20：按问题对照真实请求
+
+沿用户“清晰明了、复用Inspector”的要求继续补导读。HTTP列表每轮新增实际动作标题，说明请求已有内容、对应响应、在Inspector核对的位置。`http-reading-guide.js`存两组已审查案例的12个请求说明及3条证据对照（工具闭环、主/Explore交接、Skill调用/正文注入）；`http-reading-view.js`只呈现说明和定位按钮，不重建请求/SSE解析器。api-capture继续负责唯一的实验/请求/导出格式选择，问题入口可跨实验选择对应请求/SSE。切换选择仍撤销过期复制操作；载入失败支持保留目标的重试。
+
+新增下载选中JSON或SSE，通过Inspector原有“载入文件”复用解析。Blob URL短时撤销，文件仅含既有脱敏正文/事件；不打包认证头，不产生新模型调用。请求标题为人工审查说明，不是隐藏思考；序号仍按实际HTTP采集顺序，不等同模型Turn。
+
+真实样本回归按tool_use.id/tool_result.tool_use_id核验4个调用回到下一主请求、Agent报告回到主任务、子请求无主任务4条反馈、Skill正文在调用后出现。浏览器验证三个问题跨请求/跨实验定位、下载内容与选中真实请求完全一致、Inspector文件导入识别Skill正文、网络失败重试恢复目标/焦点、中英文、390px无横向溢出。
