@@ -105,3 +105,8 @@ async def test_english_admin_cannot_change_global_chinese_enrichment(tmp_path, m
         assert await worker._translate_once()==1
         assert current_language()=='en'
     assert read_json(path,[])[0]['title_zh']=='中文标题'
+
+
+def test_briefing_rejects_matching_but_nonexistent_source_references():
+    with pytest.raises(LLMUnavailable):
+        parse_bilingual_briefing('{"body":"中文 [2]","body_en":"English [2]"}', source_count=1)

@@ -5,7 +5,7 @@ import re
 from .llm_client import LLMUnavailable
 
 
-def parse_bilingual_briefing(text: str) -> dict[str, str]:
+def parse_bilingual_briefing(text: str, *, source_count: int | None = None) -> dict[str, str]:
     text = text.strip()
     if text.startswith('```'):
         text = '\n'.join(text.splitlines()[1:-1])
@@ -17,6 +17,8 @@ def parse_bilingual_briefing(text: str) -> dict[str, str]:
         references = [set(re.findall(r'\[(\d+)\]', value[key])) for key in ('body', 'body_en')]
         if references[0] != references[1]:
             raise ValueError('The two renditions must preserve the same source references')
+        if source_count is not None and any(not 1 <= int(ref) <= source_count for ref in references[0]):
+            raise ValueError('Briefing references must point to an available source')
     except (ValueError, TypeError) as error:
         raise LLMUnavailable('The model did not return a complete bilingual briefing; previous cache retained') from error
     return {key: value[key].strip() for key in ('body', 'body_en')}

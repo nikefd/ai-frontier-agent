@@ -14,6 +14,7 @@
 | 如果你需要... | 从这里开始 |
 |---|---|
 | `/learn`独立学习区、任务导读/四视图检查区、默认正常3轮对话、真实HTTP问题对照/导出到Inspector、日志导入 | [学习区维护](guides/learning-area.md) |
+| 每日速报选材、厂商数据归属和引用校验 | [抓取管线与 LLM 产物](architecture/rss-pipeline-architecture.md#4-其它-llm-加工产物) |
 | 了解项目概况、技术栈、目录结构、核心机制 | [项目概览](overview/project-overview.md) |
 | **★ 第一次接手，先读这篇** | [项目概览](overview/project-overview.md) ＋ [后端架构](architecture/backend-architecture.md) |
 | 本地把项目跑起来（裸机 / Docker） | [运行指南](guides/how-to-run.md) |
