@@ -95,3 +95,12 @@ Inspector当前无跨页面导入接口。点击“复制内容并打开Inspecto
 新增下载选中JSON或SSE，通过Inspector原有“载入文件”复用解析。Blob URL短时撤销，文件仅含既有脱敏正文/事件；不打包认证头，不产生新模型调用。请求标题为人工审查说明，不是隐藏思考；序号仍按实际HTTP采集顺序，不等同模型Turn。
 
 真实样本回归按tool_use.id/tool_result.tool_use_id核验4个调用回到下一主请求、Agent报告回到主任务、子请求无主任务4条反馈、Skill正文在调用后出现。浏览器验证三个问题跨请求/跨实验定位、下载内容与选中真实请求完全一致、Inspector文件导入识别Skill正文、网络失败重试恢复目标/焦点、中英文、390px无横向溢出。
+
+
+## 2026-11-21：默认改为正常多轮协作
+
+用户明确认为修错案例不合适，希望正常、多轮的例子。默认入口现为同一会话的3次真实用户请求：初选4篇→收窄评估/记忆3篇→安排3天阅读。不是工具调用循环冒充用户对话，也没有故障注入。`scripts/capture_learning_conversation.py`以同一session/config/workspace连续resume，safe模式只开放Read/Write/Edit，经既有loopback桥采HTTP。原创教学输入在research/learn-reading，raw仍忽略且不自动公开。
+
+审查后http-normal.json共7个HTTP请求（3+2+2），附3轮实际用户消息、assistant回复和生成文件快照。独立验证每轮exit0、无tool_result错误、源未改，输出从4篇到3篇，再到15/18/20分钟的三天计划；后两轮首次请求确实带前文。脱敏沿用完整块合并后处理，API认证头与思考正文不公开。
+
+`capture-cases.js`统一案例目录，normal排第一并默认载入；`normal-conversation.js`负责三轮对话及文件呈现（Markdown走既有安全渲染）、用户轮次切换、首次请求/最终SSE定位。api-capture仍只做选择和Inspector导出，不重建解析器。每个HTTP请求单列user_turn，用户第1/2/3轮与HTTP #1..7分别标注。故障修复导读和Skill检查作为旧例可选，原JSONL导入/清空/离开撤销保留。
