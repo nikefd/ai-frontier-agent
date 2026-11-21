@@ -1,0 +1,53 @@
+{
+  "notice": "全部为本项目原创教学条目，非真实新闻或外部文章。时长是练习设定。",
+  "articles": [
+    {
+      "id": "A1",
+      "title": "Agent工具调用入门",
+      "topic": "tools",
+      "level": "beginner",
+      "minutes": 12,
+      "summary": "通过请求参数、工具执行与反馈理解一次工具调用闭环。"
+    },
+    {
+      "id": "A2",
+      "title": "为文章检索Agent设计评估用例",
+      "topic": "evaluation",
+      "level": "beginner",
+      "minutes": 18,
+      "summary": "用可验证的样例检查检索结果是否命中需求，而非只看回答是否流畅。"
+    },
+    {
+      "id": "A3",
+      "title": "对话记忆与上下文整理",
+      "topic": "memory",
+      "level": "beginner",
+      "minutes": 15,
+      "summary": "区分当前消息、历史反馈与长期记录，练习保留对下一步有用的信息。"
+    },
+    {
+      "id": "A4",
+      "title": "检查RAG检索质量",
+      "topic": "evaluation",
+      "level": "beginner",
+      "minutes": 20,
+      "summary": "检查召回、来源相关性与答案引用，记录错误样例。"
+    },
+    {
+      "id": "A5",
+      "title": "LoRA微调的训练配置",
+      "topic": "finetuning",
+      "level": "advanced",
+      "minutes": 40,
+      "summary": "讨论训练配置与适配器参数，作为进阶条目。"
+    },
+    {
+      "id": "A6",
+      "title": "推理服务的批处理与部署",
+      "topic": "deployment",
+      "level": "advanced",
+      "minutes": 30,
+      "summary": "讨论服务侧请求批处理，作为部署方向进阶条目。"
+    }
+  ]
+}
