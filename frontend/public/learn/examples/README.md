@@ -30,3 +30,11 @@
 - 中间另做过一次bare Skill尝试，未提供Skill工具；失败尝试仅保留忽略目录，不冒充成功采集。
 
 公开处理：移除request.metadata与客户端计费元数据；替换私有路径与调用标识；删除thinking/redacted_thinking内容及signature。SSE文本和参数增量先按块合并，再对完整字符串/JSON脱敏，避免路径跨片段造成漏删；公开事件保留块索引与capture_merged_deltas计数，不保留原始分片边界。提供方usage保留为报告值，非独立账单核验。系统提示词和Schema来自实际请求，不是根据工具名补写。Skill原文为本项目自己的原创练习。仅点击回放，不产生模型调用。
+
+## http-normal.json（2026-11-21，默认正常多轮案例）
+
+三次真实用户请求，通过Claude Code + DeepSeek Flash在同一新会话中完成；三轮分别实际启动CLI并使用同一session/config/workspace续问。共7个HTTP请求，分组为3+2+2，明确不把工具循环次数当成用户轮次。任务为读取原创教学条目、整理4篇入门清单、按第二轮偏好收窄到评估/记忆3篇、按第三轮要求生成三天阅读计划。没有故障注入或失败测试；源articles.json未改，工具反馈无错误。条目及阅读时长为教学输入，不是真实新闻或实时抓取。
+
+独立核验：首轮表格IDs为A1/A3/A2/A4，第二轮为A3/A2/A4，第三轮计划沿用A3/A2/A4，每天15/18/20分钟；保留每轮实际assistant回复及文件快照。所有续问首个请求都实际包含此前用户请求，不是将三次独立单轮拼接。HTTP正文按前述规则脱敏并合并SSE增量，认证头未采集、思考内容未公开。CLI session原标识仅留忽略目录，公开标记为same-new-isolated-session。请求说明为人工审查导读，原始角色消息与模型回复不预写。
+
+复现：`python -m scripts.capture_learning_conversation --allow-agent-run --provider-config /path/to/settings.json`，仅在获得受控模型运行授权后使用。运行只开放Read/Write/Edit，safe-mode/严格空MCP/独立CLI配置，不执行Bash、联网工具或子任务；raw产物不自动公开。网页仍只回放与导出到Inspector，不运行模型。
