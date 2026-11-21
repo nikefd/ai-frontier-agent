@@ -25,7 +25,7 @@ test('native Skill declaration call and subsequent injected body are all observe
  assert.match(capture.skill_source,/name: verify-search/);
 });
 test('public HTTP bodies exclude account metadata private paths and thinking content; HTML escapes System',async()=>{
- for(const kind of ['repair','skill']){
+ for(const kind of ['repair','skill','normal']){
   const capture=await load(kind);assert.ok(!JSON.stringify(capture).includes('/Users/'));
   for(const e of capture.exchanges){assert.equal(e.request.metadata,undefined);assert.ok(e.response_events.every(v=>!['thinking_delta','signature_delta'].includes(v.delta?.type)));assert.ok(!inspectorPayload(e,'response').includes('/Users/'));}
  }
